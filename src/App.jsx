@@ -3,9 +3,25 @@ import { useState, useMemo, useEffect } from "react";
 // ET to BD time converter: ET = UTC-4 (summer), BD = UTC+6, so BD = ET + 10h
 function etToBD(etTime) {
   const [h, m] = etTime.split(":").map(Number);
-  let bdH = (h + 10) % 24;
-  const nextDay = h + 10 >= 24;
-  return { time: `${String(bdH).padStart(2,"0")}:${String(m).padStart(2,"0")}`, nextDay };
+  const totalH = h + 10;
+  let bdH = totalH % 24;
+  const nextDay = totalH >= 24;
+
+  // Bangla time-of-day label
+  let label;
+  if (bdH >= 4 && bdH < 6)        label = "ভোর";
+  else if (bdH >= 6 && bdH < 12)  label = "সকাল";
+  else if (bdH >= 12 && bdH < 15) label = "দুপুর";
+  else if (bdH >= 15 && bdH < 18) label = "বিকেল";
+  else if (bdH >= 18 && bdH < 20) label = "সন্ধ্যা";
+  else                              label = "রাত";
+
+  // 12-hour format
+  const ampm = bdH >= 12 ? "PM" : "AM";
+  const h12 = bdH % 12 === 0 ? 12 : bdH % 12;
+  const timeStr = `${h12}:${String(m).padStart(2,"0")} ${ampm}`;
+
+  return { time: timeStr, label, nextDay };
 }
 
 const GROUPS = {
@@ -544,8 +560,8 @@ function MatchCountdown({ dateStr, etTime, isFav }) {
 }
 
 function bdTime(etTime, dateStr) {
-  const { time, nextDay } = etToBD(etTime);
-  return time + (nextDay ? " (+1)" : "");
+  const { time, label, nextDay } = etToBD(etTime);
+  return label + " " + time + (nextDay ? " (+1)" : "");
 }
 
 function getTeamGroup(t) {
