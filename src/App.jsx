@@ -1045,7 +1045,6 @@ export default function App() {
           FIFA World Cup 2026 · সকল সময় বাংলাদেশ সময় অনুযায়ী (GMT+6) · Jun 11 – Jul 19
         </div>
       </div>
-    </div>
     </>
   );
 }
