@@ -8,6 +8,34 @@ function etToBD(etTime) {
   return { time: `${String(bdH).padStart(2,"0")}:${String(m).padStart(2,"0")}`, nextDay };
 }
 
+// Parse "Jun 11" style date into a comparable value (2026 assumed)
+const MONTH_MAP = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+function parseDateStr(dateStr) {
+  if (!dateStr) return null;
+  const [mon, day] = dateStr.trim().split(" ");
+  return new Date(2026, (MONTH_MAP[mon] || 6) - 1, parseInt(day));
+}
+// Returns "Jun 11" format for a Date
+function formatDateStr(d) {
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${months[d.getMonth()]} ${d.getDate()}`;
+}
+// Get today's date in Bangladesh time (UTC+6)
+function getTodayBD() {
+  const now = new Date();
+  const bdOffset = 6 * 60; // minutes
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + bdOffset * 60000);
+}
+// Get BD date for a fixture (ET date + possible +1 day from time conversion)
+function getFixtureBDDate(dateStr, etTime) {
+  const { nextDay } = etToBD(etTime);
+  const base = parseDateStr(dateStr);
+  if (!base) return null;
+  if (nextDay) { const d = new Date(base); d.setDate(d.getDate() + 1); return d; }
+  return base;
+}
+
 const GROUPS = {
   A: ["Mexico","South Africa","South Korea","Czech Republic"],
   B: ["Canada","Bosnia & Herzegovina","Qatar","Switzerland"],
@@ -199,7 +227,7 @@ const posLabel = {GK:"গোলকিপার",DEF:"ডিফেন্ডার
 
 function bdTime(etTime, dateStr) {
   const { time, nextDay } = etToBD(etTime);
-  return time + (nextDay ? " (+1)" : "");
+  return time + (nextDay ? " (+১)" : "");
 }
 
 function getTeamGroup(t) {
@@ -403,10 +431,12 @@ function SquadPanel({ teamName }) {
           <div style={{display:"flex",flexDirection:"column",gap:7}}>
             {grpFixtures.map((fix,i)=>{
               const bd=bdTime(fix.etTime,"");
+              const bdDate = getFixtureBDDate(fix.dateStr, fix.etTime);
+              const bdDateStr = bdDate ? formatDateStr(bdDate) : fix.dateStr;
               const isHome=fix.home===teamName;
               return (
                 <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:12,padding:"6px 0",borderBottom:i<grpFixtures.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
-                  <span style={{color:"#4b5563",minWidth:50}}>{fix.dateStr}</span>
+                  <span style={{color:"#4b5563",minWidth:50}}>{bdDateStr}</span>
                   <span style={{fontWeight:isHome?800:500,color:isHome?"#10b981":"#9ca3af"}}>{fix.home}</span>
                   <span style={{color:"#374151",fontSize:10}}>vs</span>
                   <span style={{fontWeight:!isHome?800:500,color:!isHome?"#10b981":"#9ca3af"}}>{fix.away}</span>
@@ -426,18 +456,51 @@ export default function App() {
   const [tab, setTab] = useState("fixtures");
   const [fixtureSearch, setFixtureSearch] = useState("");
   const [fixtureFilter, setFixtureFilter] = useState("ALL");
+  const [fixtureDateFilter, setFixtureDateFilter] = useState("ALL"); // "ALL" or "Jun 11" etc
   const [squadTeam, setSquadTeam] = useState(null);
   const [koRound, setKoRound] = useState(0);
+
+  // Today's matches in BD time
+  const todayBD = getTodayBD();
+  const todayMatches = useMemo(() => {
+    return ALL_GROUP_FIXTURES.filter(f => {
+      const bdDate = getFixtureBDDate(f.dateStr, f.etTime);
+      if (!bdDate) return false;
+      return bdDate.getFullYear() === todayBD.getFullYear() &&
+             bdDate.getMonth() === todayBD.getMonth() &&
+             bdDate.getDate() === todayBD.getDate();
+    });
+  }, []);
+
+  // All unique BD dates for the date filter
+  const allBDDates = useMemo(() => {
+    const seen = new Set();
+    const dates = [];
+    ALL_GROUP_FIXTURES.forEach(f => {
+      const bdDate = getFixtureBDDate(f.dateStr, f.etTime);
+      if (!bdDate) return;
+      const key = formatDateStr(bdDate);
+      if (!seen.has(key)) { seen.add(key); dates.push({ key, date: bdDate }); }
+    });
+    dates.sort((a,b) => a.date - b.date);
+    return dates;
+  }, []);
 
   const filteredFixtures = useMemo(() => {
     let list = ALL_GROUP_FIXTURES;
     if (fixtureFilter !== "ALL") list = list.filter(f => f.grp === fixtureFilter);
+    if (fixtureDateFilter !== "ALL") {
+      list = list.filter(f => {
+        const bdDate = getFixtureBDDate(f.dateStr, f.etTime);
+        return bdDate && formatDateStr(bdDate) === fixtureDateFilter;
+      });
+    }
     if (fixtureSearch.trim()) {
       const q = fixtureSearch.toLowerCase();
       list = list.filter(f => f.home.toLowerCase().includes(q) || f.away.toLowerCase().includes(q));
     }
     return list;
-  }, [fixtureFilter, fixtureSearch]);
+  }, [fixtureFilter, fixtureDateFilter, fixtureSearch]);
 
   const searchSuggestions = useMemo(() => {
     if (!fixtureSearch.trim() || fixtureSearch.length < 2) return [];
@@ -481,11 +544,12 @@ export default function App() {
         @media(max-width:600px){
           .squad-layout{flex-direction:column;gap:0;}
           .team-sidebar{width:100%;max-height:none;position:static;overflow-y:visible;
-            display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:10px;margin-bottom:14px;}
-          .team-sidebar::-webkit-scrollbar{height:3px;}
-          .team-sidebar > div{display:contents;}
-          .team-sidebar button{flex-shrink:0;white-space:nowrap;width:auto!important;padding:6px 12px!important;border:1px solid rgba(255,255,255,.1)!important;}
-          .team-sidebar button span:last-child{display:inline!important;}
+            display:block;margin-bottom:14px;}
+          .team-sidebar .grp-row{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:4px;margin-bottom:4px;}
+          .team-sidebar .grp-row::-webkit-scrollbar{height:3px;background:transparent;}
+          .team-sidebar .grp-row::-webkit-scrollbar-thumb{background:#10b981;border-radius:2px;}
+          .team-sidebar > div > div:first-child{font-size:9px!important;color:#4b5563!important;letter-spacing:2px;text-transform:uppercase;padding-left:2px;margin-bottom:4px!important;margin-top:6px!important;}
+          .team-sidebar button{flex-shrink:0!important;white-space:nowrap!important;width:auto!important;padding:5px 10px!important;font-size:11px!important;}
           .squad-content{width:100%;}
           .fcard{padding:10px 12px!important;}
           .fcard-venue{display:none;}
@@ -532,8 +596,42 @@ export default function App() {
           {/* ===== FIXTURES TAB ===== */}
           {tab==="fixtures" && (
             <div className="fi">
+
+              {/* TODAY'S MATCHES BANNER */}
+              {todayMatches.length > 0 && (
+                <div style={{marginBottom:20,padding:"14px 16px",background:"linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,95,70,.08))",border:"1px solid rgba(16,185,129,.3)",borderRadius:14}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                    <span style={{fontSize:18}}>⚽</span>
+                    <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:18,color:"#10b981",letterSpacing:2}}>আজকের ম্যাচ</span>
+                    <span style={{padding:"2px 8px",background:"rgba(16,185,129,.2)",borderRadius:999,fontSize:11,fontWeight:700,color:"#34d399"}}>{todayMatches.length}টি</span>
+                    <span style={{marginLeft:"auto",fontSize:11,color:"#4b5563"}}>{formatDateStr(todayBD)} · বাংলাদেশ সময়</span>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {todayMatches.map(fix => {
+                      const bd = bdTime(fix.etTime, fix.dateStr);
+                      return (
+                        <div key={fix.id} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(0,0,0,.2)",borderRadius:10,padding:"10px 12px"}}>
+                          <span style={{fontSize:10,fontWeight:800,color:"#10b981",background:"rgba(16,185,129,.1)",padding:"2px 6px",borderRadius:4,minWidth:22,textAlign:"center"}}>{fix.grp}</span>
+                          <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"center"}}>
+                            <span style={{fontSize:18}}>{FLAGS[fix.home]||"🏳"}</span>
+                            <span style={{fontSize:12,fontWeight:700,color:"#e5e7eb"}}>{fix.home}</span>
+                            <div style={{padding:"3px 8px",background:"rgba(16,185,129,.15)",border:"1px solid rgba(16,185,129,.3)",borderRadius:6,textAlign:"center",minWidth:60}}>
+                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:15,color:"#10b981",letterSpacing:1}}>{bd}</div>
+                              <div style={{fontSize:8,color:"#4b5563"}}>BD</div>
+                            </div>
+                            <span style={{fontSize:12,fontWeight:700,color:"#e5e7eb"}}>{fix.away}</span>
+                            <span style={{fontSize:18}}>{FLAGS[fix.away]||"🏳"}</span>
+                          </div>
+                          <span style={{fontSize:10,color:"#4b5563",textAlign:"right",display:"none"}} className="fcard-venue">{fix.venue.split(",")[0]}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Search bar */}
-              <div style={{display:"flex",gap:12,marginBottom:18,flexWrap:"wrap",alignItems:"flex-start"}}>
+              <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap",alignItems:"flex-start"}}>
                 <div style={{position:"relative",flex:1,minWidth:220}}>
                   <input type="text" value={fixtureSearch} onChange={e=>{setFixtureSearch(e.target.value);setFixtureFilter("ALL");}}
                     placeholder="🔍 দলের নাম লিখুন... e.g. Brazil, Spain, Japan"
@@ -555,15 +653,36 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                {fixtureSearch && (
-                  <button onClick={()=>setFixtureSearch("")} style={{padding:"11px 14px",background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:10,color:"#ef4444",cursor:"pointer",fontSize:13,fontWeight:600}}>✕ Clear</button>
+                {(fixtureSearch || fixtureDateFilter!=="ALL") && (
+                  <button onClick={()=>{setFixtureSearch("");setFixtureDateFilter("ALL");setFixtureFilter("ALL");}} style={{padding:"11px 14px",background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:10,color:"#ef4444",cursor:"pointer",fontSize:13,fontWeight:600}}>✕ Clear</button>
                 )}
               </div>
 
+              {/* DATE filter — scrollable chips */}
+              <div style={{marginBottom:12}}>
+                <div style={{fontSize:10,fontWeight:800,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>তারিখ বেছে নিন (বাংলাদেশ সময়)</div>
+                <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:6}}>
+                  <button onClick={()=>setFixtureDateFilter("ALL")}
+                    style={{flexShrink:0,padding:"5px 12px",borderRadius:7,border:`1px solid ${fixtureDateFilter==="ALL"?"#10b981":"rgba(255,255,255,.08)"}`,background:fixtureDateFilter==="ALL"?"rgba(16,185,129,.15)":"transparent",color:fixtureDateFilter==="ALL"?"#10b981":"#6b7280",cursor:"pointer",fontSize:12,fontWeight:700,whiteSpace:"nowrap"}}>
+                    সব তারিখ
+                  </button>
+                  {allBDDates.map(({key,date})=>{
+                    const isToday = date.getFullYear()===todayBD.getFullYear()&&date.getMonth()===todayBD.getMonth()&&date.getDate()===todayBD.getDate();
+                    const isActive = fixtureDateFilter===key;
+                    return (
+                      <button key={key} onClick={()=>{setFixtureDateFilter(key);setFixtureFilter("ALL");setFixtureSearch("");}}
+                        style={{flexShrink:0,padding:"5px 12px",borderRadius:7,border:`1px solid ${isActive?"#10b981":isToday?"rgba(16,185,129,.35)":"rgba(255,255,255,.08)"}`,background:isActive?"rgba(16,185,129,.15)":isToday?"rgba(16,185,129,.05)":"transparent",color:isActive?"#10b981":isToday?"#34d399":"#6b7280",cursor:"pointer",fontSize:12,fontWeight:isToday?700:500,whiteSpace:"nowrap",position:"relative"}}>
+                        {key}{isToday&&<span style={{marginLeft:4,fontSize:9,color:"#10b981"}}>●</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Group filter */}
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
                 {["ALL",...Object.keys(GROUPS)].map(g=>(
-                  <button key={g} className="grpbtn" onClick={()=>{setFixtureFilter(g);setFixtureSearch("");}}
+                  <button key={g} className="grpbtn" onClick={()=>{setFixtureFilter(g);setFixtureSearch("");setFixtureDateFilter("ALL");}}
                     style={{padding:"5px 13px",borderRadius:7,border:`1px solid ${fixtureFilter===g?"#10b981":"rgba(255,255,255,.08)"}`,background:fixtureFilter===g?"rgba(16,185,129,.15)":"transparent",color:fixtureFilter===g?"#10b981":"#6b7280",cursor:"pointer",fontFamily:"'Bebas Neue',cursive",fontSize:15,letterSpacing:1.5,transition:"all .2s"}}>
                     {g==="ALL"?"All Groups":`Grp ${g}`}
                   </button>
@@ -574,6 +693,7 @@ export default function App() {
               <div style={{fontSize:12,color:"#4b5563",marginBottom:14}}>
                 {filteredFixtures.length} টি ম্যাচ দেখানো হচ্ছে
                 {fixtureSearch && <span style={{color:"#10b981"}}> · "{fixtureSearch}" সংক্রান্ত</span>}
+                {fixtureDateFilter!=="ALL" && <span style={{color:"#10b981"}}> · {fixtureDateFilter} (BD)</span>}
               </div>
 
               {/* Fixture cards */}
@@ -586,6 +706,8 @@ export default function App() {
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {filteredFixtures.map((fix)=>{
                     const bd = bdTime(fix.etTime, fix.dateStr);
+                    const bdDate = getFixtureBDDate(fix.dateStr, fix.etTime);
+                    const bdDateStr = bdDate ? formatDateStr(bdDate) : fix.dateStr;
                     const highlighted = fixtureSearch && (fix.home.toLowerCase().includes(fixtureSearch.toLowerCase())||fix.away.toLowerCase().includes(fixtureSearch.toLowerCase()));
                     return (
                       <div key={fix.id} className="fcard" style={{background:"rgba(255,255,255,.02)",border:`1px solid ${highlighted?"rgba(16,185,129,.35)":"rgba(255,255,255,.06)"}`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,transition:"all .2s"}}>
@@ -608,7 +730,7 @@ export default function App() {
                           </div>
                         </div>
                         <div className="fcard-venue" style={{textAlign:"right",minWidth:150}}>
-                          <div style={{fontSize:12,fontWeight:700,color:"#d1d5db"}}>{fix.dateStr} 2026</div>
+                          <div style={{fontSize:12,fontWeight:700,color:"#d1d5db"}}>{bdDateStr} 2026 <span style={{fontSize:10,color:"#4b5563",fontWeight:400}}>(BD)</span></div>
                           <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>📍 {fix.venue.split(",")[0]}</div>
                           <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>{fix.venue.split(",").slice(1).join(",").trim()}</div>
                         </div>
@@ -724,17 +846,19 @@ export default function App() {
                 {/* Team selector */}
                 <div className="team-sidebar">
                   {Object.entries(GROUPS).map(([grp,teams])=>(
-                    <div key={grp} style={{marginBottom:10}}>
-                      <div style={{fontSize:10,fontWeight:800,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:5,paddingLeft:2}}>Grp {grp}</div>
-                      {teams.map(team=>(
-                        <button key={team} onClick={()=>setSquadTeam(team)}
-                          style={{display:"flex",alignItems:"center",gap:7,width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${squadTeam===team?"#10b981":"transparent"}`,background:squadTeam===team?"rgba(16,185,129,.12)":"transparent",color:squadTeam===team?"#10b981":"#9ca3af",cursor:"pointer",fontSize:12,fontWeight:squadTeam===team?700:500,transition:"all .15s",marginBottom:2,textAlign:"left"}}
-                          onMouseEnter={e=>{if(squadTeam!==team){e.currentTarget.style.background="rgba(255,255,255,.04)";e.currentTarget.style.color="#d1d5db";}}}
-                          onMouseLeave={e=>{if(squadTeam!==team){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#9ca3af";}}}>
-                          <span style={{fontSize:15,flexShrink:0}}>{FLAGS[team]||"🏳"}</span>
-                          <span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontSize:11}}>{team}</span>
-                        </button>
-                      ))}
+                    <div key={grp} style={{marginBottom:8}}>
+                      <div style={{fontSize:10,fontWeight:800,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:4,paddingLeft:2}}>Grp {grp}</div>
+                      <div className="grp-row">
+                        {teams.map(team=>(
+                          <button key={team} onClick={()=>setSquadTeam(team)}
+                            style={{display:"flex",alignItems:"center",gap:6,width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${squadTeam===team?"#10b981":"rgba(255,255,255,.07)"}`,background:squadTeam===team?"rgba(16,185,129,.12)":"transparent",color:squadTeam===team?"#10b981":"#9ca3af",cursor:"pointer",fontSize:12,fontWeight:squadTeam===team?700:500,transition:"all .15s",marginBottom:2,textAlign:"left"}}
+                            onMouseEnter={e=>{if(squadTeam!==team){e.currentTarget.style.background="rgba(255,255,255,.04)";e.currentTarget.style.color="#d1d5db";}}}
+                            onMouseLeave={e=>{if(squadTeam!==team){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#9ca3af";}}}>
+                            <span style={{fontSize:14,flexShrink:0}}>{FLAGS[team]||"🏳"}</span>
+                            <span style={{fontSize:11}}>{team}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
