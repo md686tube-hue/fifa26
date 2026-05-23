@@ -669,7 +669,7 @@ export default function App() {
                 </button>
               </div>
             )}
-            </div>
+
             <div style={{display:"flex",gap:4}}>
               {tabs.map(({k,label})=>(
                 <button key={k} onClick={()=>setTab(k)} style={{padding:"9px 18px",background:tab===k?"rgba(16,185,129,.15)":"transparent",color:tab===k?"#10b981":"#6b7280",border:"none",borderBottom:tab===k?"2px solid #10b981":"2px solid transparent",cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"'Outfit',sans-serif",transition:"all .2s"}}>
@@ -1045,6 +1045,7 @@ export default function App() {
           FIFA World Cup 2026 · সকল সময় বাংলাদেশ সময় অনুযায়ী (GMT+6) · Jun 11 – Jul 19
         </div>
       </div>
+    </div>
     </>
   );
 }
