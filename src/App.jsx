@@ -16,10 +16,9 @@ function etToBD(etTime) {
   else if (bdH >= 18 && bdH < 20) label = "সন্ধ্যা";
   else                              label = "রাত";
 
-  // 12-hour format
-  const ampm = bdH >= 12 ? "PM" : "AM";
+  // 12-hour format (no AM/PM — bangla label handles it)
   const h12 = bdH % 12 === 0 ? 12 : bdH % 12;
-  const timeStr = `${h12}:${String(m).padStart(2,"0")} ${ampm}`;
+  const timeStr = `${h12}:${String(m).padStart(2,"0")}`;
 
   return { time: timeStr, label, nextDay };
 }
@@ -622,16 +621,18 @@ export default function App() {
   }, [fixtureSearch]);
 
   const tabs = [
-    {k:"fixtures",label:"📅 Fixtures"},
-    {k:"knockout",label:"🏆 Knockout"},
-    {k:"squads",label:"👕 Squads"},
+    {k:"fixtures",label:"📅 Fixtures",short:"📅 ম্যাচ"},
+    {k:"knockout",label:"🏆 Knockout",short:"🏆 KO"},
+    {k:"squads",label:"👕 Squads",short:"👕 দল"},
   ];
 
   return (
     <>
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
       <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0;}
+        html{-webkit-text-size-adjust:100%;}
         ::-webkit-scrollbar{width:4px;height:4px;}
         ::-webkit-scrollbar-track{background:#0a1208;}
         ::-webkit-scrollbar-thumb{background:#10b981;border-radius:2px;}
@@ -651,52 +652,76 @@ export default function App() {
         .favbtn:hover{transform:scale(1.25);}
         @keyframes starPop{0%{transform:scale(1);}50%{transform:scale(1.5);}100%{transform:scale(1);}}
         @keyframes cdPulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+        /* ── MOBILE RESPONSIVE ── */
+        @media(max-width:600px){
+          .header-stats{display:none!important;}
+          .header-title{font-size:20px!important;letter-spacing:2px!important;}
+          .header-sub{font-size:9px!important;letter-spacing:1px!important;}
+          .tab-label-full{display:none;}
+          .tab-label-short{display:inline!important;}
+          .fcard-inner{flex-direction:column!important;gap:8px!important;}
+          .fcard-venue{min-width:unset!important;text-align:center!important;}
+          .fcard-vs{min-width:unset!important;}
+          .ko-venue{display:none!important;}
+          .ko-inner{flex-direction:column!important;gap:6px!important;}
+          .squad-player-grid{grid-template-columns:1fr!important;}
+          .grp-fixtures-row{flex-wrap:wrap!important;gap:4px!important;}
+        }
+        @media(max-width:400px){
+          .fcard-team-name{font-size:11px!important;}
+          .main-pad{padding:14px 10px!important;}
+        }
+        .tab-label-short{display:none;}
       `}</style>
 
       <div style={{minHeight:"100vh",background:"#060f08",color:"#e5e7eb",fontFamily:"'Outfit',sans-serif"}}>
 
         {/* HEADER */}
-        <div style={{background:"linear-gradient(180deg,rgba(16,185,129,.08) 0%,transparent 100%)",borderBottom:"1px solid rgba(16,185,129,.15)",padding:"20px 20px 0"}}>
+        <div style={{background:"linear-gradient(180deg,rgba(16,185,129,.08) 0%,transparent 100%)",borderBottom:"1px solid rgba(16,185,129,.15)",padding:"14px 14px 0"}}>
           <div style={{maxWidth:1060,margin:"0 auto"}}>
-            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:18,flexWrap:"wrap"}}>
-              <div style={{width:48,height:48,background:"linear-gradient(135deg,#10b981,#065f46)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>⚽</div>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,letterSpacing:3,color:"#10b981",lineHeight:1}}>FIFA WORLD CUP 2026</div>
-                <div style={{fontSize:11,color:"#6b7280",letterSpacing:2,marginTop:2}}>USA · CANADA · MEXICO &nbsp;|&nbsp; JUN 11 – JUL 19 &nbsp;|&nbsp; সকল সময় বাংলাদেশ সময় (GMT+6)</div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+              <div style={{width:42,height:42,background:"linear-gradient(135deg,#10b981,#065f46)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>⚽</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div className="header-title" style={{fontFamily:"'Bebas Neue',cursive",fontSize:26,letterSpacing:3,color:"#10b981",lineHeight:1}}>FIFA WORLD CUP 2026</div>
+                <div className="header-sub" style={{fontSize:10,color:"#6b7280",letterSpacing:1,marginTop:2}}>USA · CANADA · MEXICO | JUN 11 – JUL 19 | BD সময় GMT+6</div>
               </div>
-              {[["48","Teams"],["12","Groups"],["104","Matches"]].map(([n,l])=>(
-                <div key={l} style={{textAlign:"center",minWidth:48}}>
-                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:26,color:"#10b981",lineHeight:1}}>{n}</div>
-                  <div style={{fontSize:10,color:"#6b7280",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-                </div>
-              ))}
+              <div className="header-stats" style={{display:"flex",gap:12}}>
+                {[["48","Teams"],["12","Groups"],["104","Matches"]].map(([n,l])=>(
+                  <div key={l} style={{textAlign:"center",minWidth:40}}>
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:"#10b981",lineHeight:1}}>{n}</div>
+                    <div style={{fontSize:9,color:"#6b7280",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* ── Favorite team banner ── */}
             {favTeam && (
-              <div style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",marginBottom:12,background:"rgba(251,191,36,.07)",border:"1px solid rgba(251,191,36,.25)",borderRadius:10}}>
-                <span style={{fontSize:22}}>{FLAGS[favTeam]||"🏳"}</span>
-                <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",marginBottom:10,background:"rgba(251,191,36,.07)",border:"1px solid rgba(251,191,36,.25)",borderRadius:10,flexWrap:"wrap"}}>
+                <span style={{fontSize:20}}>{FLAGS[favTeam]||"🏳"}</span>
+                <div style={{flex:1,minWidth:0}}>
                   <span style={{fontSize:13,fontWeight:700,color:"#fbbf24"}}>{favTeam}</span>
-                  <span style={{fontSize:11,color:"#92400e",marginLeft:8}}>তোমার প্রিয় দল · Fixtures-এ সবার উপরে দেখাচ্ছে</span>
+                  <span style={{fontSize:10,color:"#92400e",marginLeft:6}}>⭐ প্রিয় দল</span>
                 </div>
-                <button onClick={()=>toggleFav(favTeam)} style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",borderRadius:7,color:"#fbbf24",fontSize:11,fontWeight:700,padding:"4px 10px",cursor:"pointer"}}>
-                  ✕ remove
+                <button onClick={()=>toggleFav(favTeam)} style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",borderRadius:7,color:"#fbbf24",fontSize:11,fontWeight:700,padding:"4px 10px",cursor:"pointer",flexShrink:0}}>
+                  ✕
                 </button>
               </div>
             )}
 
-            <div style={{display:"flex",gap:4}}>
-              {tabs.map(({k,label})=>(
-                <button key={k} onClick={()=>setTab(k)} style={{padding:"9px 18px",background:tab===k?"rgba(16,185,129,.15)":"transparent",color:tab===k?"#10b981":"#6b7280",border:"none",borderBottom:tab===k?"2px solid #10b981":"2px solid transparent",cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"'Outfit',sans-serif",transition:"all .2s"}}>
-                  {label}
+            <div style={{display:"flex",gap:0}}>
+              {tabs.map(({k,label,short})=>(
+                <button key={k} onClick={()=>setTab(k)} style={{padding:"10px 16px",background:tab===k?"rgba(16,185,129,.15)":"transparent",color:tab===k?"#10b981":"#6b7280",border:"none",borderBottom:tab===k?"2px solid #10b981":"2px solid transparent",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Outfit',sans-serif",transition:"all .2s",flex:1,textAlign:"center"}}>
+                  <span className="tab-label-full">{label}</span>
+                  <span className="tab-label-short">{short}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        <div style={{maxWidth:1060,margin:"0 auto",padding:"24px 20px"}}>
+        <div className="main-pad" style={{maxWidth:1060,margin:"0 auto",padding:"20px 14px"}}>
 
           {/* ===== FIXTURES TAB ===== */}
           {tab==="fixtures" && (
@@ -827,40 +852,36 @@ export default function App() {
                     const highlighted = fixtureSearch && (fix.home.toLowerCase().includes(fixtureSearch.toLowerCase())||fix.away.toLowerCase().includes(fixtureSearch.toLowerCase()));
                     const isFavMatch = favTeam && (fix.home === favTeam || fix.away === favTeam);
                     return (
-                      <div key={fix.id} className={`fcard${isFavMatch?" fav-card":""}`} style={{background:"rgba(255,255,255,.02)",border:`1px solid ${isFavMatch?"rgba(251,191,36,.4)":highlighted?"rgba(16,185,129,.35)":"rgba(255,255,255,.06)"}`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,transition:"all .2s",position:"relative"}}>
+                      <div key={fix.id} className={`fcard${isFavMatch?" fav-card":""}`} style={{background:"rgba(255,255,255,.02)",border:`1px solid ${isFavMatch?"rgba(251,191,36,.4)":highlighted?"rgba(16,185,129,.35)":"rgba(255,255,255,.06)"}`,borderRadius:12,padding:"12px 14px",transition:"all .2s",position:"relative"}}>
 
-                        {/* Favorite badge */}
-                        {isFavMatch && (
-                          <div style={{position:"absolute",top:8,right:12,fontSize:10,fontWeight:700,color:"#fbbf24",letterSpacing:.5,display:"flex",alignItems:"center",gap:3}}>
-                            ⭐ প্রিয় দল
-                          </div>
-                        )}
+                        {/* Top row: group badge + date + venue */}
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                          <div style={{width:24,height:24,background:"rgba(16,185,129,.12)",borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:13,color:"#10b981",flexShrink:0}}>Grp {fix.grp}</div>
+                          <div style={{fontSize:11,fontWeight:700,color:"#d1d5db"}}>{fix.dateStr} 2026</div>
+                          <div className="fcard-venue" style={{fontSize:10,color:"#6b7280",marginLeft:"auto",textAlign:"right"}}>📍 {fix.venue.split(",")[0]}, {fix.venue.split(",").slice(1).join(",").trim()}</div>
+                          {isFavMatch && <span style={{fontSize:10,fontWeight:700,color:"#fbbf24",marginLeft:"auto"}}>⭐</span>}
+                        </div>
 
-                        <div style={{display:"flex",flexDirection:"column",alignItems:"center",minWidth:38,gap:4}}>
-                          <div style={{width:28,height:28,background:"rgba(16,185,129,.12)",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:15,color:"#10b981"}}>{fix.grp}</div>
-                        </div>
-                        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:0}}>
-                          <div style={{display:"flex",alignItems:"center",gap:8,flex:1,justifyContent:"flex-end"}}>
-                            <span style={{fontSize:13,fontWeight:700,color:favTeam===fix.home?"#fbbf24":highlighted&&fix.home.toLowerCase().includes(fixtureSearch.toLowerCase())?"#10b981":"#e5e7eb",textAlign:"right"}}>{fix.home}</span>
-                            <span style={{fontSize:22,cursor:"pointer"}} title={`${fix.home} কে favorite করো`} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
+                        {/* Match row */}
+                        <div className="fcard-inner" style={{display:"flex",alignItems:"center",gap:10}}>
+                          <div style={{display:"flex",alignItems:"center",gap:7,flex:1,justifyContent:"flex-end"}}>
+                            <span className="fcard-team-name" style={{fontSize:13,fontWeight:700,color:favTeam===fix.home?"#fbbf24":highlighted&&fix.home.toLowerCase().includes(fixtureSearch.toLowerCase())?"#10b981":"#e5e7eb",textAlign:"right"}}>{fix.home}</span>
+                            <span style={{fontSize:24,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
                           </div>
-                          <div style={{padding:"5px 12px",margin:"0 10px",background:isFavMatch?"rgba(251,191,36,.08)":"rgba(16,185,129,.08)",border:`1px solid ${isFavMatch?"rgba(251,191,36,.2)":"rgba(16,185,129,.2)"}`,borderRadius:7,textAlign:"center",minWidth:70}}>
-                            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:"#6b7280",letterSpacing:1}}>VS</div>
-                            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:17,color:isFavMatch?"#fbbf24":"#10b981",letterSpacing:1}}>{bd}</div>
-                            <div style={{fontSize:9,color:"#4b5563"}}>BD সময়</div>
+                          <div className="fcard-vs" style={{padding:"5px 10px",background:isFavMatch?"rgba(251,191,36,.08)":"rgba(16,185,129,.08)",border:`1px solid ${isFavMatch?"rgba(251,191,36,.2)":"rgba(16,185,129,.2)"}`,borderRadius:8,textAlign:"center",minWidth:90,flexShrink:0}}>
+                            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,color:"#6b7280",letterSpacing:1}}>VS</div>
+                            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,color:isFavMatch?"#fbbf24":"#10b981",letterSpacing:.5,lineHeight:1.2}}>{bd}</div>
+                            <div style={{fontSize:8,color:"#4b5563",marginTop:1}}>BD সময়</div>
                           </div>
-                          <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-                            <span style={{fontSize:22,cursor:"pointer"}} title={`${fix.away} কে favorite করো`} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
-                            <span style={{fontSize:13,fontWeight:700,color:favTeam===fix.away?"#fbbf24":highlighted&&fix.away.toLowerCase().includes(fixtureSearch.toLowerCase())?"#10b981":"#e5e7eb"}}>{fix.away}</span>
+                          <div style={{display:"flex",alignItems:"center",gap:7,flex:1}}>
+                            <span style={{fontSize:24,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
+                            <span className="fcard-team-name" style={{fontSize:13,fontWeight:700,color:favTeam===fix.away?"#fbbf24":highlighted&&fix.away.toLowerCase().includes(fixtureSearch.toLowerCase())?"#10b981":"#e5e7eb"}}>{fix.away}</span>
                           </div>
                         </div>
-                        <div style={{textAlign:"right",minWidth:150}}>
-                          <div style={{fontSize:12,fontWeight:700,color:"#d1d5db"}}>{fix.dateStr} 2026</div>
-                          <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>📍 {fix.venue.split(",")[0]}</div>
-                          <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>{fix.venue.split(",").slice(1).join(",").trim()}</div>
-                          <div style={{display:"flex",justifyContent:"flex-end"}}>
-                            <MatchCountdown dateStr={fix.dateStr} etTime={fix.etTime} isFav={isFavMatch} />
-                          </div>
+
+                        {/* Countdown */}
+                        <div style={{marginTop:6}}>
+                          <MatchCountdown dateStr={fix.dateStr} etTime={fix.etTime} isFav={isFavMatch} />
                         </div>
                       </div>
                     );
@@ -909,25 +930,26 @@ export default function App() {
                       {r.matches.map((m,i)=>{
                         const bd = bdTime(m.etTime,"");
                         return (
-                          <div key={m.id} className="kocard" style={{background:"rgba(255,255,255,.02)",border:`1px solid ${isFinal?"rgba(251,191,36,.2)":"rgba(255,255,255,.06)"}`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,transition:"all .2s"}}>
-                            <div style={{minWidth:32,fontFamily:"'Bebas Neue',cursive",fontSize:13,color:isFinal?"#fbbf24":"#6b7280"}}>M{i+1}</div>
-                            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:0}}>
+                          <div key={m.id} className="kocard" style={{background:"rgba(255,255,255,.02)",border:`1px solid ${isFinal?"rgba(251,191,36,.2)":"rgba(255,255,255,.06)"}`,borderRadius:12,padding:"12px 14px",transition:"all .2s"}}>
+                            {/* top row: match # + date + venue */}
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:isFinal?"#fbbf24":"#6b7280",flexShrink:0}}>M{i+1}</div>
+                              <div style={{fontSize:11,fontWeight:700,color:"#d1d5db"}}>{m.date} 2026</div>
+                              <div className="ko-venue" style={{fontSize:10,color:"#6b7280",marginLeft:"auto"}}>📍 {m.venue.split(",")[0]}, {m.venue.split(",").slice(1).join(",").trim()}</div>
+                            </div>
+                            {/* teams row */}
+                            <div className="ko-inner" style={{display:"flex",alignItems:"center",gap:8}}>
                               <div style={{flex:1,textAlign:"right"}}>
                                 <span style={{fontSize:13,fontWeight:700,color:isFinal?"#fbbf24":"#d1d5db"}}>{m.home}</span>
                               </div>
-                              <div style={{padding:"5px 12px",margin:"0 12px",background:isFinal?"rgba(251,191,36,.08)":"rgba(16,185,129,.06)",border:`1px solid ${isFinal?"rgba(251,191,36,.2)":"rgba(16,185,129,.15)"}`,borderRadius:7,textAlign:"center",minWidth:70}}>
-                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:"#6b7280",letterSpacing:1}}>VS</div>
-                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,color:isFinal?"#fbbf24":"#10b981"}}>{bd}</div>
-                                <div style={{fontSize:9,color:"#4b5563"}}>BD সময়</div>
+                              <div style={{padding:"5px 10px",background:isFinal?"rgba(251,191,36,.08)":"rgba(16,185,129,.06)",border:`1px solid ${isFinal?"rgba(251,191,36,.2)":"rgba(16,185,129,.15)"}`,borderRadius:7,textAlign:"center",minWidth:90,flexShrink:0}}>
+                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,color:"#6b7280",letterSpacing:1}}>VS</div>
+                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,color:isFinal?"#fbbf24":"#10b981",lineHeight:1.2}}>{bd}</div>
+                                <div style={{fontSize:8,color:"#4b5563",marginTop:1}}>BD সময়</div>
                               </div>
                               <div style={{flex:1}}>
                                 <span style={{fontSize:13,fontWeight:700,color:isFinal?"#fbbf24":"#d1d5db"}}>{m.away}</span>
                               </div>
-                            </div>
-                            <div style={{textAlign:"right",minWidth:150}}>
-                              <div style={{fontSize:12,fontWeight:700,color:"#d1d5db"}}>{m.date} 2026</div>
-                              <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>📍 {m.venue.split(",")[0]}</div>
-                              <div style={{fontSize:10,color:"#4b5563"}}>{m.venue.split(",").slice(1).join(",").trim()}</div>
                             </div>
                           </div>
                         );
@@ -951,7 +973,7 @@ export default function App() {
                         <div style={{fontSize:36,marginBottom:8}}>🏆</div>
                         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:"#fbbf24",letterSpacing:2}}>World Cup Final</div>
                         <div style={{fontSize:13,color:"#d97706",marginTop:4}}>July 19, 2026 · MetLife Stadium, New York</div>
-                        <div style={{fontSize:12,color:"#92400e",marginTop:2}}>Bangladesh Time: রাত 01:00 (+1 দিন)</div>
+                        <div style={{fontSize:12,color:"#92400e",marginTop:2}}>Bangladesh Time: রাত 1:00 AM (+1 দিন)</div>
                       </div>
                     )}
                   </div>
@@ -1015,7 +1037,7 @@ export default function App() {
                             {pos==="GK"?"গোলকিপার":pos==="DEF"?"ডিফেন্ডার":pos==="MID"?"মিডফিল্ডার":"ফরওয়ার্ড"} ({byPos[pos].length}জন)
                           </div>
                         </div>
-                        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(250px,1fr))",gap:8}}>
+                        <div className="squad-player-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:8}}>
                           {byPos[pos].map((p,i)=>(
                             <div key={i} className="scard" style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(255,255,255,.06)",borderRadius:10,padding:"11px 14px",display:"flex",alignItems:"center",gap:12,transition:"all .2s"}}>
                               <div style={{width:36,height:36,borderRadius:"50%",background:`${posColors[pos]}18`,border:`2px solid ${posColors[pos]}40`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:16,color:posColors[pos],flexShrink:0}}>{p.num}</div>
@@ -1038,7 +1060,7 @@ export default function App() {
                           const bd=bdTime(fix.etTime,"");
                           const isHome=fix.home===squadTeam;
                           return (
-                            <div key={i} style={{display:"flex",alignItems:"center",gap:10,fontSize:13}}>
+                            <div key={i} className="grp-fixtures-row" style={{display:"flex",alignItems:"center",gap:8,fontSize:12}}>
                               <span style={{color:"#6b7280",minWidth:55,fontSize:12}}>{fix.dateStr}</span>
                               <span style={{fontWeight:isHome?800:400,color:isHome?"#10b981":"#9ca3af"}}>{fix.home}</span>
                               <span style={{color:"#4b5563",fontSize:11}}>vs</span>
