@@ -224,7 +224,10 @@ Rules: pos must be GK/DEF/MID/FWD only. Include ~23 players (3 GK, 7-8 DEF, 7-8 
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
-    headers:{"Content-Type":"application/json"},
+    headers:{
+      "Content-Type":"application/json",
+      "anthropic-dangerous-direct-browser-access":"true"
+    },
     body:JSON.stringify({
       model:"claude-sonnet-4-20250514",
       max_tokens:1500,
@@ -387,7 +390,7 @@ function SquadPanel({ teamName }) {
           </div>
 
           {/* Player grid */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10,marginBottom:24}}>
+          <div className="player-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))",gap:10,marginBottom:24}}>
             {filtered.map((p,i)=><PlayerCard key={i} player={p}/>)}
           </div>
         </>
@@ -464,31 +467,59 @@ export default function App() {
         .scard:hover{transform:translateY(-1px);border-color:rgba(16,185,129,0.3)!important;}
         input[type=text]:focus{outline:1px solid #10b981;border-color:#10b981!important;}
         .kocard:hover{border-color:rgba(251,191,36,0.5)!important;background:rgba(251,191,36,0.03)!important;}
-        .squadbtn:hover{border-color:#10b981!important;color:#10b981!important;}
         .pill{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.5px;}
+
+        /* Squad layout: desktop = sidebar + content side-by-side */
+        .squad-layout{display:flex;gap:20px;align-items:flex-start;}
+        .team-sidebar{width:170px;flex-shrink:0;max-height:80vh;overflow-y:auto;position:sticky;top:16px;}
+        .squad-content{flex:1;min-width:0;}
+
+        /* Fixture card mobile tweak */
+        .fcard-inner{display:flex;align-items:center;gap:12px;}
+
+        /* Mobile breakpoint */
+        @media(max-width:600px){
+          .squad-layout{flex-direction:column;gap:0;}
+          .team-sidebar{width:100%;max-height:none;position:static;overflow-y:visible;
+            display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:10px;margin-bottom:14px;}
+          .team-sidebar::-webkit-scrollbar{height:3px;}
+          .team-sidebar > div{display:contents;}
+          .team-sidebar button{flex-shrink:0;white-space:nowrap;width:auto!important;padding:6px 12px!important;border:1px solid rgba(255,255,255,.1)!important;}
+          .team-sidebar button span:last-child{display:inline!important;}
+          .squad-content{width:100%;}
+          .fcard{padding:10px 12px!important;}
+          .fcard-venue{display:none;}
+          .ko-venue{display:none;}
+          .header-stats{display:none!important;}
+          .fix-team-name{font-size:11px!important;}
+          .fix-vs-box{min-width:56px!important;padding:4px 6px!important;}
+        }
+        @media(max-width:480px){
+          .player-grid{grid-template-columns:repeat(2,1fr)!important;}
+        }
       `}</style>
 
       <div style={{minHeight:"100vh",background:"#060f08",color:"#e5e7eb",fontFamily:"'Outfit',sans-serif"}}>
 
         {/* HEADER */}
-        <div style={{background:"linear-gradient(180deg,rgba(16,185,129,.08) 0%,transparent 100%)",borderBottom:"1px solid rgba(16,185,129,.15)",padding:"20px 20px 0"}}>
+        <div style={{background:"linear-gradient(180deg,rgba(16,185,129,.08) 0%,transparent 100%)",borderBottom:"1px solid rgba(16,185,129,.15)",padding:"16px 16px 0"}}>
           <div style={{maxWidth:1060,margin:"0 auto"}}>
-            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:18,flexWrap:"wrap"}}>
-              <div style={{width:48,height:48,background:"linear-gradient(135deg,#10b981,#065f46)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>⚽</div>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,letterSpacing:3,color:"#10b981",lineHeight:1}}>FIFA WORLD CUP 2026</div>
-                <div style={{fontSize:11,color:"#6b7280",letterSpacing:2,marginTop:2}}>USA · CANADA · MEXICO &nbsp;|&nbsp; JUN 11 – JUL 19 &nbsp;|&nbsp; সকল সময় বাংলাদেশ সময় (GMT+6)</div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+              <div style={{width:42,height:42,background:"linear-gradient(135deg,#10b981,#065f46)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>⚽</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,letterSpacing:2,color:"#10b981",lineHeight:1}}>FIFA WORLD CUP 2026</div>
+                <div style={{fontSize:10,color:"#6b7280",letterSpacing:1,marginTop:2}}>USA · CANADA · MEXICO &nbsp;|&nbsp; JUN 11 – JUL 19 &nbsp;|&nbsp; GMT+6</div>
               </div>
               {[["48","Teams"],["12","Groups"],["104","Matches"]].map(([n,l])=>(
-                <div key={l} style={{textAlign:"center",minWidth:48}}>
+                <div key={l} className="header-stats" style={{textAlign:"center",minWidth:40}}>
                   <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:26,color:"#10b981",lineHeight:1}}>{n}</div>
                   <div style={{fontSize:10,color:"#6b7280",textTransform:"uppercase",letterSpacing:1}}>{l}</div>
                 </div>
               ))}
             </div>
-            <div style={{display:"flex",gap:4}}>
+            <div style={{display:"flex",gap:0,overflowX:"auto"}}>
               {tabs.map(({k,label})=>(
-                <button key={k} onClick={()=>setTab(k)} style={{padding:"9px 18px",background:tab===k?"rgba(16,185,129,.15)":"transparent",color:tab===k?"#10b981":"#6b7280",border:"none",borderBottom:tab===k?"2px solid #10b981":"2px solid transparent",cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"'Outfit',sans-serif",transition:"all .2s"}}>
+                <button key={k} onClick={()=>setTab(k)} style={{padding:"9px 14px",background:tab===k?"rgba(16,185,129,.15)":"transparent",color:tab===k?"#10b981":"#6b7280",border:"none",borderBottom:tab===k?"2px solid #10b981":"2px solid transparent",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Outfit',sans-serif",transition:"all .2s",whiteSpace:"nowrap",flexShrink:0}}>
                   {label}
                 </button>
               ))}
@@ -496,7 +527,7 @@ export default function App() {
           </div>
         </div>
 
-        <div style={{maxWidth:1060,margin:"0 auto",padding:"24px 20px"}}>
+        <div style={{maxWidth:1060,margin:"0 auto",padding:"16px 12px"}}>
 
           {/* ===== FIXTURES TAB ===== */}
           {tab==="fixtures" && (
@@ -563,20 +594,20 @@ export default function App() {
                         </div>
                         <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:0}}>
                           <div style={{display:"flex",alignItems:"center",gap:8,flex:1,justifyContent:"flex-end"}}>
-                            <span style={{fontSize:13,fontWeight:700,color:highlighted&&fix.home.toLowerCase().includes(fixtureSearch.toLowerCase())?"#10b981":"#e5e7eb",textAlign:"right"}}>{fix.home}</span>
+                            <span className="fix-team-name" style={{fontSize:13,fontWeight:700,color:highlighted&&fix.home.toLowerCase().includes(fixtureSearch.toLowerCase())?"#10b981":"#e5e7eb",textAlign:"right"}}>{fix.home}</span>
                             <span style={{fontSize:22}}>{FLAGS[fix.home]||"🏳"}</span>
                           </div>
-                          <div style={{padding:"5px 12px",margin:"0 10px",background:"rgba(16,185,129,.08)",border:"1px solid rgba(16,185,129,.2)",borderRadius:7,textAlign:"center",minWidth:70}}>
+                          <div className="fix-vs-box" style={{padding:"5px 12px",margin:"0 10px",background:"rgba(16,185,129,.08)",border:"1px solid rgba(16,185,129,.2)",borderRadius:7,textAlign:"center",minWidth:70}}>
                             <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:"#6b7280",letterSpacing:1}}>VS</div>
                             <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:17,color:"#10b981",letterSpacing:1}}>{bd}</div>
                             <div style={{fontSize:9,color:"#4b5563"}}>BD সময়</div>
                           </div>
                           <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
                             <span style={{fontSize:22}}>{FLAGS[fix.away]||"🏳"}</span>
-                            <span style={{fontSize:13,fontWeight:700,color:highlighted&&fix.away.toLowerCase().includes(fixtureSearch.toLowerCase())?"#10b981":"#e5e7eb"}}>{fix.away}</span>
+                            <span className="fix-team-name" style={{fontSize:13,fontWeight:700,color:highlighted&&fix.away.toLowerCase().includes(fixtureSearch.toLowerCase())?"#10b981":"#e5e7eb"}}>{fix.away}</span>
                           </div>
                         </div>
-                        <div style={{textAlign:"right",minWidth:150}}>
+                        <div className="fcard-venue" style={{textAlign:"right",minWidth:150}}>
                           <div style={{fontSize:12,fontWeight:700,color:"#d1d5db"}}>{fix.dateStr} 2026</div>
                           <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>📍 {fix.venue.split(",")[0]}</div>
                           <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>{fix.venue.split(",").slice(1).join(",").trim()}</div>
@@ -643,7 +674,7 @@ export default function App() {
                                 <span style={{fontSize:13,fontWeight:700,color:isFinal?"#fbbf24":"#d1d5db"}}>{m.away}</span>
                               </div>
                             </div>
-                            <div style={{textAlign:"right",minWidth:150}}>
+                            <div className="ko-venue" style={{textAlign:"right",minWidth:150}}>
                               <div style={{fontSize:12,fontWeight:700,color:"#d1d5db"}}>{m.date} 2026</div>
                               <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>📍 {m.venue.split(",")[0]}</div>
                               <div style={{fontSize:10,color:"#4b5563"}}>{m.venue.split(",").slice(1).join(",").trim()}</div>
@@ -683,32 +714,33 @@ export default function App() {
           {tab==="squads" && (
             <div className="fi">
               {/* Info banner */}
-              <div style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:"rgba(16,185,129,.05)",border:"1px solid rgba(16,185,129,.12)",borderRadius:8,marginBottom:18,fontSize:12,color:"#6b7280"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:"rgba(16,185,129,.05)",border:"1px solid rgba(16,185,129,.12)",borderRadius:8,marginBottom:14,fontSize:12,color:"#6b7280"}}>
                 <span style={{width:7,height:7,borderRadius:"50%",background:"#10b981",display:"inline-block",flexShrink:0}}/>
-                যেকোনো দলে ক্লিক করুন — AI সেই দলের squad তথ্য + player ছবি আনবে (সব ৪৮ দলের জন্য কাজ করে)
+                দলে ক্লিক করুন — AI সেই দলের squad তথ্য + player ছবি আনবে (সব ৪৮ দল)
               </div>
 
-              <div style={{display:"flex",gap:28,flexWrap:"wrap"}}>
-                {/* Left: team list grouped by group */}
-                <div style={{width:200,flexShrink:0}}>
+              {/* Mobile: horizontal group tabs → team chips. Desktop: sidebar */}
+              <div className="squad-layout">
+                {/* Team selector */}
+                <div className="team-sidebar">
                   {Object.entries(GROUPS).map(([grp,teams])=>(
-                    <div key={grp} style={{marginBottom:14}}>
-                      <div style={{fontSize:10,fontWeight:800,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:6,paddingLeft:4}}>Group {grp}</div>
+                    <div key={grp} style={{marginBottom:10}}>
+                      <div style={{fontSize:10,fontWeight:800,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:5,paddingLeft:2}}>Grp {grp}</div>
                       {teams.map(team=>(
                         <button key={team} onClick={()=>setSquadTeam(team)}
-                          style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"7px 10px",borderRadius:8,border:`1px solid ${squadTeam===team?"#10b981":"transparent"}`,background:squadTeam===team?"rgba(16,185,129,.1)":"transparent",color:squadTeam===team?"#10b981":"#9ca3af",cursor:"pointer",fontSize:12,fontWeight:squadTeam===team?700:500,transition:"all .18s",marginBottom:2,textAlign:"left"}}
+                          style={{display:"flex",alignItems:"center",gap:7,width:"100%",padding:"7px 9px",borderRadius:7,border:`1px solid ${squadTeam===team?"#10b981":"transparent"}`,background:squadTeam===team?"rgba(16,185,129,.12)":"transparent",color:squadTeam===team?"#10b981":"#9ca3af",cursor:"pointer",fontSize:12,fontWeight:squadTeam===team?700:500,transition:"all .15s",marginBottom:2,textAlign:"left"}}
                           onMouseEnter={e=>{if(squadTeam!==team){e.currentTarget.style.background="rgba(255,255,255,.04)";e.currentTarget.style.color="#d1d5db";}}}
                           onMouseLeave={e=>{if(squadTeam!==team){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#9ca3af";}}}>
-                          <span style={{fontSize:16,flexShrink:0}}>{FLAGS[team]||"🏳"}</span>
-                          <span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{team}</span>
+                          <span style={{fontSize:15,flexShrink:0}}>{FLAGS[team]||"🏳"}</span>
+                          <span style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontSize:11}}>{team}</span>
                         </button>
                       ))}
                     </div>
                   ))}
                 </div>
 
-                {/* Right: squad panel */}
-                <div style={{flex:1,minWidth:0}}>
+                {/* Squad panel */}
+                <div className="squad-content">
                   <SquadPanel teamName={squadTeam}/>
                 </div>
               </div>
