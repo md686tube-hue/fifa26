@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 
 function etToBD(etTime) {
   const [h, m] = etTime.split(":").map(Number);
@@ -1276,9 +1276,93 @@ export default function App() {
   const [squadTeam, setSquadTeam] = useState(null);
   const [standGrp, setStandGrp] = useState("A");
   const [stadIdx, setStadIdx] = useState(null);
-  const [calcET, setCalcET] = useState("15:00");
   const [results, setResults] = useState({});
   const [favTeam, setFavTeam] = useState(() => { try { return localStorage.getItem("wc26_fav")||null; } catch { return null; } });
+  const [bdClock, setBdClock] = useState("");
+  const [autoFetching, setAutoFetching] = useState(false);
+  const [lastFetched, setLastFetched] = useState(null);
+  const fetchTimeoutRef = useRef(null); // reserved for future debounce
+
+  // Live BD clock
+  useEffect(() => {
+    function tick() {
+      const now = new Date();
+      const bd = new Date(now.getTime() + (6 * 3600000) - (now.getTimezoneOffset() * 60000));
+      const h = bd.getUTCHours(), m = bd.getUTCMinutes(), s = bd.getUTCSeconds();
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      const ap = h < 12 ? "AM" : "PM";
+      const label = h>=4&&h<6?"ভোর":h>=6&&h<12?"সকাল":h>=12&&h<15?"দুপুর":h>=15&&h<18?"বিকেল":h>=18&&h<20?"সন্ধ্যা":"রাত";
+      setBdClock(`${label} ${h12}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")} ${ap}`);
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Auto-fetch results from Anthropic API
+  const fetchResults = useCallback(async () => {
+    setAutoFetching(true);
+    try {
+      const now = new Date();
+      const bdNow = new Date(now.getTime() + 6 * 3600000 - now.getTimezoneOffset() * 60000);
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const todayBD = months[bdNow.getUTCMonth()] + " " + bdNow.getUTCDate();
+
+      // Find matches that should have results (started >100 min ago)
+      const pastMatches = ALL_GROUP_FIXTURES.filter(f => {
+        try {
+          const utc = matchUTC(f.dateStr, f.etTime);
+          return (now.getTime() - utc) > 100 * 60 * 1000; // 100 min past kickoff
+        } catch { return false; }
+      });
+
+      if (pastMatches.length === 0) { setAutoFetching(false); return; }
+
+      const matchList = pastMatches.slice(-12).map(f =>
+        `ID:${f.id} | ${f.home} vs ${f.away} | ${f.dateStr} 2026`
+      ).join("\n");
+
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          system: `You are a FIFA World Cup 2026 score tracker. Search for match results and return ONLY valid JSON. No markdown, no explanation. Return format: {"results": {"matchId": {"h": homeScore, "a": awayScore}, ...}}. Use null for matches not yet played or no result found. Only include matches with confirmed final scores.`,
+          messages: [{ role: "user", content: `Search for final scores of these FIFA World Cup 2026 group stage matches and return JSON:\n${matchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1}, "2": {"h": 0, "a": 0}}}` }]
+        })
+      });
+      const data = await response.json();
+      const text = data.content?.map(i => i.type === "text" ? i.text : "").filter(Boolean).join("") || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      try {
+        const parsed = JSON.parse(clean);
+        if (parsed.results && typeof parsed.results === "object") {
+          setResults(prev => {
+            const updated = { ...prev };
+            Object.entries(parsed.results).forEach(([id, val]) => {
+              if (val && val.h !== null && val.a !== null && !isNaN(+val.h) && !isNaN(+val.a)) {
+                updated[+id] = { h: String(val.h), a: String(val.a) };
+              }
+            });
+            return updated;
+          });
+          setLastFetched(new Date());
+        }
+      } catch {}
+    } catch (err) {
+      console.error("Auto-fetch error:", err);
+    }
+    setAutoFetching(false);
+  }, []);
+
+  // Auto-fetch on mount and every 5 minutes
+  useEffect(() => {
+    fetchResults();
+    const id = setInterval(fetchResults, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [fetchResults]);
 
   useEffect(() => {
     try { favTeam ? localStorage.setItem("wc26_fav",favTeam) : localStorage.removeItem("wc26_fav"); } catch {}
@@ -1338,7 +1422,6 @@ export default function App() {
     {k:"standings",l:"📊 Standings"},
     {k:"knockout",l:"🏆 Knockout"},
     {k:"stadiums",l:"🏟️ Stadiums"},
-    {k:"calculator",l:"🕐 সময়"},
     {k:"squads",l:"👕 Squads"},
   ];
 
@@ -1349,6 +1432,20 @@ export default function App() {
     const today=mn[bd.getUTCMonth()]+" "+bd.getUTCDate();
     return ALL_GROUP_FIXTURES.filter(f=>f.dateStr===today);
   },[]);
+
+  // Group fixtures by date for the fixture tab
+  const fixturesByDate = useMemo(() => {
+    const grouped = {};
+    filteredFix.forEach(f => {
+      if (!grouped[f.dateStr]) grouped[f.dateStr] = [];
+      grouped[f.dateStr].push(f);
+    });
+    const mn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return Object.entries(grouped).sort(([a],[b]) => {
+      const [am,ad] = a.split(" "); const [bm,bd2] = b.split(" ");
+      return (mn.indexOf(am)*31 + +ad) - (mn.indexOf(bm)*31 + +bd2);
+    });
+  }, [filteredFix]);
 
   const nextMatch = useMemo(()=>{
     const now=Date.now();
@@ -1379,8 +1476,16 @@ export default function App() {
         @media(max-width:600px){
           .hide-sm{display:none!important;}
           .fc-inner{flex-direction:column!important;gap:8px!important;}
+          .fc-inner > div:first-child{justify-content:center!important;}
+          .fc-inner > div:last-child{justify-content:center!important;}
           .sq-grid{grid-template-columns:1fr!important;}
-          .tab-txt{font-size:11px!important;}
+          .tab-txt{font-size:10px!important;padding:8px 8px!important;}
+          .ko-grid{grid-template-columns:1fr!important;}
+          table{font-size:11px!important;}
+          th,td{padding:6px 4px!important;}
+        }
+        @media(max-width:380px){
+          .tab-txt{font-size:9px!important;padding:7px 6px!important;}
         }
       `}</style>
 
@@ -1403,9 +1508,20 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <button onClick={()=>setDark(d=>!d)} style={{padding:"7px 13px",borderRadius:8,border:`1px solid ${T.border}`,background:T.card,color:T.text,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Outfit',sans-serif",flexShrink:0,transition:"all .2s"}}>
-                {dark?"☀️ Light":"🌙 Dark"}
-              </button>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <div style={{padding:"5px 10px",background:T.acBg,border:`1px solid ${c}33`,borderRadius:8,textAlign:"center"}}>
+                    <div style={{fontSize:8,color:T.sub,letterSpacing:1,textTransform:"uppercase",marginBottom:1}}>🇧🇩 BD সময়</div>
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,color:c,letterSpacing:1,lineHeight:1}}>{bdClock}</div>
+                  </div>
+                  <button onClick={()=>setDark(d=>!d)} style={{padding:"7px 13px",borderRadius:8,border:`1px solid ${T.border}`,background:T.card,color:T.text,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Outfit',sans-serif",flexShrink:0,transition:"all .2s"}}>
+                    {dark?"☀️":"🌙"}
+                  </button>
+                </div>
+                {autoFetching && <div style={{fontSize:9,color:c,animation:"pulse 1s infinite"}}>⟳ আপডেট হচ্ছে...</div>}
+                {!autoFetching && lastFetched && <div style={{fontSize:9,color:T.sub,cursor:"pointer"}} onClick={fetchResults}>✓ {lastFetched.toLocaleTimeString("bn-BD")} · রিফ্রেশ</div>}
+                {!autoFetching && !lastFetched && <div style={{fontSize:9,color:T.sub,cursor:"pointer"}} onClick={fetchResults}>⟳ ফলাফল আনুন</div>}
+              </div>
             </div>
 
             {favTeam && (
@@ -1505,36 +1621,69 @@ export default function App() {
               </div>
               <div style={{fontSize:11,color:T.sub,marginBottom:10}}>{filteredFix.length}টি ম্যাচ{search&&<span style={{color:c}}> · "{search}"</span>}</div>
 
-              {/* Cards */}
-              <div style={{display:"flex",flexDirection:"column",gap:7}}>
-                {filteredFix.map(fix=>{
-                  const isFav=favTeam&&(fix.home===favTeam||fix.away===favTeam);
-                  const hl=search&&(fix.home.toLowerCase().includes(search.toLowerCase())||fix.away.toLowerCase().includes(search.toLowerCase()));
+              {/* Cards - Date grouped */}
+              <div style={{display:"flex",flexDirection:"column",gap:16}}>
+                {fixturesByDate.map(([dateStr, fixes]) => {
+                  const now = Date.now();
+                  const bdNow = new Date(now + 6*3600000);
+                  const mn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                  const todayStr = mn[bdNow.getUTCMonth()] + " " + bdNow.getUTCDate();
+                  const isToday = dateStr === todayStr;
+                  const allPast = fixes.every(f => { try { return matchUTC(f.dateStr, f.etTime) + 105*60000 < now; } catch { return false; } });
                   return (
-                    <div key={fix.id} className={`fc${isFav?" fav-card":""}`} style={{background:T.card,border:`1px solid ${isFav?"rgba(251,191,36,.4)":hl?c+"55":T.border}`,borderRadius:12,padding:"11px 13px",transition:"all .2s",boxShadow:T.sh}}>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
-                        <div style={{width:22,height:22,background:T.acBg,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:11,color:c,flexShrink:0}}>G{fix.grp}</div>
-                        <span style={{fontSize:11,fontWeight:700}}>{fix.dateStr} 2026</span>
-                        <span style={{fontSize:10,color:T.sub,marginLeft:"auto",textAlign:"right"}}>📍 {fix.venue.split(",")[0]}</span>
-                        <button onClick={()=>shareMatch(fix)} title="শেয়ার" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,opacity:.55,color:T.sub}}>📤</button>
-                        <button onClick={()=>requestNotification(fix)} title="Reminder" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,opacity:.55,color:T.sub}}>🔔</button>
+                    <div key={dateStr}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                        <div style={{padding:"3px 10px",borderRadius:6,background:isToday?c:T.acBg,color:isToday?T.bg:c,fontFamily:"'Bebas Neue',cursive",fontSize:12,letterSpacing:1.5,flexShrink:0}}>
+                          {isToday?"🔴 আজ":""}{dateStr} 2026
+                        </div>
+                        {allPast && <span style={{fontSize:9,color:T.sub}}>সম্পন্ন</span>}
+                        <div style={{flex:1,height:1,background:T.border}}/>
                       </div>
-                      <div className="fc-inner" style={{display:"flex",alignItems:"center",gap:8}}>
-                        <div style={{display:"flex",alignItems:"center",gap:6,flex:1,justifyContent:"flex-end"}}>
-                          <span style={{fontSize:13,fontWeight:700,color:favTeam===fix.home?"#fbbf24":T.text,textAlign:"right"}}>{fix.home}</span>
-                          <span style={{fontSize:24,cursor:"pointer"}} onClick={()=>toggleFav(fix.home)} title="প্রিয় দল">{FLAGS[fix.home]||"🏳"}</span>
-                        </div>
-                        <div style={{padding:"5px 9px",background:isFav?"rgba(251,191,36,.07)":T.acBg,border:`1px solid ${isFav?"rgba(251,191,36,.2)":c+"33"}`,borderRadius:8,textAlign:"center",minWidth:82,flexShrink:0}}>
-                          <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:9,color:T.sub,letterSpacing:1}}>VS</div>
-                          <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:isFav?"#fbbf24":c,lineHeight:1.3}}>{bdTime(fix.etTime)}</div>
-                          <div style={{fontSize:8,color:T.dim}}>BD সময়</div>
-                        </div>
-                        <div style={{display:"flex",alignItems:"center",gap:6,flex:1}}>
-                          <span style={{fontSize:24,cursor:"pointer"}} onClick={()=>toggleFav(fix.away)} title="প্রিয় দল">{FLAGS[fix.away]||"🏳"}</span>
-                          <span style={{fontSize:13,fontWeight:700,color:favTeam===fix.away?"#fbbf24":T.text}}>{fix.away}</span>
-                        </div>
+                      <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                        {fixes.map(fix => {
+                          const isFav = favTeam && (fix.home === favTeam || fix.away === favTeam);
+                          const hl = search && (fix.home.toLowerCase().includes(search.toLowerCase()) || fix.away.toLowerCase().includes(search.toLowerCase()));
+                          const r = results[fix.id];
+                          const hasScore = r && r.h !== "" && r.a !== "" && !isNaN(+r.h) && !isNaN(+r.a);
+                          const matchStarted = matchUTC(fix.dateStr, fix.etTime) < now;
+                          const matchOver = matchUTC(fix.dateStr, fix.etTime) + 105*60000 < now;
+                          return (
+                            <div key={fix.id} className={`fc${isFav?" fav-card":""}`} style={{background:T.card,border:`1px solid ${isFav?"rgba(251,191,36,.4)":hl?c+"55":T.border}`,borderRadius:12,padding:"11px 13px",transition:"all .2s",boxShadow:T.sh}}>
+                              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
+                                <div style={{width:22,height:22,background:T.acBg,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:11,color:c,flexShrink:0}}>G{fix.grp}</div>
+                                <span style={{fontSize:10,color:T.sub,marginLeft:"auto",textAlign:"right",flex:1}}>📍 {fix.venue.split(",")[0]}</span>
+                                <button onClick={()=>shareMatch(fix)} title="শেয়ার" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,opacity:.55,color:T.sub}}>📤</button>
+                                <button onClick={()=>requestNotification(fix)} title="Reminder" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,opacity:.55,color:T.sub}}>🔔</button>
+                              </div>
+                              <div className="fc-inner" style={{display:"flex",alignItems:"center",gap:8}}>
+                                <div style={{display:"flex",alignItems:"center",gap:6,flex:1,justifyContent:"flex-end"}}>
+                                  <span style={{fontSize:13,fontWeight:700,color:hasScore&&+r.h>+r.a?c:favTeam===fix.home?"#fbbf24":T.text,textAlign:"right"}}>{fix.home}</span>
+                                  <span style={{fontSize:24,cursor:"pointer"}} onClick={()=>toggleFav(fix.home)} title="প্রিয় দল">{FLAGS[fix.home]||"🏳"}</span>
+                                </div>
+                                <div style={{padding:"5px 9px",background:hasScore?"rgba(16,185,129,.15)":isFav?"rgba(251,191,36,.07)":T.acBg,border:`1px solid ${hasScore?c+"66":isFav?"rgba(251,191,36,.2)":c+"33"}`,borderRadius:8,textAlign:"center",minWidth:82,flexShrink:0}}>
+                                  {hasScore ? (
+                                    <>
+                                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:c,lineHeight:1}}>{r.h} – {r.a}</div>
+                                      <div style={{fontSize:8,color:matchOver?T.sub:"#ef4444",fontWeight:700}}>{matchOver?"FT":"🔴 LIVE"}</div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:9,color:T.sub,letterSpacing:1}}>VS</div>
+                                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:isFav?"#fbbf24":c,lineHeight:1.3}}>{bdTime(fix.etTime)}</div>
+                                      <div style={{fontSize:8,color:T.dim}}>BD সময়</div>
+                                    </>
+                                  )}
+                                </div>
+                                <div style={{display:"flex",alignItems:"center",gap:6,flex:1}}>
+                                  <span style={{fontSize:24,cursor:"pointer"}} onClick={()=>toggleFav(fix.away)} title="প্রিয় দল">{FLAGS[fix.away]||"🏳"}</span>
+                                  <span style={{fontSize:13,fontWeight:700,color:hasScore&&+r.a>+r.h?c:favTeam===fix.away?"#fbbf24":T.text}}>{fix.away}</span>
+                                </div>
+                              </div>
+                              {!hasScore && <Countdown dateStr={fix.dateStr} etTime={fix.etTime} accent={isFav?"#fbbf24":c}/>}
+                            </div>
+                          );
+                        })}
                       </div>
-                      <Countdown dateStr={fix.dateStr} etTime={fix.etTime} accent={isFav?"#fbbf24":c}/>
                     </div>
                   );
                 })}
@@ -1591,22 +1740,36 @@ export default function App() {
                       </table>
                     </div>
 
-                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:15,letterSpacing:2,color:c,marginBottom:10}}>GROUP {g} · রেজাল্ট এন্ট্রি</div>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:6}}>
+                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:15,letterSpacing:2,color:c}}>GROUP {g} · রেজাল্ট</div>
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        {autoFetching && <span style={{fontSize:10,color:c,animation:"pulse 1s infinite"}}>⟳ আপডেট হচ্ছে...</span>}
+                        <button onClick={fetchResults} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${c}33`,background:T.acBg,color:c,cursor:"pointer",fontSize:10,fontWeight:700}}>
+                          🔄 রিফ্রেশ
+                        </button>
+                      </div>
+                    </div>
                     <div style={{display:"flex",flexDirection:"column",gap:7}}>
                       {fixes.map(fix=>{
                         const r=results[fix.id]||{h:"",a:""};
+                        const hasScore = r.h !== "" && r.a !== "" && !isNaN(+r.h) && !isNaN(+r.a);
+                        const matchOver = matchUTC(fix.dateStr, fix.etTime) + 105*60000 < Date.now();
                         return (
-                          <div key={fix.id} style={{display:"flex",alignItems:"center",gap:7,padding:"9px 12px",background:T.card,border:`1px solid ${T.border}`,borderRadius:10,flexWrap:"wrap",boxShadow:T.sh}}>
+                          <div key={fix.id} style={{display:"flex",alignItems:"center",gap:7,padding:"9px 12px",background:T.card,border:`1px solid ${hasScore?c+"44":T.border}`,borderRadius:10,flexWrap:"wrap",boxShadow:T.sh}}>
                             <span style={{fontSize:16}}>{FLAGS[fix.home]||"🏳"}</span>
-                            <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:60,color:T.text}}>{fix.home}</span>
+                            <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:60,color:hasScore&&+r.h>+r.a?c:T.text}}>{fix.home}</span>
                             <input type="number" min="0" max="20" value={r.h} onChange={e=>setResult(fix.id,e.target.value,r.a)} placeholder="-"
-                              style={{width:38,padding:"4px",textAlign:"center",background:T.inp,border:`1px solid ${T.inpB}`,borderRadius:6,color:T.text,fontFamily:"'Bebas Neue',cursive",fontSize:17}}/>
+                              style={{width:38,padding:"4px",textAlign:"center",background:hasScore?T.acBg:T.inp,border:`1px solid ${hasScore?c+"55":T.inpB}`,borderRadius:6,color:hasScore?c:T.text,fontFamily:"'Bebas Neue',cursive",fontSize:17}}/>
                             <span style={{color:T.sub,fontSize:11}}>–</span>
                             <input type="number" min="0" max="20" value={r.a} onChange={e=>setResult(fix.id,r.h,e.target.value)} placeholder="-"
-                              style={{width:38,padding:"4px",textAlign:"center",background:T.inp,border:`1px solid ${T.inpB}`,borderRadius:6,color:T.text,fontFamily:"'Bebas Neue',cursive",fontSize:17}}/>
+                              style={{width:38,padding:"4px",textAlign:"center",background:hasScore?T.acBg:T.inp,border:`1px solid ${hasScore?c+"55":T.inpB}`,borderRadius:6,color:hasScore?c:T.text,fontFamily:"'Bebas Neue',cursive",fontSize:17}}/>
                             <span style={{fontSize:16}}>{FLAGS[fix.away]||"🏳"}</span>
-                            <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:60,textAlign:"right",color:T.text}}>{fix.away}</span>
-                            <span style={{fontSize:10,color:T.sub,width:"100%",textAlign:"right"}}>{fix.dateStr} · {bdTime(fix.etTime)}</span>
+                            <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:60,textAlign:"right",color:hasScore&&+r.a>+r.h?c:T.text}}>{fix.away}</span>
+                            <div style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                              <span style={{fontSize:10,color:T.sub}}>{fix.dateStr} · {bdTime(fix.etTime)}</span>
+                              {hasScore && <span style={{fontSize:9,color:c}}>✓ {matchOver?"FT":"LIVE"}</span>}
+                              {!hasScore && matchOver && <span style={{fontSize:9,color:"#fbbf24"}}>ফলাফল আসেনি</span>}
+                            </div>
                           </div>
                         );
                       })}
@@ -1706,54 +1869,6 @@ export default function App() {
             </div>
           )}
 
-          {/* ═══ CALCULATOR ═══ */}
-          {tab==="calculator" && (
-            <div className="fi" style={{maxWidth:460,margin:"0 auto"}}>
-              <div style={{textAlign:"center",marginBottom:20}}>
-                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:26,color:c,letterSpacing:3}}>সময় পরিবর্তন</div>
-                <div style={{fontSize:12,color:T.sub,marginTop:3}}>ET সময় → বিশ্বের বিভিন্ন দেশের সময়</div>
-              </div>
-              <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:22,boxShadow:T.sh}}>
-                <label style={{fontSize:11,color:T.sub,fontWeight:700,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:7}}>Eastern Time (ET / UTC-4)</label>
-                <input type="time" value={calcET} onChange={e=>setCalcET(e.target.value)}
-                  style={{width:"100%",padding:"11px 14px",background:T.inp,border:`1px solid ${T.inpB}`,borderRadius:9,color:T.text,fontSize:22,fontFamily:"'Bebas Neue',cursive",letterSpacing:2,marginBottom:18}}/>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-                  {[["🇺🇸 ET","UTC-4",0],["🇬🇧 BST","UTC+1",5],["🇩🇪 CEST","UTC+2",6],["🇮🇳 IST","UTC+5:30",9.5],["🇧🇩 BD","UTC+6",10],["🇯🇵 JST","UTC+9",13]].map(([label,zone,off])=>{
-                    const [h,m]=calcET.split(":").map(Number);
-                    const tot=(h*60+(m||0))+(off*60);
-                    const rh=Math.floor(tot/60)%24,rm=tot%60;
-                    const nd=Math.floor(tot/60)>=24;
-                    const h12=rh%12===0?12:rh%12,ap=rh<12?"AM":"PM";
-                    const isBD=label.includes("BD");
-                    return (
-                      <div key={label} style={{padding:"11px 13px",background:isBD?T.acBg:T.muted,border:`1px solid ${isBD?c+"55":T.border}`,borderRadius:9}}>
-                        <div style={{fontSize:10,color:T.sub,marginBottom:3}}>{label} · {zone}</div>
-                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:isBD?c:T.text,lineHeight:1}}>
-                          {h12}:{String(rm).padStart(2,"0")} {ap}
-                        </div>
-                        {nd&&<div style={{fontSize:10,color:"#fbbf24",marginTop:2}}>+1 দিন</div>}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div style={{padding:"10px 12px",background:T.acBg,border:`1px solid ${c}33`,borderRadius:9,fontSize:11,color:T.sub}}>
-                  ℹ️ বাংলাদেশ = ET + ১০ ঘণ্টা (গ্রীষ্মকাল EDT/UTC-4)
-                </div>
-              </div>
-              <div style={{marginTop:18}}>
-                <div style={{fontSize:11,color:T.sub,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>সাধারণ কিক-অফ সময়</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {[["12:00","দুপুর ১০:০০"],["13:00","রাত ১১:০০"],["15:00","রাত ১:০০+1"],["16:00","রাত ২:০০+1"],["18:00","ভোর ৪:০০+1"],["21:00","সকাল ৭:০০+1"],["22:00","সকাল ৮:০০+1"]].map(([et,bd])=>(
-                    <button key={et} onClick={()=>setCalcET(et)}
-                      style={{padding:"7px 12px",borderRadius:8,border:`1px solid ${calcET===et?c:T.border}`,background:calcET===et?T.acBg:T.card,color:calcET===et?c:T.sub,cursor:"pointer",fontSize:11,fontWeight:600,transition:"all .2s",boxShadow:T.sh}}>
-                      {et} ET → <span style={{color:c}}>{bd}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* ═══ SQUADS ═══ */}
           {tab==="squads" && (
             <div className="fi">
@@ -1846,7 +1961,7 @@ export default function App() {
         </div>
 
         <div style={{textAlign:"center",padding:"14px",borderTop:`1px solid ${T.border}`,fontSize:11,color:T.dim}}>
-          FIFA World Cup 2026 · সকল সময় বাংলাদেশ সময় (GMT+6) · Jun 11 – Jul 19, 2026
+          FIFA World Cup 2026 · সকল সময় বাংলাদেশ সময় (GMT+6) · Jun 11 – Jul 19, 2026 · ফলাফল প্রতি ৫ মিনিটে auto-update হয়
         </div>
       </div>
     </>
