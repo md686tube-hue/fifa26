@@ -1386,87 +1386,97 @@ export default function App() {
     setTimeout(() => { setDark(d => !d); setDarkAnimating(false); }, 180);
   }
 
-  // Head-to-Head AI fetch - properly handles web_search tool_use response
+  // Head-to-Head AI fetch - single call, web_search runs server-side
   const fetchH2H = useCallback(async (fix) => {
     const key = fix.id;
     if (h2hData[key]) { setH2hFixId(key); return; }
     setH2hLoading(true);
     setH2hFixId(key);
     try {
-      // Multi-turn: first call triggers web_search, second call gets the final text
-      const messages = [
-        { role:"user", content:`Search for complete head-to-head football history between ${fix.home} and ${fix.away} national teams. Find total meetings, wins for each side, draws, and recent results. Also search "${fix.home} vs ${fix.away} world cup history".` }
-      ];
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:2000,
+          tools:[{type:"web_search_20250305",name:"web_search"}],
+          system:`You are a football statistics expert. Search the web for head-to-head records between the two national teams. After searching, you MUST reply with ONLY a raw JSON object — no markdown, no backticks, no explanation, nothing else before or after the JSON.
 
-      let finalText = "";
-      // Agentic loop: keep sending until no more tool_use
-      for (let turn = 0; turn < 5; turn++) {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({
-            model:"claude-sonnet-4-20250514",
-            max_tokens:1500,
-            tools:[{type:"web_search_20250305",name:"web_search"}],
-            system:`You are a football statistics expert. After searching, return ONLY a valid JSON object. No markdown fences, no explanation text before or after. Exact format:
-{"summary":"2-3 sentence Bengali summary of the head-to-head history","meetings":NUMBER,"home_wins":NUMBER,"draws":NUMBER,"away_wins":NUMBER,"home_team":"${fix.home}","away_team":"${fix.away}","last_match":"e.g. Brazil 3-0 Argentina (2023 World Cup Qualifier)","last_year":YEAR,"notable_fact":"1 interesting fact about this rivalry in Bengali","wc_meetings":NUMBER_OF_WORLD_CUP_MEETINGS}
-Use real numbers from search results. If a stat is unknown use 0.`,
-            messages
-          })
-        });
-        const data = await res.json();
-        if (!data.content) break;
+Required JSON format (fill every field with real data from search):
+{"summary":"2-3 sentence Bengali summary","meetings":NUMBER,"home_wins":NUMBER,"draws":NUMBER,"away_wins":NUMBER,"home_team":"TEAM1","away_team":"TEAM2","last_match":"Result e.g. USA 1-0 Paraguay (2016 Copa America)","last_year":YEAR_NUMBER,"notable_fact":"Interesting Bengali fact about this rivalry","wc_meetings":NUMBER}
 
-        // Collect assistant message
-        const assistantMsg = { role:"assistant", content: data.content };
-        messages.push(assistantMsg);
+Rules: use actual numbers, never null, use 0 if unknown. home_wins = wins for home_team. away_wins = wins for away_team.`,
+          messages:[{
+            role:"user",
+            content:`Search for "${fix.home} vs ${fix.away} head to head football history all time record" and "${fix.home} ${fix.away} historical matches results". Then return the JSON with real stats.`
+          }]
+        })
+      });
 
-        // Check for tool_use blocks
-        const toolUseBlocks = data.content.filter(b => b.type === "tool_use");
-        const textBlocks = data.content.filter(b => b.type === "text");
-
-        if (textBlocks.length > 0) {
-          finalText = textBlocks.map(b => b.text).join("");
-        }
-
-        if (toolUseBlocks.length === 0) break; // done
-
-        // Build tool_result for each tool_use
-        const toolResults = toolUseBlocks.map(tu => ({
-          type:"tool_result",
-          tool_use_id: tu.id,
-          content: tu.input ? JSON.stringify(tu.input) : "search completed"
-        }));
-        messages.push({ role:"user", content: toolResults });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("H2H API error:", res.status, errText);
+        throw new Error(`API ${res.status}`);
       }
 
-      // Extract JSON from finalText
-      const jsonMatch = finalText.match(/\{[\s\S]*\}/);
+      const data = await res.json();
+      console.log("H2H raw response:", JSON.stringify(data).slice(0,500));
+
+      // Extract text from ALL content blocks (text blocks come after tool_result blocks)
+      let finalText = "";
+      if (data.content && Array.isArray(data.content)) {
+        // Collect all text blocks
+        const textBlocks = data.content.filter(b => b.type === "text");
+        finalText = textBlocks.map(b => b.text || "").join("");
+
+        // Also check tool_result content if text blocks are empty
+        if (!finalText) {
+          data.content.forEach(b => {
+            if (b.type === "tool_result" && Array.isArray(b.content)) {
+              b.content.forEach(c => { if (c.type === "text") finalText += c.text; });
+            }
+          });
+        }
+      }
+
+      console.log("H2H finalText:", finalText.slice(0,300));
+
+      // Try to extract JSON
+      const jsonMatch = finalText.match(/\{[\s\S]*?\}/s) || finalText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           const parsed = JSON.parse(jsonMatch[0]);
-          // Validate it has useful data
-          if (parsed.summary || parsed.meetings !== undefined) {
-            setH2hData(p=>({...p,[key]:parsed}));
+          if (typeof parsed.meetings !== "undefined" || parsed.summary) {
+            setH2hData(p=>({...p,[key]:{ ...parsed, home_team: parsed.home_team||fix.home, away_team: parsed.away_team||fix.away }}));
             setH2hLoading(false);
             return;
           }
-        } catch {}
+        } catch(e) { console.error("JSON parse fail:", e, jsonMatch[0].slice(0,200)); }
       }
-      // Fallback
-      setH2hData(p=>({...p,[key]:{
-        summary:`${fix.home} ও ${fix.away}-এর মধ্যে ইতিহাস লোড করা সম্ভব হয়নি।`,
-        meetings:0,home_wins:0,draws:0,away_wins:0,
-        home_team:fix.home,away_team:fix.away,
-        last_match:"N/A",last_year:null,notable_fact:"তথ্য পাওয়া যায়নি।",wc_meetings:0
-      }}));
+
+      // If no JSON found but we have text, show it as summary
+      if (finalText.length > 20) {
+        setH2hData(p=>({...p,[key]:{
+          summary: finalText.slice(0,300),
+          meetings:"?", home_wins:"?", draws:"?", away_wins:"?",
+          home_team:fix.home, away_team:fix.away,
+          last_match:"N/A", last_year:null, notable_fact:"", wc_meetings:0
+        }}));
+      } else {
+        setH2hData(p=>({...p,[key]:{
+          summary:`${fix.home} ও ${fix.away}-এর তথ্য পাওয়া যায়নি।`,
+          meetings:0, home_wins:0, draws:0, away_wins:0,
+          home_team:fix.home, away_team:fix.away,
+          last_match:"N/A", last_year:null, notable_fact:"", wc_meetings:0
+        }}));
+      }
     } catch(err) {
-      console.error("H2H error:", err);
+      console.error("H2H fetch error:", err);
       setH2hData(p=>({...p,[key]:{
-        summary:"নেটওয়ার্ক সমস্যার কারণে তথ্য আনা যায়নি।",
-        meetings:0,home_wins:0,draws:0,away_wins:0,
-        home_team:fix.home,away_team:fix.away,
-        last_match:"N/A",last_year:null,notable_fact:"পুনরায় চেষ্টা করুন।",wc_meetings:0
+        summary:`তথ্য আনতে সমস্যা হয়েছে (${err.message})। পুনরায় চেষ্টা করুন।`,
+        meetings:0, home_wins:0, draws:0, away_wins:0,
+        home_team:fix.home, away_team:fix.away,
+        last_match:"N/A", last_year:null, notable_fact:"", wc_meetings:0
       }}));
     }
     setH2hLoading(false);
@@ -1604,7 +1614,7 @@ Use real numbers from search results. If a stat is unknown use 0.`,
         .theme-btn:hover::after{opacity:1;}
         .theme-animating{animation:themeFade .36s ease;}
         .ticker-wrap{overflow:hidden;white-space:nowrap;width:100%;}
-        .ticker-inner{display:inline-flex;gap:0;animation:tickerScroll 120s linear infinite;}
+        .ticker-inner{display:inline-flex;gap:0;animation:tickerScroll 200s linear infinite;}
         .ticker-inner:hover{animation-play-state:paused;}
         .q-badge-green{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);}
         .q-badge-yellow{background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
@@ -1887,56 +1897,63 @@ Use real numbers from search results. If a stat is unknown use 0.`,
                                 <div style={{marginTop:8,padding:"12px 14px",background:T.acBg,border:`1px solid ${c}33`,borderRadius:10,animation:"fadeIn .2s ease"}}>
                                   {(h2hLoading&&!h2hData[fix.id]) ? (
                                     <div style={{textAlign:"center",padding:"14px 0",color:T.sub,fontSize:12}}>
-                                      <div style={{fontSize:20,marginBottom:6,animation:"pulse 1s infinite"}}>🔍</div>
+                                      <div style={{fontSize:24,marginBottom:6,animation:"pulse 1s infinite"}}>🔍</div>
                                       <div style={{fontWeight:600,color:T.text,marginBottom:3}}>AI দিয়ে তথ্য খুঁজছে...</div>
-                                      <div style={{fontSize:10,color:T.dim}}>{fix.home} vs {fix.away} · ইন্টারনেটে সার্চ চলছে</div>
+                                      <div style={{fontSize:10,color:T.dim}}>{fix.home} vs {fix.away} · ওয়েব সার্চ চলছে</div>
                                     </div>
                                   ) : h2hData[fix.id] ? (()=>{
                                     const d=h2hData[fix.id];
                                     const hTeam = d.home_team||fix.home;
                                     const aTeam = d.away_team||fix.away;
+                                    const hasRealData = d.meetings > 0 || d.home_wins > 0 || d.away_wins > 0;
                                     return (
                                       <>
                                         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
                                           <span style={{fontSize:14}}>⚔️</span>
                                           <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c}}>HEAD TO HEAD</span>
                                           {d.wc_meetings>0&&<span className="pill" style={{background:"rgba(251,191,36,.15)",color:"#fbbf24"}}>🏆 WC: {d.wc_meetings}বার</span>}
+                                          <button onClick={()=>{ setH2hData(p=>{const n={...p};delete n[fix.id];return n;}); fetchH2H(fix); }}
+                                            style={{marginLeft:"auto",padding:"2px 8px",border:`1px solid ${T.border}`,background:"none",color:T.sub,borderRadius:5,cursor:"pointer",fontSize:10}}>🔄 রিফ্রেশ</button>
                                         </div>
-                                        {/* Stats boxes */}
-                                        <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:6,marginBottom:10,alignItems:"center"}}>
-                                          <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
-                                            <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[hTeam]||"🏳"} {hTeam}</div>
-                                            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.home_wins}</div>
-                                            <div style={{fontSize:9,color:T.sub}}>জয়</div>
+                                        {hasRealData ? (<>
+                                          {/* Stats boxes */}
+                                          <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:6,marginBottom:10,alignItems:"center"}}>
+                                            <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
+                                              <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[hTeam]||"🏳"} {hTeam}</div>
+                                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.home_wins}</div>
+                                              <div style={{fontSize:9,color:T.sub}}>জয়</div>
+                                            </div>
+                                            <div style={{textAlign:"center"}}>
+                                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:T.sub,lineHeight:1}}>{d.draws}</div>
+                                              <div style={{fontSize:9,color:T.dim}}>ড্র</div>
+                                              <div style={{fontSize:9,color:T.dim,marginTop:2}}>{d.meetings} মিটিং</div>
+                                            </div>
+                                            <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
+                                              <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[aTeam]||"🏳"} {aTeam}</div>
+                                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.away_wins}</div>
+                                              <div style={{fontSize:9,color:T.sub}}>জয়</div>
+                                            </div>
                                           </div>
-                                          <div style={{textAlign:"center"}}>
-                                            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:T.sub,lineHeight:1}}>{d.draws}</div>
-                                            <div style={{fontSize:9,color:T.dim}}>ড্র</div>
-                                            <div style={{fontSize:9,color:T.dim,marginTop:2}}>{d.meetings} মিটিং</div>
+                                          {/* Win bar */}
+                                          <div style={{display:"flex",height:5,borderRadius:3,overflow:"hidden",marginBottom:10,gap:1}}>
+                                            <div style={{flex:d.home_wins||0.01,background:c,minWidth:d.home_wins>0?4:0,transition:"flex .5s"}}/>
+                                            <div style={{flex:d.draws||0.01,background:"#6b7280",minWidth:d.draws>0?4:0,transition:"flex .5s"}}/>
+                                            <div style={{flex:d.away_wins||0.01,background:"#f59e0b",minWidth:d.away_wins>0?4:0,transition:"flex .5s"}}/>
                                           </div>
-                                          <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
-                                            <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[aTeam]||"🏳"} {aTeam}</div>
-                                            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.away_wins}</div>
-                                            <div style={{fontSize:9,color:T.sub}}>জয়</div>
+                                        </>) : (
+                                          <div style={{padding:"8px 10px",background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",borderRadius:7,fontSize:11,color:"#ef4444",marginBottom:8}}>
+                                            ⚠️ সংখ্যাগত তথ্য পাওয়া যায়নি। নিচে সারসংক্ষেপ দেখুন।
                                           </div>
-                                        </div>
-                                        {/* Win bar */}
-                                        {d.meetings>0&&<div style={{display:"flex",height:4,borderRadius:2,overflow:"hidden",marginBottom:10,gap:1}}>
-                                          <div style={{flex:d.home_wins||0,background:c,minWidth:d.home_wins>0?4:0}}/>
-                                          <div style={{flex:d.draws||0,background:"#6b7280",minWidth:d.draws>0?4:0}}/>
-                                          <div style={{flex:d.away_wins||0,background:"#f59e0b",minWidth:d.away_wins>0?4:0}}/>
-                                        </div>}
+                                        )}
                                         {/* Summary */}
-                                        <div style={{fontSize:11,color:T.text,lineHeight:1.65,marginBottom:8,padding:"8px 10px",background:T.card,borderRadius:8,border:`1px solid ${T.border}`}}>{d.summary}</div>
-                                        {/* Last match */}
+                                        <div style={{fontSize:11,color:T.text,lineHeight:1.7,marginBottom:8,padding:"8px 10px",background:T.card,borderRadius:8,border:`1px solid ${T.border}`}}>{d.summary}</div>
                                         {d.last_match&&d.last_match!=="N/A"&&(
-                                          <div style={{fontSize:11,color:T.sub,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+                                          <div style={{fontSize:11,color:T.sub,marginBottom:6,display:"flex",alignItems:"flex-start",gap:6}}>
                                             <span style={{flexShrink:0,color:c}}>🕐</span>
                                             <span><span style={{fontWeight:700,color:T.text}}>শেষ ম্যাচ{d.last_year?` (${d.last_year})`:""}: </span>{d.last_match}</span>
                                           </div>
                                         )}
-                                        {/* Notable */}
-                                        {d.notable_fact&&d.notable_fact!=="তথ্য পাওয়া যায়নি।"&&(
+                                        {d.notable_fact&&d.notable_fact.length>3&&(
                                           <div style={{fontSize:11,color:T.sub,padding:"6px 10px",background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.2)",borderRadius:7,display:"flex",gap:6}}>
                                             <span style={{flexShrink:0}}>💡</span><span>{d.notable_fact}</span>
                                           </div>
