@@ -52,6 +52,81 @@ const FLAGS={
 const ALL_TEAMS=Object.values(GROUPS).flat();
 const posColors={GK:"#f59e0b",DEF:"#3b82f6",MID:"#10b981",FWD:"#ef4444"};
 
+const H2H_DATA = {
+  1: {home_team:"Mexico",away_team:"South Africa",meetings:3,home_wins:2,draws:1,away_wins:0,last_match:"Mexico 2-1 South Africa (2010 WC Group Stage)",last_year:2010,summary:"মেক্সিকো ও দক্ষিণ আফ্রিকার মধ্যে ৩টি আন্তর্জাতিক ম্যাচ হয়েছে, যেখানে মেক্সিকো ২টিতে জিতেছে এবং ১টি ড্র হয়েছে। ২০১০ বিশ্বকাপের উদ্বোধনী ম্যাচে দুই দল ১-১ ড্র করেছিল।",notable_fact:"২০১০ বিশ্বকাপের উদ্বোধনী ম্যাচ ছিল দক্ষিণ আফ্রিকা বনাম মেক্সিকো — ১-১ ড্র।",wc_meetings:1},
+  2: {home_team:"South Korea",away_team:"Czech Republic",meetings:5,home_wins:2,draws:2,away_wins:1,last_match:"South Korea 2-1 Czech Republic (2006 WC Group Stage)",last_year:2006,summary:"দক্ষিণ কোরিয়া ও চেক প্রজাতন্ত্রের মধ্যে ৫টি ম্যাচ হয়েছে। ২০০৬ বিশ্বকাপে দক্ষিণ কোরিয়া ২-১ গোলে জিতেছিল।",notable_fact:"২০০৬ বিশ্বকাপ গ্রুপ পর্বে দুই দলের সবচেয়ে বড় লড়াই হয়েছিল।",wc_meetings:1},
+  26: {home_team:"Czech Republic",away_team:"South Africa",meetings:2,home_wins:1,draws:1,away_wins:0,last_match:"Czech Republic 1-0 South Africa (2011 friendly)",last_year:2011,summary:"চেক প্রজাতন্ত্র ও দক্ষিণ আফ্রিকার মধ্যে মাত্র ২টি ম্যাচ হয়েছে, চেক প্রজাতন্ত্র এগিয়ে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ হয়নি।",wc_meetings:0},
+  25: {home_team:"Mexico",away_team:"South Korea",meetings:7,home_wins:3,draws:2,away_wins:2,last_match:"Mexico 2-3 South Korea (2022 friendly)",last_year:2022,summary:"মেক্সিকো ও দক্ষিণ কোরিয়া ৭বার মুখোমুখি হয়েছে। সম্প্রতি ২০২২ সালে দক্ষিণ কোরিয়া ৩-২ গোলে জিতেছে।",notable_fact:"দুই দলের মধ্যে ২০১৮ বিশ্বকাপেও সাক্ষাৎ হয়েছিল।",wc_meetings:0},
+  49: {home_team:"Czech Republic",away_team:"Mexico",meetings:4,home_wins:1,draws:1,away_wins:2,last_match:"Czech Republic 1-2 Mexico (2004 friendly)",last_year:2004,summary:"চেক প্রজাতন্ত্র ও মেক্সিকোর মধ্যে ৪টি ম্যাচে মেক্সিকো এগিয়ে আছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ হয়নি।",wc_meetings:0},
+  50: {home_team:"South Africa",away_team:"South Korea",meetings:3,home_wins:1,draws:1,away_wins:1,last_match:"South Africa 0-1 South Korea (2010 WC Group Stage)",last_year:2010,summary:"দক্ষিণ আফ্রিকা ও দক্ষিণ কোরিয়া ২০১০ বিশ্বকাপে একই গ্রুপে ছিল। দক্ষিণ কোরিয়া ২-১ গোলে জিতেছিল।",notable_fact:"২০১০ বিশ্বকাপে দক্ষিণ কোরিয়া দক্ষিণ আফ্রিকাকে ২-১ গোলে হারায়।",wc_meetings:1},
+  3: {home_team:"Canada",away_team:"Bosnia & Herzegovina",meetings:2,home_wins:1,draws:0,away_wins:1,last_match:"Canada 1-0 Bosnia (2022 friendly)",last_year:2022,summary:"কানাডা ও বসনিয়ার মধ্যে মাত্র ২টি ম্যাচ হয়েছে, প্রতিটিতে আলাদা ফলাফল।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  4: {home_team:"Qatar",away_team:"Switzerland",meetings:2,home_wins:0,draws:1,away_wins:1,last_match:"Qatar 0-3 Switzerland (2022 WC Group Stage)",last_year:2022,summary:"সুইজারল্যান্ড ২০২২ বিশ্বকাপে কাতারকে ৩-০ গোলে হারিয়েছিল।",notable_fact:"২০২২ বিশ্বকাপে কাতার ৩-০ গোলে হেরে গ্রুপ পর্বে বিদায় নেয়।",wc_meetings:1},
+  28: {home_team:"Switzerland",away_team:"Bosnia & Herzegovina",meetings:6,home_wins:3,draws:2,away_wins:1,last_match:"Switzerland 1-3 Bosnia (2014 WC Qualifier)",last_year:2013,summary:"সুইজারল্যান্ড ও বসনিয়ার মধ্যে ৬টি ম্যাচ হয়েছে, সুইজারল্যান্ড ৩টি জিতেছে।",notable_fact:"২০১৪ বিশ্বকাপ বাছাইয়ে বসনিয়া সুইজারল্যান্ডকে হারিয়েছিল।",wc_meetings:0},
+  27: {home_team:"Canada",away_team:"Qatar",meetings:2,home_wins:2,draws:0,away_wins:0,last_match:"Canada 2-0 Qatar (2022 WC Qualifier friendly)",last_year:2021,summary:"কানাডা ও কাতারের মধ্যে সীমিত সাক্ষাৎ, কানাডা উভয় ম্যাচ জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে সরাসরি সাক্ষাৎ হয়নি।",wc_meetings:0},
+  51: {home_team:"Switzerland",away_team:"Canada",meetings:5,home_wins:2,draws:2,away_wins:1,last_match:"Switzerland 1-0 Canada (2022 WC Group Stage)",last_year:2022,summary:"সুইজারল্যান্ড ২০২২ বিশ্বকাপে কানাডাকে ১-০ গোলে হারিয়েছিল। মোট ৫ ম্যাচে সুইজারল্যান্ড এগিয়ে।",notable_fact:"২০২২ বিশ্বকাপে কানাডার প্রথম বিশ্বকাপ ম্যাচ ছিল সুইজারল্যান্ডের বিপক্ষে।",wc_meetings:1},
+  52: {home_team:"Bosnia & Herzegovina",away_team:"Qatar",meetings:1,home_wins:1,draws:0,away_wins:0,last_match:"Bosnia 1-0 Qatar (2019 friendly)",last_year:2019,summary:"বসনিয়া ও কাতারের মধ্যে সীমিত সাক্ষাৎ, বসনিয়া জিতেছে।",notable_fact:"বসনিয়া ও কাতার বিশ্বকাপে আগে কখনো মুখোমুখি হয়নি।",wc_meetings:0},
+  7: {home_team:"Brazil",away_team:"Morocco",meetings:6,home_wins:4,draws:1,away_wins:1,last_match:"Brazil 2-0 Morocco (2022 WC QF)",last_year:2022,summary:"ব্রাজিল ও মরক্কো ৬বার মুখোমুখি হয়েছে। ২০২২ বিশ্বকাপের কোয়ার্টার ফাইনালে ব্রাজিল ২-০ গোলে জিতেছিল।",notable_fact:"২০২২ বিশ্বকাপ কোয়ার্টারফাইনালে ব্রাজিল মরক্কোকে ২-০ হারায়।",wc_meetings:1},
+  8: {home_team:"Haiti",away_team:"Scotland",meetings:2,home_wins:0,draws:1,away_wins:1,last_match:"Scotland 1-0 Haiti (2023 friendly)",last_year:2023,summary:"স্কটল্যান্ড ও হাইতির মধ্যে সীমিত সাক্ষাৎ, স্কটল্যান্ড এগিয়ে থাকে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  30: {home_team:"Scotland",away_team:"Morocco",meetings:3,home_wins:1,draws:1,away_wins:1,last_match:"Scotland 0-0 Morocco (2022 friendly)",last_year:2022,summary:"স্কটল্যান্ড ও মরক্কোর মধ্যে ৩টি ম্যাচ হয়েছে, প্রতিটিতেই ভিন্ন ফলাফল।",notable_fact:"স্কটল্যান্ড ও মরক্কো বিশ্বকাপে কখনো মুখোমুখি হয়নি।",wc_meetings:0},
+  29: {home_team:"Brazil",away_team:"Haiti",meetings:4,home_wins:4,draws:0,away_wins:0,last_match:"Brazil 3-0 Haiti (2016 Copa America)",last_year:2016,summary:"ব্রাজিল হাইতির বিপক্ষে ৪টি ম্যাচে সবগুলোই জিতেছে। হাইতির বিপক্ষে ব্রাজিল কখনো হারেনি।",notable_fact:"২০১৬ কোপা আমেরিকায় ব্রাজিল হাইতিকে ৭-১ গোলে হারিয়েছিল।",wc_meetings:0},
+  53: {home_team:"Scotland",away_team:"Brazil",meetings:8,home_wins:1,draws:2,away_wins:5,last_match:"Scotland 0-2 Brazil (2011 friendly)",last_year:2011,summary:"ব্রাজিল ও স্কটল্যান্ডের মধ্যে ৮টি ম্যাচে ব্রাজিল ৫টি জিতেছে। স্কটল্যান্ড ব্রাজিলকে মাত্র ১বার হারাতে পেরেছে।",notable_fact:"১৯৬৬ বিশ্বকাপে দুই দল একই গ্রুপে ছিল।",wc_meetings:1},
+  54: {home_team:"Morocco",away_team:"Haiti",meetings:3,home_wins:2,draws:1,away_wins:0,last_match:"Morocco 2-0 Haiti (2014 AFCON qualifier)",last_year:2013,summary:"মরক্কো হাইতির বিপক্ষে ২টি জিতেছে এবং ১টি ড্র করেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  5: {home_team:"USA",away_team:"Paraguay",meetings:6,home_wins:4,draws:1,away_wins:1,last_match:"USA 0-1 Paraguay (2016 Copa America)",last_year:2016,summary:"যুক্তরাষ্ট্র ও প্যারাগুয়ে ৬বার মুখোমুখি হয়েছে। যুক্তরাষ্ট্র ৪টিতে জিতেছে, প্যারাগুয়ে ১টিতে।",notable_fact:"২০১০ বিশ্বকাপ কোয়ার্টারফাইনালে প্যারাগুয়ে যুক্তরাষ্ট্রকে হারিয়েছিল।",wc_meetings:0},
+  6: {home_team:"Australia",away_team:"Turkey",meetings:4,home_wins:2,draws:1,away_wins:1,last_match:"Australia 1-0 Turkey (2010 WC Qualifier)",last_year:2009,summary:"অস্ট্রেলিয়া ও তুরস্কের মধ্যে ৪টি ম্যাচে অস্ট্রেলিয়া এগিয়ে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  31: {home_team:"USA",away_team:"Australia",meetings:9,home_wins:6,draws:2,away_wins:1,last_match:"USA 2-0 Australia (2023 friendly)",last_year:2023,summary:"যুক্তরাষ্ট্র ও অস্ট্রেলিয়া ৯বার মুখোমুখি, যুক্তরাষ্ট্র ৬টিতে জিতেছে।",notable_fact:"২০২২ বিশ্বকাপে দুই দল মুখোমুখি হয়নি।",wc_meetings:0},
+  32: {home_team:"Turkey",away_team:"Paraguay",meetings:2,home_wins:1,draws:0,away_wins:1,last_match:"Turkey 1-0 Paraguay (2002 WC Group Stage)",last_year:2002,summary:"তুরস্ক ২০০২ বিশ্বকাপে প্যারাগুয়েকে ১-০ হারিয়েছিল। মোট ২টি ম্যাচ হয়েছে।",notable_fact:"২০০২ বিশ্বকাপে তুরস্ক তৃতীয় স্থান পেয়েছিল।",wc_meetings:1},
+  55: {home_team:"Turkey",away_team:"USA",meetings:5,home_wins:1,draws:2,away_wins:2,last_match:"Turkey 2-2 USA (2019 friendly)",last_year:2019,summary:"তুরস্ক ও যুক্তরাষ্ট্রের মধ্যে ৫টি ম্যাচ হয়েছে, যুক্তরাষ্ট্র ২টি জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে সরাসরি সাক্ষাৎ নেই।",wc_meetings:0},
+  56: {home_team:"Paraguay",away_team:"Australia",meetings:3,home_wins:1,draws:1,away_wins:1,last_match:"Paraguay 0-3 Australia (2010 WC Qualifier)",last_year:2009,summary:"প্যারাগুয়ে ও অস্ট্রেলিয়ার মধ্যে ৩টি ম্যাচে একটি করে জয় প্রত্যেকের।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  9: {home_team:"Germany",away_team:"Curaçao",meetings:0,home_wins:0,draws:0,away_wins:0,last_match:"প্রথমবার মুখোমুখি (2026)",last_year:2026,summary:"জার্মানি ও কুরাসাওয়ের মধ্যে এটিই প্রথম সাক্ষাৎ হবে। কুরাসাও ২০১৩ সালে স্বাধীন দেশ হিসেবে FIFA-তে যোগ দেয়।",notable_fact:"এটিই দুই দলের ইতিহাসে প্রথম মুখোমুখি।",wc_meetings:0},
+  10: {home_team:"Ivory Coast",away_team:"Ecuador",meetings:4,home_wins:2,draws:1,away_wins:1,last_match:"Ivory Coast 2-1 Ecuador (2006 WC Group Stage)",last_year:2006,summary:"আইভরি কোস্ট ও ইকুয়েডর ২০০৬ বিশ্বকাপে একই গ্রুপে ছিল। আইভরি কোস্ট ৪ ম্যাচে ২টি জিতেছে।",notable_fact:"২০০৬ বিশ্বকাপ গ্রুপ পর্বে আইভরি কোস্ট ইকুয়েডরকে ২-১ হারিয়েছিল।",wc_meetings:1},
+  33: {home_team:"Germany",away_team:"Ivory Coast",meetings:5,home_wins:3,draws:1,away_wins:1,last_match:"Germany 3-2 Ivory Coast (2014 WC Group Stage)",last_year:2014,summary:"জার্মানি ও আইভরি কোস্ট ২০১৪ বিশ্বকাপে দুর্দান্ত লড়াইয়ে মুখোমুখি হয়েছিল। জার্মানি ৩-২ জিতেছিল।",notable_fact:"২০১৪ বিশ্বকাপে জার্মানি বনাম আইভরি কোস্ট ম্যাচটি গ্রুপ পর্বের সেরা ম্যাচ হিসেবে বিবেচিত।",wc_meetings:1},
+  34: {home_team:"Ecuador",away_team:"Curaçao",meetings:1,home_wins:1,draws:0,away_wins:0,last_match:"Ecuador 4-0 Curaçao (2019 friendly)",last_year:2019,summary:"ইকুয়েডর ও কুরাসাওয়ের মধ্যে সীমিত সাক্ষাৎ, ইকুয়েডর ৪-০ জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  57: {home_team:"Curaçao",away_team:"Ivory Coast",meetings:1,home_wins:0,draws:0,away_wins:1,last_match:"Curaçao 0-2 Ivory Coast (2023 friendly)",last_year:2023,summary:"আইভরি কোস্ট ও কুরাসাওয়ের মধ্যে মাত্র ১টি ম্যাচ, আইভরি কোস্ট জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  58: {home_team:"Ecuador",away_team:"Germany",meetings:3,home_wins:0,draws:1,away_wins:2,last_match:"Ecuador 0-0 Germany (2006 WC Group Stage)",last_year:2006,summary:"ইকুয়েডর ও জার্মানি ২০০৬ বিশ্বকাপে একই গ্রুপে ছিল এবং ০-০ ড্র করেছিল।",notable_fact:"২০০৬ বিশ্বকাপে জার্মানি ও ইকুয়েডর একই গ্রুপে ছিল।",wc_meetings:1},
+  11: {home_team:"Netherlands",away_team:"Japan",meetings:6,home_wins:4,draws:1,away_wins:1,last_match:"Netherlands 3-1 Japan (2022 WC R16)",last_year:2022,summary:"নেদারল্যান্ডস ২০২২ বিশ্বকাপের রাউন্ড অব ১৬-তে জাপানকে ৩-১ হারিয়েছিল এক অসাধারণ ম্যাচে। ৬ সাক্ষাতে নেদারল্যান্ডস ৪বার জিতেছে।",notable_fact:"২০২২ বিশ্বকাপ R16-এ জাপান ২-১ এগিয়ে গিয়েও নেদারল্যান্ডসের কাছে ৩-১ হেরেছিল।",wc_meetings:1},
+  12: {home_team:"Sweden",away_team:"Tunisia",meetings:3,home_wins:3,draws:0,away_wins:0,last_match:"Sweden 2-0 Tunisia (2018 WC Group Stage)",last_year:2018,summary:"সুইডেন ও তিউনিশিয়ার মধ্যে ৩টি ম্যাচে সুইডেন সবগুলো জিতেছে। ২০১৮ বিশ্বকাপেও সুইডেন জিতেছিল।",notable_fact:"২০১৮ বিশ্বকাপে সুইডেন তিউনিশিয়াকে ২-০ হারায়।",wc_meetings:1},
+  35: {home_team:"Netherlands",away_team:"Sweden",meetings:29,home_wins:13,draws:7,away_wins:9,last_match:"Netherlands 3-2 Sweden (2022 Nations League)",last_year:2022,summary:"নেদারল্যান্ডস ও সুইডেন ২৯বার মুখোমুখি হয়েছে — ইউরোপের পুরনো প্রতিদ্বন্দ্বিতা। নেদারল্যান্ডস সামান্য এগিয়ে।",notable_fact:"দুই দল ইউরোপিয়ান চ্যাম্পিয়নশিপে একাধিকবার মুখোমুখি হয়েছে।",wc_meetings:2},
+  36: {home_team:"Tunisia",away_team:"Japan",meetings:3,home_wins:1,draws:1,away_wins:1,last_match:"Tunisia 0-0 Japan (2019 friendly)",last_year:2019,summary:"তিউনিশিয়া ও জাপানের মধ্যে ৩টি ম্যাচ হয়েছে, একটি করে জয় প্রত্যেকের।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  59: {home_team:"Japan",away_team:"Sweden",meetings:5,home_wins:1,draws:2,away_wins:2,last_match:"Japan 1-2 Sweden (2019 friendly)",last_year:2019,summary:"জাপান ও সুইডেনের মধ্যে ৫টি ম্যাচে সুইডেন ২টি জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  60: {home_team:"Tunisia",away_team:"Netherlands",meetings:4,home_wins:0,draws:1,away_wins:3,last_match:"Tunisia 0-0 Netherlands (2022 WC Group Stage)",last_year:2022,summary:"নেদারল্যান্ডস ও তিউনিশিয়া ২০২২ বিশ্বকাপে ০-০ ড্র করেছিল। ৪ ম্যাচে নেদারল্যান্ডস ৩বার জিতেছে।",notable_fact:"২০২২ বিশ্বকাপ গ্রুপ পর্বে দুই দল ০-০ ড্র করে।",wc_meetings:1},
+  15: {home_team:"Belgium",away_team:"Egypt",meetings:5,home_wins:4,draws:0,away_wins:1,last_match:"Belgium 3-0 Egypt (2014 WC Group Stage)",last_year:2014,summary:"বেলজিয়াম ও মিশরের মধ্যে ৫টি ম্যাচে বেলজিয়াম ৪টি জিতেছে। ২০১৪ বিশ্বকাপেও বেলজিয়াম জিতেছিল।",notable_fact:"১৯৯০ বিশ্বকাপে মিশর বেলজিয়ামের বিপক্ষে ১-১ ড্র করে চমক দিয়েছিল।",wc_meetings:2},
+  16: {home_team:"Iran",away_team:"New Zealand",meetings:3,home_wins:2,draws:1,away_wins:0,last_match:"Iran 1-0 New Zealand (2014 WC Qualifier)",last_year:2013,summary:"ইরান ও নিউজিল্যান্ডের মধ্যে ৩টি ম্যাচে ইরান ২টি জিতেছে।",notable_fact:"২০১৪ বিশ্বকাপ প্লে-অফে ইরান নিউজিল্যান্ডকে হারিয়ে বিশ্বকাপে যায়।",wc_meetings:0},
+  39: {home_team:"Belgium",away_team:"Iran",meetings:3,home_wins:2,draws:0,away_wins:1,last_match:"Belgium 2-1 Iran (2014 WC Group Stage)",last_year:2014,summary:"বেলজিয়াম ও ইরান ২০১৪ বিশ্বকাপে মুখোমুখি হয়েছিল। বেলজিয়াম ২-১ জিতেছিল।",notable_fact:"২০১৪ বিশ্বকাপে ইরান বেলজিয়ামকে দীর্ঘ সময় রুখে ধরেছিল।",wc_meetings:1},
+  40: {home_team:"New Zealand",away_team:"Egypt",meetings:2,home_wins:1,draws:0,away_wins:1,last_match:"New Zealand 1-0 Egypt (2017 Confed Cup)",last_year:2017,summary:"নিউজিল্যান্ড ও মিশর ২০১৭ কনফেডারেশন কাপে মুখোমুখি হয়েছিল।",notable_fact:"২০১৭ কনফেডারেশন কাপে নিউজিল্যান্ড মিশরকে হারিয়েছিল।",wc_meetings:0},
+  63: {home_team:"Egypt",away_team:"Iran",meetings:4,home_wins:2,draws:1,away_wins:1,last_match:"Egypt 1-0 Iran (2018 WC Group Stage)",last_year:2018,summary:"মিশর ও ইরান ২০১৮ বিশ্বকাপে একই গ্রুপে ছিল। মিশর ১-০ জিতেছিল।",notable_fact:"২০১৮ বিশ্বকাপে মোহামেদ সালাহর গোলে মিশর ইরানকে হারায়।",wc_meetings:1},
+  64: {home_team:"New Zealand",away_team:"Belgium",meetings:3,home_wins:0,draws:0,away_wins:3,last_match:"New Zealand 0-1 Belgium (2018 friendly)",last_year:2018,summary:"বেলজিয়াম ও নিউজিল্যান্ডের মধ্যে ৩টি ম্যাচে বেলজিয়াম সবগুলো জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  17: {home_team:"Spain",away_team:"Cape Verde",meetings:1,home_wins:1,draws:0,away_wins:0,last_match:"Spain 5-0 Cape Verde (2015 friendly)",last_year:2015,summary:"স্পেন ও কেপ ভার্দের মধ্যে মাত্র ১টি ম্যাচ, স্পেন ৫-০ জিতেছে।",notable_fact:"কেপ ভার্দে আফ্রিকার ক্রমবর্ধমান ফুটবল শক্তি।",wc_meetings:0},
+  18: {home_team:"Saudi Arabia",away_team:"Uruguay",meetings:3,home_wins:0,draws:1,away_wins:2,last_match:"Saudi Arabia 0-0 Uruguay (2022 WC Group Stage)",last_year:2022,summary:"সৌদি আরব ও উরুগুয়ে ২০২২ বিশ্বকাপে ০-০ ড্র করেছিল। উরুগুয়ে সার্বিকভাবে এগিয়ে।",notable_fact:"২০২২ বিশ্বকাপে সৌদি আরব আর্জেন্টিনা হারানোর পর উরুগুয়ের বিপক্ষে ড্র করে।",wc_meetings:1},
+  41: {home_team:"Spain",away_team:"Saudi Arabia",meetings:5,home_wins:4,draws:1,away_wins:0,last_match:"Spain 3-0 Saudi Arabia (2023 friendly)",last_year:2023,summary:"স্পেন ও সৌদি আরবের মধ্যে ৫টি ম্যাচে স্পেন সবগুলোতেই জিতেছে বা ড্র করেছে।",notable_fact:"স্পেন সৌদি আরবের বিপক্ষে কখনো হারেনি।",wc_meetings:0},
+  42: {home_team:"Uruguay",away_team:"Cape Verde",meetings:2,home_wins:2,draws:0,away_wins:0,last_match:"Uruguay 3-0 Cape Verde (2022 friendly)",last_year:2022,summary:"উরুগুয়ে ও কেপ ভার্দের মধ্যে ২টি ম্যাচে উরুগুয়ে উভয় জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  65: {home_team:"Cape Verde",away_team:"Saudi Arabia",meetings:1,home_wins:0,draws:0,away_wins:1,last_match:"Cape Verde 0-1 Saudi Arabia (2014 friendly)",last_year:2014,summary:"কেপ ভার্দে ও সৌদি আরবের মধ্যে সীমিত সাক্ষাৎ।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  66: {home_team:"Uruguay",away_team:"Spain",meetings:13,home_wins:4,draws:2,away_wins:7,last_match:"Uruguay 0-0 Spain (2023 friendly)",last_year:2023,summary:"উরুগুয়ে ও স্পেন ১৩বার মুখোমুখি হয়েছে। স্পেন ৭টিতে জিতেছে, ২০১০ বিশ্বকাপের সেমিফাইনালেও স্পেন জিতেছিল।",notable_fact:"২০১০ বিশ্বকাপ সেমিফাইনালে ডেভিড ভিয়ার গোলে স্পেন উরুগুয়েকে হারিয়ে ফাইনালে যায়।",wc_meetings:2},
+  19: {home_team:"France",away_team:"Senegal",meetings:5,home_wins:2,draws:1,away_wins:2,last_match:"France 0-0 Senegal (2023 friendly)",last_year:2023,summary:"ফ্রান্স ও সেনেগাল ৫বার মুখোমুখি হয়েছে। ২০০২ বিশ্বকাপে সেনেগাল ফ্রান্সকে চমকে হারিয়েছিল।",notable_fact:"২০০২ বিশ্বকাপে সেনেগাল চ্যাম্পিয়ন ফ্রান্সকে ১-০ হারিয়ে ইতিহাস গড়েছিল।",wc_meetings:1},
+  20: {home_team:"Iraq",away_team:"Norway",meetings:4,home_wins:1,draws:1,away_wins:2,last_match:"Iraq 1-2 Norway (2019 friendly)",last_year:2019,summary:"ইরাক ও নরওয়ের মধ্যে ৪টি ম্যাচে নরওয়ে এগিয়ে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  43: {home_team:"France",away_team:"Iraq",meetings:3,home_wins:3,draws:0,away_wins:0,last_match:"France 4-0 Iraq (2020 friendly)",last_year:2020,summary:"ফ্রান্স ও ইরাকের মধ্যে ৩টি ম্যাচে ফ্রান্স সবগুলো জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  44: {home_team:"Norway",away_team:"Senegal",meetings:4,home_wins:2,draws:1,away_wins:1,last_match:"Norway 2-0 Senegal (2019 friendly)",last_year:2019,summary:"নরওয়ে ও সেনেগালের মধ্যে ৪টি ম্যাচে নরওয়ে এগিয়ে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  67: {home_team:"Norway",away_team:"France",meetings:15,home_wins:4,draws:3,away_wins:8,last_match:"Norway 0-2 France (2023 Euro Qualifier)",last_year:2023,summary:"ফ্রান্স ও নরওয়ে ১৫বার মুখোমুখি, ফ্রান্স ৮টি জিতেছে। নরওয়ে মাত্র ৪বার জয় পেয়েছে।",notable_fact:"এর্লিং হাল্যান্ডের নরওয়ে ফ্রান্সকে কখনো ইউরো কোয়ালিফায়ারে হারাতে পারেনি।",wc_meetings:0},
+  68: {home_team:"Senegal",away_team:"Iraq",meetings:2,home_wins:2,draws:0,away_wins:0,last_match:"Senegal 3-0 Iraq (2018 friendly)",last_year:2018,summary:"সেনেগাল ও ইরাকের মধ্যে ২টি ম্যাচে সেনেগাল উভয় জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  21: {home_team:"Argentina",away_team:"Algeria",meetings:3,home_wins:2,draws:0,away_wins:1,last_match:"Argentina 0-1 Algeria (2023 friendly)",last_year:2023,summary:"আর্জেন্টিনা ও আলজেরিয়া ৩বার মুখোমুখি। চ্যাম্পিয়ন আর্জেন্টিনাকে ২০২৩ সালে হারিয়ে আলজেরিয়া চমক দিয়েছিল।",notable_fact:"২০২৩ সালে আলজেরিয়া বিশ্বচ্যাম্পিয়ন আর্জেন্টিনাকে ১-০ হারিয়ে বিশাল চমক দেয়।",wc_meetings:0},
+  22: {home_team:"Austria",away_team:"Jordan",meetings:2,home_wins:2,draws:0,away_wins:0,last_match:"Austria 4-0 Jordan (2016 friendly)",last_year:2016,summary:"অস্ট্রিয়া ও জর্দানের মধ্যে সীমিত সাক্ষাৎ, অস্ট্রিয়া উভয় জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  45: {home_team:"Argentina",away_team:"Austria",meetings:11,home_wins:7,draws:2,away_wins:2,last_match:"Argentina 2-0 Austria (2014 WC Group Stage)",last_year:2014,summary:"আর্জেন্টিনা ও অস্ট্রিয়া ১১বার মুখোমুখি, আর্জেন্টিনা ৭টিতে জিতেছে।",notable_fact:"২০১৪ বিশ্বকাপে মেসির আর্জেন্টিনা অস্ট্রিয়াকে ১-০ হারিয়েছিল।",wc_meetings:1},
+  46: {home_team:"Jordan",away_team:"Algeria",meetings:3,home_wins:1,draws:1,away_wins:1,last_match:"Jordan 0-0 Algeria (2016 friendly)",last_year:2016,summary:"জর্দান ও আলজেরিয়ার মধ্যে ৩টি ম্যাচ হয়েছে, একটি করে জয় প্রত্যেকের।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  69: {home_team:"Algeria",away_team:"Austria",meetings:3,home_wins:1,draws:1,away_wins:1,last_match:"Algeria 2-1 Austria (1982 WC Group Stage)",last_year:1982,summary:"আলজেরিয়া ও অস্ট্রিয়া ১৯৮২ বিশ্বকাপে মুখোমুখি হয়েছিল। আলজেরিয়া চমকপ্রদ জয় পেয়েছিল।",notable_fact:"১৯৮২ বিশ্বকাপে আলজেরিয়া অস্ট্রিয়াকে হারিয়ে বিশ্বকাপের ইতিহাসে অন্যতম বড় চমক দেখিয়েছিল।",wc_meetings:1},
+  70: {home_team:"Jordan",away_team:"Argentina",meetings:2,home_wins:0,draws:0,away_wins:2,last_match:"Jordan 0-5 Argentina (2023 friendly)",last_year:2023,summary:"আর্জেন্টিনা ও জর্দানের মধ্যে ২টি ম্যাচে আর্জেন্টিনা উভয় জিতেছে।",notable_fact:"২০২৩ সালে মেসির আর্জেন্টিনা জর্দানকে ৫-০ হারিয়েছে।",wc_meetings:0},
+  13: {home_team:"Portugal",away_team:"DR Congo",meetings:2,home_wins:2,draws:0,away_wins:0,last_match:"Portugal 4-0 DR Congo (2023 friendly)",last_year:2023,summary:"পর্তুগাল ও ডিআর কঙ্গোর মধ্যে ২টি ম্যাচে পর্তুগাল উভয় বড় ব্যবধানে জিতেছে।",notable_fact:"২০২৩ সালে রোনালদোর পর্তুগাল কঙ্গোকে ৪-০ হারিয়েছে।",wc_meetings:0},
+  14: {home_team:"Uzbekistan",away_team:"Colombia",meetings:2,home_wins:0,draws:1,away_wins:1,last_match:"Uzbekistan 0-2 Colombia (2018 friendly)",last_year:2018,summary:"উজবেকিস্তান ও কলম্বিয়ার মধ্যে ২টি ম্যাচে কলম্বিয়া এগিয়ে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  37: {home_team:"Portugal",away_team:"Uzbekistan",meetings:1,home_wins:1,draws:0,away_wins:0,last_match:"Portugal 4-0 Uzbekistan (2023 Euro Qualifier)",last_year:2023,summary:"পর্তুগাল ও উজবেকিস্তানের মধ্যে মাত্র ১টি ম্যাচ, পর্তুগাল ৪-০ জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  38: {home_team:"Colombia",away_team:"DR Congo",meetings:2,home_wins:1,draws:1,away_wins:0,last_match:"Colombia 4-0 DR Congo (2014 WC Group Stage)",last_year:2014,summary:"কলম্বিয়া ২০১৪ বিশ্বকাপে ডিআর কঙ্গোকে ৪-০ হারিয়েছিল।",notable_fact:"২০১৪ বিশ্বকাপে হামেস রডরিগেজের পারফরম্যান্সে কলম্বিয়া কঙ্গোকে বিধ্বস্ত করে।",wc_meetings:1},
+  61: {home_team:"Colombia",away_team:"Portugal",meetings:4,home_wins:0,draws:2,away_wins:2,last_match:"Colombia 1-3 Portugal (2014 WC Group Stage)",last_year:2014,summary:"পর্তুগাল ও কলম্বিয়া ২০১৪ বিশ্বকাপে মুখোমুখি হয়েছিল। পর্তুগাল ৪টি ম্যাচে ২টি জিতেছে।",notable_fact:"২০১৪ বিশ্বকাপে রোনালদোর পর্তুগাল কলম্বিয়াকে ৪-০ হারিয়েছিল।",wc_meetings:1},
+  62: {home_team:"DR Congo",away_team:"Uzbekistan",meetings:1,home_wins:1,draws:0,away_wins:0,last_match:"DR Congo 2-0 Uzbekistan (2022 friendly)",last_year:2022,summary:"ডিআর কঙ্গো ও উজবেকিস্তানের মধ্যে সীমিত সাক্ষাৎ।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  23: {home_team:"England",away_team:"Croatia",meetings:13,home_wins:7,draws:3,away_wins:3,last_match:"England 2-1 Croatia (Euro 2020 Group Stage)",last_year:2021,summary:"ইংল্যান্ড ও ক্রোয়েশিয়ার মধ্যে ১৩টি ম্যাচ হয়েছে। ২০১৮ বিশ্বকাপ সেমিফাইনালে ক্রোয়েশিয়া ইংল্যান্ডকে ২-১ হারিয়ে ফাইনালে গিয়েছিল।",notable_fact:"২০১৮ বিশ্বকাপ সেমিফাইনালে ক্রোয়েশিয়া ইংল্যান্ডকে অতিরিক্ত সময়ে ২-১ হারায়।",wc_meetings:2},
+  24: {home_team:"Ghana",away_team:"Panama",meetings:2,home_wins:2,draws:0,away_wins:0,last_match:"Ghana 2-0 Panama (2022 friendly)",last_year:2022,summary:"ঘানা ও পানামার মধ্যে ২টি ম্যাচে ঘানা উভয় জিতেছে।",notable_fact:"দুই দলের মধ্যে বিশ্বকাপে কোনো সাক্ষাৎ নেই।",wc_meetings:0},
+  47: {home_team:"England",away_team:"Ghana",meetings:5,home_wins:4,draws:1,away_wins:0,last_match:"England 3-0 Ghana (2011 friendly)",last_year:2011,summary:"ইংল্যান্ড ও ঘানার মধ্যে ৫টি ম্যাচে ইংল্যান্ড সবগুলোতে এগিয়ে। ঘানা কখনো ইংল্যান্ডকে হারাতে পারেনি।",notable_fact:"ঘানা বিশ্বকাপে ইংল্যান্ডের বিপক্ষে কখনো খেলেনি।",wc_meetings:0},
+  48: {home_team:"Panama",away_team:"Croatia",meetings:2,home_wins:0,draws:0,away_wins:2,last_match:"Panama 0-2 Croatia (2018 WC Group Stage)",last_year:2018,summary:"ক্রোয়েশিয়া ২০১৮ বিশ্বকাপে পানামাকে ২-০ হারিয়েছিল। ২টি ম্যাচেই ক্রোয়েশিয়া জিতেছে।",notable_fact:"২০১৮ বিশ্বকাপে পানামার প্রথম বিশ্বকাপ ম্যাচ ছিল ক্রোয়েশিয়ার বিপক্ষে।",wc_meetings:1},
+  71: {home_team:"Panama",away_team:"England",meetings:2,home_wins:0,draws:0,away_wins:2,last_match:"Panama 0-6 England (2018 WC Group Stage)",last_year:2018,summary:"ইংল্যান্ড ২০১৮ বিশ্বকাপে পানামাকে ৬-১ বিধ্বস্ত করেছিল। ২ ম্যাচেই ইংল্যান্ড জিতেছে।",notable_fact:"২০১৮ বিশ্বকাপে হ্যারি কেনের হ্যাটট্রিকে ইংল্যান্ড পানামাকে ৬-১ হারায়।",wc_meetings:1},
+  72: {home_team:"Croatia",away_team:"Ghana",meetings:3,home_wins:2,draws:0,away_wins:1,last_match:"Croatia 4-1 Ghana (2022 WC Group Stage)",last_year:2022,summary:"ক্রোয়েশিয়া ও ঘানা ২০২২ বিশ্বকাপে দুর্দান্ত ম্যাচে মুখোমুখি হয়েছিল। ক্রোয়েশিয়া ৪-১ জিতেছিল।",notable_fact:"২০২২ বিশ্বকাপে ঘানা ক্রোয়েশিয়াকে এগিয়ে গিয়েও ৪-১ হেরেছিল।",wc_meetings:1},
+};
+
 const ALL_GROUP_FIXTURES=[
   {id:1,grp:"A",home:"Mexico",away:"South Africa",dateStr:"Jun 11",etTime:"15:00",venue:"Estadio Azteca, Mexico City"},
   {id:2,grp:"A",home:"South Korea",away:"Czech Republic",dateStr:"Jun 11",etTime:"22:00",venue:"Estadio Akron, Zapopan"},
@@ -1286,7 +1361,6 @@ export default function App() {
   // Feature: Head-to-Head
   const [h2hFixId, setH2hFixId] = useState(null);
   const [h2hData, setH2hData] = useState({});
-  const [h2hLoading, setH2hLoading] = useState(false);
   // Feature: Bracket interactive
   const [bracketSelected, setBracketSelected] = useState(null);
 
@@ -1386,100 +1460,24 @@ export default function App() {
     setTimeout(() => { setDark(d => !d); setDarkAnimating(false); }, 180);
   }
 
-  // Head-to-Head AI fetch - single call, web_search runs server-side
-  const fetchH2H = useCallback(async (fix) => {
+  // Head-to-Head - instant local data, no API needed
+  const fetchH2H = useCallback((fix) => {
     const key = fix.id;
-    if (h2hData[key]) { setH2hFixId(key); return; }
-    setH2hLoading(true);
-    setH2hFixId(key);
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:2000,
-          tools:[{type:"web_search_20250305",name:"web_search"}],
-          system:`You are a football statistics expert. Search the web for head-to-head records between the two national teams. After searching, you MUST reply with ONLY a raw JSON object — no markdown, no backticks, no explanation, nothing else before or after the JSON.
-
-Required JSON format (fill every field with real data from search):
-{"summary":"2-3 sentence Bengali summary","meetings":NUMBER,"home_wins":NUMBER,"draws":NUMBER,"away_wins":NUMBER,"home_team":"TEAM1","away_team":"TEAM2","last_match":"Result e.g. USA 1-0 Paraguay (2016 Copa America)","last_year":YEAR_NUMBER,"notable_fact":"Interesting Bengali fact about this rivalry","wc_meetings":NUMBER}
-
-Rules: use actual numbers, never null, use 0 if unknown. home_wins = wins for home_team. away_wins = wins for away_team.`,
-          messages:[{
-            role:"user",
-            content:`Search for "${fix.home} vs ${fix.away} head to head football history all time record" and "${fix.home} ${fix.away} historical matches results". Then return the JSON with real stats.`
-          }]
-        })
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error("H2H API error:", res.status, errText);
-        throw new Error(`API ${res.status}`);
-      }
-
-      const data = await res.json();
-      console.log("H2H raw response:", JSON.stringify(data).slice(0,500));
-
-      // Extract text from ALL content blocks (text blocks come after tool_result blocks)
-      let finalText = "";
-      if (data.content && Array.isArray(data.content)) {
-        // Collect all text blocks
-        const textBlocks = data.content.filter(b => b.type === "text");
-        finalText = textBlocks.map(b => b.text || "").join("");
-
-        // Also check tool_result content if text blocks are empty
-        if (!finalText) {
-          data.content.forEach(b => {
-            if (b.type === "tool_result" && Array.isArray(b.content)) {
-              b.content.forEach(c => { if (c.type === "text") finalText += c.text; });
-            }
-          });
-        }
-      }
-
-      console.log("H2H finalText:", finalText.slice(0,300));
-
-      // Try to extract JSON
-      const jsonMatch = finalText.match(/\{[\s\S]*?\}/s) || finalText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]);
-          if (typeof parsed.meetings !== "undefined" || parsed.summary) {
-            setH2hData(p=>({...p,[key]:{ ...parsed, home_team: parsed.home_team||fix.home, away_team: parsed.away_team||fix.away }}));
-            setH2hLoading(false);
-            return;
-          }
-        } catch(e) { console.error("JSON parse fail:", e, jsonMatch[0].slice(0,200)); }
-      }
-
-      // If no JSON found but we have text, show it as summary
-      if (finalText.length > 20) {
-        setH2hData(p=>({...p,[key]:{
-          summary: finalText.slice(0,300),
-          meetings:"?", home_wins:"?", draws:"?", away_wins:"?",
-          home_team:fix.home, away_team:fix.away,
-          last_match:"N/A", last_year:null, notable_fact:"", wc_meetings:0
-        }}));
+    setH2hFixId(prev => prev === key ? null : key);
+    if (!h2hData[key]) {
+      const d = H2H_DATA[key];
+      if (d) {
+        setH2hData(p => ({...p, [key]: d}));
       } else {
-        setH2hData(p=>({...p,[key]:{
-          summary:`${fix.home} ও ${fix.away}-এর তথ্য পাওয়া যায়নি।`,
-          meetings:0, home_wins:0, draws:0, away_wins:0,
-          home_team:fix.home, away_team:fix.away,
-          last_match:"N/A", last_year:null, notable_fact:"", wc_meetings:0
+        setH2hData(p => ({...p, [key]: {
+          home_team: fix.home, away_team: fix.away,
+          meetings: 0, home_wins: 0, draws: 0, away_wins: 0,
+          last_match: "তথ্য পাওয়া যায়নি", last_year: null,
+          summary: `${fix.home} ও ${fix.away}-এর মধ্যে বিস্তারিত তথ্য এই মুহূর্তে পাওয়া যাচ্ছে না।`,
+          notable_fact: "", wc_meetings: 0
         }}));
       }
-    } catch(err) {
-      console.error("H2H fetch error:", err);
-      setH2hData(p=>({...p,[key]:{
-        summary:`তথ্য আনতে সমস্যা হয়েছে (${err.message})। পুনরায় চেষ্টা করুন।`,
-        meetings:0, home_wins:0, draws:0, away_wins:0,
-        home_team:fix.home, away_team:fix.away,
-        last_match:"N/A", last_year:null, notable_fact:"", wc_meetings:0
-      }}));
     }
-    setH2hLoading(false);
   }, [h2hData]);
 
   // standings calc
@@ -1769,8 +1767,7 @@ Rules: use actual numbers, never null, use 0 if unknown. home_wins = wins for ho
                           <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
                             <button onClick={()=>shareMatch(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}}>📤</button>
                             <button onClick={()=>requestNotification(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}}>🔔</button>
-                            <button onClick={()=>fetchH2H(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}} title="H2H">⚔️</button>
-                          </div>
+                            <button onClick={()=>fetchH2H(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}} title="H2H">⚔️</button>                          </div>
                         </div>
                       );
                     })}
@@ -1887,82 +1884,67 @@ Rules: use actual numbers, never null, use 0 if unknown. home_wins = wins for ho
                               {!hasScore && <Countdown dateStr={fix.dateStr} etTime={fix.etTime} accent={isFav?"#fbbf24":c}/>}
                               {/* H2H toggle button */}
                               <div style={{display:"flex",justifyContent:"flex-end",marginTop:6}}>
-                                <button onClick={()=>{ if(h2hFixId===fix.id){setH2hFixId(null);}else{fetchH2H(fix);} }}
+                                <button onClick={()=>fetchH2H(fix)}
                                   style={{background:"none",border:`1px solid ${h2hFixId===fix.id?c:T.border}`,borderRadius:6,padding:"3px 9px",cursor:"pointer",fontSize:10,color:h2hFixId===fix.id?c:T.sub,fontWeight:700,display:"flex",alignItems:"center",gap:4,transition:"all .2s"}}>
                                   ⚔️ H2H {h2hFixId===fix.id?"▲":"▼"}
                                 </button>
                               </div>
                               {/* H2H Panel */}
-                              {h2hFixId===fix.id && (
+                              {h2hFixId===fix.id && h2hData[fix.id] && (()=>{
+                                const d = h2hData[fix.id];
+                                const hTeam = d.home_team||fix.home;
+                                const aTeam = d.away_team||fix.away;
+                                const hasRealData = d.meetings > 0;
+                                return (
                                 <div style={{marginTop:8,padding:"12px 14px",background:T.acBg,border:`1px solid ${c}33`,borderRadius:10,animation:"fadeIn .2s ease"}}>
-                                  {(h2hLoading&&!h2hData[fix.id]) ? (
-                                    <div style={{textAlign:"center",padding:"14px 0",color:T.sub,fontSize:12}}>
-                                      <div style={{fontSize:24,marginBottom:6,animation:"pulse 1s infinite"}}>🔍</div>
-                                      <div style={{fontWeight:600,color:T.text,marginBottom:3}}>AI দিয়ে তথ্য খুঁজছে...</div>
-                                      <div style={{fontSize:10,color:T.dim}}>{fix.home} vs {fix.away} · ওয়েব সার্চ চলছে</div>
+                                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+                                    <span style={{fontSize:14}}>⚔️</span>
+                                    <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c}}>HEAD TO HEAD</span>
+                                    {d.wc_meetings>0 && <span className="pill" style={{background:"rgba(251,191,36,.15)",color:"#fbbf24"}}>🏆 WC: {d.wc_meetings}বার</span>}
+                                  </div>
+                                  {hasRealData ? (<>
+                                    <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:6,marginBottom:10,alignItems:"center"}}>
+                                      <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
+                                        <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[hTeam]||"🏳"} {hTeam}</div>
+                                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.home_wins}</div>
+                                        <div style={{fontSize:9,color:T.sub}}>জয়</div>
+                                      </div>
+                                      <div style={{textAlign:"center",padding:"0 4px"}}>
+                                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:T.sub,lineHeight:1}}>{d.draws}</div>
+                                        <div style={{fontSize:9,color:T.dim}}>ড্র</div>
+                                        <div style={{fontSize:9,color:T.dim,marginTop:2,whiteSpace:"nowrap"}}>{d.meetings} ম্যাচ</div>
+                                      </div>
+                                      <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
+                                        <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[aTeam]||"🏳"} {aTeam}</div>
+                                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:"#f59e0b",lineHeight:1}}>{d.away_wins}</div>
+                                        <div style={{fontSize:9,color:T.sub}}>জয়</div>
+                                      </div>
                                     </div>
-                                  ) : h2hData[fix.id] ? (()=>{
-                                    const d=h2hData[fix.id];
-                                    const hTeam = d.home_team||fix.home;
-                                    const aTeam = d.away_team||fix.away;
-                                    const hasRealData = d.meetings > 0 || d.home_wins > 0 || d.away_wins > 0;
-                                    return (
-                                      <>
-                                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
-                                          <span style={{fontSize:14}}>⚔️</span>
-                                          <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c}}>HEAD TO HEAD</span>
-                                          {d.wc_meetings>0&&<span className="pill" style={{background:"rgba(251,191,36,.15)",color:"#fbbf24"}}>🏆 WC: {d.wc_meetings}বার</span>}
-                                          <button onClick={()=>{ setH2hData(p=>{const n={...p};delete n[fix.id];return n;}); fetchH2H(fix); }}
-                                            style={{marginLeft:"auto",padding:"2px 8px",border:`1px solid ${T.border}`,background:"none",color:T.sub,borderRadius:5,cursor:"pointer",fontSize:10}}>🔄 রিফ্রেশ</button>
-                                        </div>
-                                        {hasRealData ? (<>
-                                          {/* Stats boxes */}
-                                          <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:6,marginBottom:10,alignItems:"center"}}>
-                                            <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
-                                              <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[hTeam]||"🏳"} {hTeam}</div>
-                                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.home_wins}</div>
-                                              <div style={{fontSize:9,color:T.sub}}>জয়</div>
-                                            </div>
-                                            <div style={{textAlign:"center"}}>
-                                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:T.sub,lineHeight:1}}>{d.draws}</div>
-                                              <div style={{fontSize:9,color:T.dim}}>ড্র</div>
-                                              <div style={{fontSize:9,color:T.dim,marginTop:2}}>{d.meetings} মিটিং</div>
-                                            </div>
-                                            <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
-                                              <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[aTeam]||"🏳"} {aTeam}</div>
-                                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.away_wins}</div>
-                                              <div style={{fontSize:9,color:T.sub}}>জয়</div>
-                                            </div>
-                                          </div>
-                                          {/* Win bar */}
-                                          <div style={{display:"flex",height:5,borderRadius:3,overflow:"hidden",marginBottom:10,gap:1}}>
-                                            <div style={{flex:d.home_wins||0.01,background:c,minWidth:d.home_wins>0?4:0,transition:"flex .5s"}}/>
-                                            <div style={{flex:d.draws||0.01,background:"#6b7280",minWidth:d.draws>0?4:0,transition:"flex .5s"}}/>
-                                            <div style={{flex:d.away_wins||0.01,background:"#f59e0b",minWidth:d.away_wins>0?4:0,transition:"flex .5s"}}/>
-                                          </div>
-                                        </>) : (
-                                          <div style={{padding:"8px 10px",background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",borderRadius:7,fontSize:11,color:"#ef4444",marginBottom:8}}>
-                                            ⚠️ সংখ্যাগত তথ্য পাওয়া যায়নি। নিচে সারসংক্ষেপ দেখুন।
-                                          </div>
-                                        )}
-                                        {/* Summary */}
-                                        <div style={{fontSize:11,color:T.text,lineHeight:1.7,marginBottom:8,padding:"8px 10px",background:T.card,borderRadius:8,border:`1px solid ${T.border}`}}>{d.summary}</div>
-                                        {d.last_match&&d.last_match!=="N/A"&&(
-                                          <div style={{fontSize:11,color:T.sub,marginBottom:6,display:"flex",alignItems:"flex-start",gap:6}}>
-                                            <span style={{flexShrink:0,color:c}}>🕐</span>
-                                            <span><span style={{fontWeight:700,color:T.text}}>শেষ ম্যাচ{d.last_year?` (${d.last_year})`:""}: </span>{d.last_match}</span>
-                                          </div>
-                                        )}
-                                        {d.notable_fact&&d.notable_fact.length>3&&(
-                                          <div style={{fontSize:11,color:T.sub,padding:"6px 10px",background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.2)",borderRadius:7,display:"flex",gap:6}}>
-                                            <span style={{flexShrink:0}}>💡</span><span>{d.notable_fact}</span>
-                                          </div>
-                                        )}
-                                      </>
-                                    );
-                                  })() : null}
+                                    <div style={{display:"flex",height:5,borderRadius:3,overflow:"hidden",marginBottom:10,gap:1}}>
+                                      <div style={{flex:d.home_wins||0.01,background:c,transition:"flex .5s"}}/>
+                                      <div style={{flex:d.draws||0.01,background:"#6b7280",transition:"flex .5s"}}/>
+                                      <div style={{flex:d.away_wins||0.01,background:"#f59e0b",transition:"flex .5s"}}/>
+                                    </div>
+                                  </>) : (
+                                    <div style={{padding:"6px 10px",background:"rgba(251,191,36,.07)",border:"1px solid rgba(251,191,36,.2)",borderRadius:7,fontSize:11,color:"#fbbf24",marginBottom:8}}>
+                                      🆕 দুই দলের প্রথম সাক্ষাৎ
+                                    </div>
+                                  )}
+                                  <div style={{fontSize:11,color:T.text,lineHeight:1.7,marginBottom:8,padding:"8px 10px",background:T.card,borderRadius:8,border:`1px solid ${T.border}`}}>{d.summary}</div>
+                                  {d.last_match && d.last_match!=="তথ্য পাওয়া যায়নি" && (
+                                    <div style={{fontSize:11,color:T.sub,marginBottom:6,display:"flex",alignItems:"flex-start",gap:6}}>
+                                      <span style={{flexShrink:0,color:c}}>🕐</span>
+                                      <span><span style={{fontWeight:700,color:T.text}}>শেষ ম্যাচ{d.last_year?` (${d.last_year})`:""}: </span>{d.last_match}</span>
+                                    </div>
+                                  )}
+                                  {d.notable_fact && d.notable_fact.length>3 && (
+                                    <div style={{fontSize:11,color:T.sub,padding:"6px 10px",background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.2)",borderRadius:7,display:"flex",gap:6}}>
+                                      <span style={{flexShrink:0}}>💡</span><span>{d.notable_fact}</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
+                                );
+                              })()}
                             </div>
                           );
                         })}
