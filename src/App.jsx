@@ -1456,32 +1456,17 @@ export default function App() {
     try { favTeam ? localStorage.setItem("wc26_fav",favTeam) : localStorage.removeItem("wc26_fav"); } catch {}
   }, [favTeam]);
 
-  // Visitor counter — uses countapi.xyz (free, works on Vercel, no backend needed)
+  // Visitor counter — countapi.xyz (free, no backend needed)
   useEffect(() => {
     async function trackVisit() {
       try {
-        // namespace = your domain, key = unique counter name
-        const ns = window.location.hostname.replace(/\./g,'_') || 'wc2026app';
-        const key = 'wc26_visitors';
-        const res = await fetch(`https://api.countapi.xyz/hit/${ns}/${key}`);
+        const ns = (window.location.hostname || 'wc2026app').replace(/\./g,'_');
+        const res = await fetch(`https://api.countapi.xyz/hit/${ns}/wc26_visitors`);
         if (res.ok) {
           const data = await res.json();
-          if (data && typeof data.value === 'number') {
-            setVisitorCount(data.value);
-          }
+          if (data && typeof data.value === 'number') setVisitorCount(data.value);
         }
-      } catch (e) {
-        // countapi unavailable — try window.storage fallback (Claude artifacts)
-        try {
-          let count = 1;
-          try {
-            const r = await window.storage.get("wc26_v", true);
-            count = (parseInt(r?.value || "0") || 0) + 1;
-          } catch { count = 1; }
-          await window.storage.set("wc26_v", String(count), true);
-          setVisitorCount(count);
-        } catch {}
-      }
+      } catch {}
     }
     trackVisit();
   }, []);
