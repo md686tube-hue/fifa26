@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, createPortal } from "react";
 
 function etToBD(etTime) {
   const [h, m] = etTime.split(":").map(Number);
@@ -1456,21 +1456,31 @@ export default function App() {
     try { favTeam ? localStorage.setItem("wc26_fav",favTeam) : localStorage.removeItem("wc26_fav"); } catch {}
   }, [favTeam]);
 
-  // Visitor counter using window.storage (shared across all visitors)
+  // Visitor counter — uses countapi.xyz (free, works on Vercel, no backend needed)
   useEffect(() => {
     async function trackVisit() {
       try {
-        // Get current count
-        let count = 1;
-        try {
-          const res = await window.storage.get("wc26_visitors", true);
-          count = (parseInt(res?.value || "0") || 0) + 1;
-        } catch { count = 1; }
-        // Save updated count
-        await window.storage.set("wc26_visitors", String(count), true);
-        setVisitorCount(count);
+        // namespace = your domain, key = unique counter name
+        const ns = window.location.hostname.replace(/\./g,'_') || 'wc2026app';
+        const key = 'wc26_visitors';
+        const res = await fetch(`https://api.countapi.xyz/hit/${ns}/${key}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data.value === 'number') {
+            setVisitorCount(data.value);
+          }
+        }
       } catch (e) {
-        console.log("Visitor counter unavailable:", e);
+        // countapi unavailable — try window.storage fallback (Claude artifacts)
+        try {
+          let count = 1;
+          try {
+            const r = await window.storage.get("wc26_v", true);
+            count = (parseInt(r?.value || "0") || 0) + 1;
+          } catch { count = 1; }
+          await window.storage.set("wc26_v", String(count), true);
+          setVisitorCount(count);
+        } catch {}
       }
     }
     trackVisit();
@@ -2574,24 +2584,27 @@ export default function App() {
 
       </div>
 
-        {/* ── BOTTOM NAV (Mobile only) — outside opacity div to avoid stacking context bug ── */}
-        <div className="bottom-nav" style={{position:"fixed",bottom:0,left:0,right:0,background:dark?"rgba(6,15,8,.97)":"rgba(248,250,252,.97)",borderTop:`1px solid ${T.border}`,display:"flex",alignItems:"stretch",zIndex:9999,boxShadow:`0 -4px 20px ${c}18`}}>
-          {[
-            {k:"fixtures",icon:"📅",label:"Fixtures"},
-            {k:"standings",icon:"📊",label:"Standings"},
-            {k:"bracket",icon:"🗂️",label:"Bracket"},
-            {k:"scorers",icon:"⚽",label:"Scorers"},
-            {k:"stadiums",icon:"🏟️",label:"Stadiums"},
-            {k:"squads",icon:"👕",label:"Squads"},
-          ].map(({k,icon,label})=>(
-            <button key={k} className={`bottom-nav-btn${tab===k?" active":""}`} onClick={()=>setTab(k)}
-              style={{color:tab===k?c:T.sub}}>
-              <span style={{fontSize:20,display:"block",transition:"transform .2s",transform:tab===k?"scale(1.15)":"scale(1)"}}>{icon}</span>
-              <span style={{fontSize:9,fontWeight:tab===k?800:500,letterSpacing:.3}}>{label}</span>
-              {tab===k&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:24,height:2,background:c,borderRadius:1}}/>}
-            </button>
-          ))}
-        </div>
+        {/* ── BOTTOM NAV via Portal — renders directly in document.body, immune to any ancestor overflow/opacity/transform/backdrop-filter ── */}
+        {createPortal(
+          <div className="bottom-nav" style={{position:"fixed",bottom:0,left:0,right:0,background:dark?"rgba(6,15,8,.97)":"rgba(248,250,252,.97)",borderTop:`1px solid ${T.border}`,display:"flex",alignItems:"stretch",zIndex:9999,boxShadow:`0 -4px 20px ${c}18`}}>
+            {[
+              {k:"fixtures",icon:"📅",label:"Fixtures"},
+              {k:"standings",icon:"📊",label:"Standings"},
+              {k:"bracket",icon:"🗂️",label:"Bracket"},
+              {k:"scorers",icon:"⚽",label:"Scorers"},
+              {k:"stadiums",icon:"🏟️",label:"Stadiums"},
+              {k:"squads",icon:"👕",label:"Squads"},
+            ].map(({k,icon,label})=>(
+              <button key={k} className={`bottom-nav-btn${tab===k?" active":""}`} onClick={()=>setTab(k)}
+                style={{color:tab===k?c:T.sub}}>
+                <span style={{fontSize:20,display:"block",transition:"transform .2s",transform:tab===k?"scale(1.15)":"scale(1)"}}>{icon}</span>
+                <span style={{fontSize:9,fontWeight:tab===k?800:500,letterSpacing:.3}}>{label}</span>
+                {tab===k&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:24,height:2,background:c,borderRadius:1}}/>}
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
