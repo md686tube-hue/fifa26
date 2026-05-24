@@ -1630,7 +1630,7 @@ export default function App() {
           .ko-grid{grid-template-columns:1fr!important;}
           table{font-size:11px!important;}
           th,td{padding:6px 4px!important;}
-          .main-content{padding-bottom:70px!important;}
+          .main-content{padding-bottom:90px!important;}
           .top-tabs{display:none!important;}
         }
         @media(min-width:601px){
@@ -1713,7 +1713,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="main-content" style={{maxWidth:1060,margin:"0 auto",padding:"18px 14px"}}>
+        <div className="main-content" style={{maxWidth:1060,margin:"0 auto",padding:"18px 14px",paddingBottom:"80px"}}>
 
           {/* ═══ FIXTURES ═══ */}
           {tab==="fixtures" && (
@@ -2078,6 +2078,7 @@ export default function App() {
 
           {/* ═══ BRACKET ═══ */}
           {tab==="bracket" && (()=>{
+            try {
             // Build qualified teams from standings
             // Winner = rank 1, Runner-up = rank 2 of each group
             const getQualified = (grp, rank) => {
@@ -2233,6 +2234,10 @@ export default function App() {
                 </div>
               </div>
             );
+            } catch(e) {
+              console.error("Bracket render error:", e);
+              return <div style={{padding:20,color:"#ef4444",fontSize:13}}>Bracket লোড করতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।</div>;
+            }
           })()}
 
           {/* ═══ STADIUMS ═══ */}
