@@ -1287,7 +1287,8 @@ export default function App() {
   useEffect(() => {
     function tick() {
       const now = new Date();
-      const bd = new Date(now.getTime() + (6 * 3600000) - (now.getTimezoneOffset() * 60000));
+      const bdMs = now.getTime() + (6 * 3600000); // UTC + 6 hours = Bangladesh
+      const bd = new Date(bdMs);
       const h = bd.getUTCHours(), m = bd.getUTCMinutes(), s = bd.getUTCSeconds();
       const h12 = h % 12 === 0 ? 12 : h % 12;
       const ap = h < 12 ? "AM" : "PM";
