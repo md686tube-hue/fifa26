@@ -1363,6 +1363,10 @@ export default function App() {
   const [h2hData, setH2hData] = useState({});
   // Feature: Bracket interactive
   const [bracketSelected, setBracketSelected] = useState(null);
+  // Feature: Top Scorers
+  const [scorers, setScorers] = useState([]);
+  const [scorersLoading, setScorersLoading] = useState(false);
+  const [scorersFetched, setScorersFetched] = useState(false);
 
   // Live BD clock
   useEffect(() => {
@@ -1480,6 +1484,39 @@ export default function App() {
     }
   }, [h2hData]);
 
+  // Top Scorers - fetch via Anthropic API with web search
+  const fetchScorers = useCallback(async () => {
+    if (scorersLoading) return;
+    setScorersLoading(true);
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          system: `You are a FIFA World Cup 2026 stats tracker. Search for the current top scorers and return ONLY valid JSON. No markdown, no explanation. Return format: {"scorers": [{"rank": 1, "name": "Player Name", "team": "Country", "goals": 3, "assists": 1, "matches": 3}, ...], "updated": "date string"}. Include top 20 scorers minimum. If the tournament hasn't started or no goals yet, return {"scorers": [], "updated": "not started"}`,
+          messages: [{ role: "user", content: "Search for FIFA World Cup 2026 top goal scorers list right now. Return JSON only." }]
+        })
+      });
+      const data = await response.json();
+      const text = data.content?.map(i => i.type === "text" ? i.text : "").filter(Boolean).join("") || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      try {
+        const parsed = JSON.parse(clean);
+        if (parsed.scorers && Array.isArray(parsed.scorers)) {
+          setScorers(parsed.scorers);
+          setScorersFetched(true);
+        }
+      } catch { setScorersFetched(true); }
+    } catch (err) {
+      console.error("Scorers fetch error:", err);
+      setScorersFetched(true);
+    }
+    setScorersLoading(false);
+  }, [scorersLoading]);
+
   // standings calc
   function calcStandings(g) {
     const teams = GROUPS[g];
@@ -1548,6 +1585,7 @@ export default function App() {
     {k:"fixtures",l:"📅 Fixtures"},
     {k:"standings",l:"📊 Standings"},
     {k:"bracket",l:"🗂️ Bracket"},
+    {k:"scorers",l:"⚽ Scorers"},
     {k:"stadiums",l:"🏟️ Stadiums"},
     {k:"squads",l:"👕 Squads"},
   ];
@@ -2240,6 +2278,137 @@ export default function App() {
             }
           })()}
 
+          {/* ═══ SCORERS ═══ */}
+          {tab==="scorers" && (()=>{
+            // Auto-fetch when tab opens
+            if (!scorersFetched && !scorersLoading) fetchScorers();
+            const posColors2 = {FWD:"#ef4444", MID:"#10b981", DEF:"#3b82f6", GK:"#f59e0b"};
+            const medalColor = (r) => r===1?"#fbbf24":r===2?"#9ca3af":r===3?"#b45309":"";
+            return (
+              <div className="fi">
+                {/* Header */}
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"12px 14px",background:T.acBg,borderRadius:12,border:`1px solid ${c}22`,flexWrap:"wrap"}}>
+                  <span style={{fontSize:22}}>⚽</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:18,letterSpacing:2,color:c}}>TOP GOAL SCORERS</div>
+                    <div style={{fontSize:10,color:T.sub}}>FIFA World Cup 2026 · গ্রুপ পর্ব · লাইভ আপডেট</div>
+                  </div>
+                  <button onClick={fetchScorers} disabled={scorersLoading}
+                    style={{padding:"6px 14px",borderRadius:8,border:`1px solid ${c}44`,background:scorersLoading?T.muted:T.acBg,color:scorersLoading?T.sub:c,cursor:scorersLoading?"not-allowed":"pointer",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:6,transition:"all .2s"}}>
+                    <span style={{display:"inline-block",animation:scorersLoading?"pulse 1s infinite":"none"}}>🔄</span>
+                    {scorersLoading?"লোড হচ্ছে...":"রিফ্রেশ"}
+                  </button>
+                </div>
+
+                {/* Loading state */}
+                {scorersLoading && !scorers.length && (
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14,padding:"40px 20px"}}>
+                    <div style={{fontSize:40,animation:"pulse 1s infinite"}}>⚽</div>
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,letterSpacing:2,color:c}}>TOP SCORERS লোড হচ্ছে...</div>
+                    <div style={{fontSize:11,color:T.sub}}>ওয়েব থেকে সর্বশেষ তথ্য আনা হচ্ছে</div>
+                    <div style={{display:"flex",gap:6}}>
+                      {[0,1,2].map(i=>(
+                        <div key={i} style={{width:8,height:8,borderRadius:"50%",background:c,animation:`pulse 1s infinite ${i*0.2}s`}}/>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* No data yet */}
+                {scorersFetched && !scorers.length && !scorersLoading && (
+                  <div style={{textAlign:"center",padding:"40px 20px"}}>
+                    <div style={{fontSize:48,marginBottom:12}}>🏆</div>
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,letterSpacing:2,color:c,marginBottom:8}}>এখনো গোল হয়নি</div>
+                    <div style={{fontSize:12,color:T.sub,marginBottom:16}}>টুর্নামেন্ট শুরু হলে এখানে গোলদাতাদের তালিকা দেখা যাবে।</div>
+                    <div style={{fontSize:11,color:T.dim}}>FIFA World Cup 2026 শুরু: Jun 11, 2026</div>
+                  </div>
+                )}
+
+                {/* Scorers list */}
+                {scorers.length > 0 && (
+                  <div>
+                    {/* Top 3 podium */}
+                    {scorers.length >= 3 && (
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
+                        {[scorers[1], scorers[0], scorers[2]].map((s, podIdx)=>{
+                          const rank = podIdx===0?2:podIdx===1?1:3;
+                          const actual = scorers[rank-1];
+                          const podSize = rank===1?"120px":"100px";
+                          return (
+                            <div key={rank} style={{textAlign:"center",padding:"12px 8px",background:rank===1?`rgba(251,191,36,.1)`:T.card,border:`1px solid ${rank===1?"rgba(251,191,36,.4)":rank===2?"rgba(156,163,175,.3)":"rgba(180,83,9,.3)"}`,borderRadius:12,display:"flex",flexDirection:"column",alignItems:"center",gap:4,boxShadow:T.sh,marginTop:rank===1?0:"20px"}}>
+                              <div style={{fontSize:rank===1?28:22}}>{rank===1?"🥇":rank===2?"🥈":"🥉"}</div>
+                              <div style={{fontSize:rank===1?26:22}}>{FLAGS[actual?.team]||"🏳"}</div>
+                              <div style={{fontWeight:800,fontSize:rank===1?13:11,color:rank===1?"#fbbf24":T.text,lineHeight:1.2,textAlign:"center"}}>{actual?.name}</div>
+                              <div style={{fontSize:10,color:T.sub}}>{actual?.team}</div>
+                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:rank===1?32:24,color:rank===1?"#fbbf24":c,lineHeight:1}}>{actual?.goals}</div>
+                              <div style={{fontSize:9,color:T.sub,letterSpacing:1}}>GOALS</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Full list */}
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c,marginBottom:8}}>সম্পূর্ণ তালিকা</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      {scorers.map((s, idx)=>{
+                        const rank = idx+1;
+                        const isTop3 = rank <= 3;
+                        return (
+                          <div key={idx} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isTop3?`rgba(251,191,36,.05)`:T.card,border:`1px solid ${isTop3?"rgba(251,191,36,.25)":T.border}`,borderRadius:10,boxShadow:T.sh,transition:"all .2s"}}>
+                            {/* Rank */}
+                            <div style={{width:26,height:26,borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:isTop3?`rgba(251,191,36,.15)`:T.acBg,border:`1px solid ${isTop3?"rgba(251,191,36,.3)":T.border}`}}>
+                              {rank<=3
+                                ? <span style={{fontSize:14}}>{rank===1?"🥇":rank===2?"🥈":"🥉"}</span>
+                                : <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,color:T.sub}}>{rank}</span>
+                              }
+                            </div>
+                            {/* Flag */}
+                            <span style={{fontSize:20,flexShrink:0}}>{FLAGS[s.team]||"🏳"}</span>
+                            {/* Name & team */}
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontWeight:700,fontSize:13,color:isTop3?"#fbbf24":T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.name}</div>
+                              <div style={{fontSize:10,color:T.sub}}>{s.team} · {s.matches||"-"} ম্যাচ</div>
+                            </div>
+                            {/* Assists */}
+                            <div style={{textAlign:"center",flexShrink:0}}>
+                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,color:T.sub,lineHeight:1}}>{s.assists||0}</div>
+                              <div style={{fontSize:8,color:T.dim,letterSpacing:.5}}>AST</div>
+                            </div>
+                            {/* Goals */}
+                            <div style={{textAlign:"center",minWidth:42,flexShrink:0}}>
+                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:26,color:isTop3?"#fbbf24":c,lineHeight:1}}>{s.goals}</div>
+                              <div style={{fontSize:8,color:T.sub,letterSpacing:.5}}>GOALS</div>
+                            </div>
+                            {/* Bar */}
+                            <div style={{width:3,height:36,borderRadius:2,background:T.border,flexShrink:0,overflow:"hidden"}}>
+                              <div style={{width:"100%",height:`${Math.min(100,(s.goals/(scorers[0]?.goals||1))*100)}%`,background:isTop3?"#fbbf24":c,borderRadius:2,transition:"height .5s"}}/>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Stats summary */}
+                    <div style={{marginTop:16,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                      {[
+                        {label:"মোট গোল", value: scorers.reduce((a,s)=>a+(+s.goals||0),0), icon:"⚽"},
+                        {label:"সর্বোচ্চ", value: scorers[0]?.goals||0, icon:"🥇"},
+                        {label:"গোলদাতা", value: scorers.length, icon:"👟"},
+                      ].map((stat,i)=>(
+                        <div key={i} style={{padding:"12px 10px",background:T.card,border:`1px solid ${T.border}`,borderRadius:10,textAlign:"center",boxShadow:T.sh}}>
+                          <div style={{fontSize:20,marginBottom:4}}>{stat.icon}</div>
+                          <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:c,lineHeight:1}}>{stat.value}</div>
+                          <div style={{fontSize:9,color:T.sub,letterSpacing:.5}}>{stat.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* ═══ STADIUMS ═══ */}
           {tab==="stadiums" && (
             <div className="fi">
@@ -2377,6 +2546,7 @@ export default function App() {
             {k:"fixtures",icon:"📅",label:"Fixtures"},
             {k:"standings",icon:"📊",label:"Standings"},
             {k:"bracket",icon:"🗂️",label:"Bracket"},
+            {k:"scorers",icon:"⚽",label:"Scorers"},
             {k:"stadiums",icon:"🏟️",label:"Stadiums"},
             {k:"squads",icon:"👕",label:"Squads"},
           ].map(({k,icon,label})=>(
