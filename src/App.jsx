@@ -1420,7 +1420,7 @@ export default function App() {
   const TABS=[
     {k:"fixtures",l:"📅 Fixtures"},
     {k:"standings",l:"📊 Standings"},
-    {k:"knockout",l:"🏆 Knockout"},
+    {k:"bracket",l:"🗂️ Bracket"},
     {k:"stadiums",l:"🏟️ Stadiums"},
     {k:"squads",l:"👕 Squads"},
   ];
@@ -1694,7 +1694,7 @@ export default function App() {
           {/* ═══ STANDINGS ═══ */}
           {tab==="standings" && (
             <div className="fi">
-              <div style={{fontSize:12,color:T.sub,marginBottom:14}}>রেজাল্ট এন্ট্রি করুন → স্ট্যান্ডিং আপডেট হবে।</div>
+              <div style={{fontSize:12,color:T.sub,marginBottom:14}}>ফলাফল auto-update হয় · ম্যাচ শেষ হলে qualified দল স্বয়ংক্রিয় নির্ধারিত হবে</div>
               <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:18}}>
                 {Object.keys(GROUPS).map(g=>(
                   <button key={g} onClick={()=>setStandGrp(g)} style={{padding:"6px 13px",borderRadius:8,border:`1px solid ${standGrp===g?c:T.border}`,background:standGrp===g?T.acBg:T.card,color:standGrp===g?c:T.sub,cursor:"pointer",fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,transition:"all .2s",boxShadow:T.sh}}>
@@ -1706,10 +1706,26 @@ export default function App() {
                 const g=standGrp;
                 const rows=calcStandings(g);
                 const fixes=ALL_GROUP_FIXTURES.filter(f=>f.grp===g);
+                // Only show qualified if ALL 6 matches in this group have results
+                const allMatchesDone = fixes.every(f => {
+                  const r = results[f.id];
+                  return r && r.h !== "" && r.a !== "" && !isNaN(+r.h) && !isNaN(+r.a);
+                });
+                const playedCount = fixes.filter(f => { const r=results[f.id]; return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a); }).length;
                 return (
                   <div className="fi">
-                    <div style={{overflowX:"auto",marginBottom:22}}>
-                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:480}}>
+                    {/* Progress bar */}
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"8px 12px",background:T.acBg,borderRadius:8,border:`1px solid ${c}22`}}>
+                      <div style={{fontSize:11,color:T.sub}}>Group {g}:</div>
+                      <div style={{flex:1,height:4,background:T.border,borderRadius:2,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:`${(playedCount/6)*100}%`,background:c,borderRadius:2,transition:"width .5s"}}/>
+                      </div>
+                      <div style={{fontSize:11,fontWeight:700,color:c}}>{playedCount}/6</div>
+                      {autoFetching && <span style={{fontSize:10,color:c,animation:"pulse 1s infinite"}}>⟳</span>}
+                      <button onClick={fetchResults} style={{padding:"3px 8px",borderRadius:5,border:`1px solid ${c}33`,background:"transparent",color:c,cursor:"pointer",fontSize:10,fontWeight:700}}>🔄</button>
+                    </div>
+                    <div style={{overflowX:"auto",marginBottom:12}}>
+                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:400}}>
                         <thead>
                           <tr style={{borderBottom:`1px solid ${T.border}`}}>
                             {["#","দল","MP","W","D","L","GF","GA","GD","PTS"].map(h=>(
@@ -1719,56 +1735,50 @@ export default function App() {
                         </thead>
                         <tbody>
                           {rows.map((s,i)=>(
-                            <tr key={s.team} style={{borderBottom:`1px solid ${T.border}`,background:i<2?T.acBg:i===2?"rgba(251,191,36,.03)":T.card,transition:"background .2s"}}>
-                              <td style={{padding:"9px 8px",textAlign:"center",fontWeight:700,fontSize:12,color:i===0?"#fbbf24":i<2?c:T.sub}}>
-                                {i===0?"🥇":i===1?"🥈":i===2?"🥉":4}
-                              </td>
+                            <tr key={s.team} style={{borderBottom:`1px solid ${T.border}`,background:allMatchesDone&&i<2?T.acBg:T.card,transition:"background .2s"}}>
+                              <td style={{padding:"9px 8px",textAlign:"center",fontWeight:700,fontSize:12,color:allMatchesDone&&i===0?"#fbbf24":allMatchesDone&&i===1?c:T.sub}}>{i+1}</td>
                               <td style={{padding:"9px 8px"}}>
-                                <div style={{display:"flex",alignItems:"center",gap:7}}>
+                                <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
                                   <span style={{fontSize:17}}>{FLAGS[s.team]||"🏳"}</span>
                                   <span style={{fontWeight:600,fontSize:13,color:T.text}}>{s.team}</span>
-                                  {i<2&&<span className="pill" style={{background:T.acBg,color:c}}>Q</span>}
+                                  {allMatchesDone && i<2 && <span className="pill" style={{background:T.acBg,color:c}}>✓ Q</span>}
+                                  {!allMatchesDone && s.mp>0 && i<2 && <span className="pill" style={{background:"rgba(251,191,36,.1)",color:"#fbbf24"}}>~Q</span>}
                                 </div>
                               </td>
                               {[s.mp,s.w,s.d,s.l,s.gf,s.ga,s.gd>0?"+"+s.gd:s.gd].map((v,vi)=>(
                                 <td key={vi} style={{padding:"9px 8px",textAlign:"center",color:vi===6?(s.gd>0?c:s.gd<0?"#ef4444":T.sub):T.text,fontWeight:vi===6?700:400}}>{v}</td>
                               ))}
-                              <td style={{padding:"9px 8px",textAlign:"center",fontFamily:"'Bebas Neue',cursive",fontSize:20,color:i<2?c:T.text}}>{s.pts}</td>
+                              <td style={{padding:"9px 8px",textAlign:"center",fontFamily:"'Bebas Neue',cursive",fontSize:20,color:allMatchesDone&&i<2?c:T.text}}>{s.pts}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
-
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:6}}>
-                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:15,letterSpacing:2,color:c}}>GROUP {g} · রেজাল্ট</div>
-                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                        {autoFetching && <span style={{fontSize:10,color:c,animation:"pulse 1s infinite"}}>⟳ আপডেট হচ্ছে...</span>}
-                        <button onClick={fetchResults} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${c}33`,background:T.acBg,color:c,cursor:"pointer",fontSize:10,fontWeight:700}}>
-                          🔄 রিফ্রেশ
-                        </button>
-                      </div>
+                    <div style={{fontSize:10,color:T.sub,marginBottom:16,padding:"6px 10px",background:T.muted,borderRadius:6}}>
+                      {allMatchesDone ? `✓ Group ${g} সম্পন্ন · শীর্ষ ২ দল Round of 32-এ qualified` : `~Q = সম্ভাব্য (চলমান) · ✓Q = নিশ্চিত (সব ম্যাচ শেষে)`}
                     </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c,marginBottom:8}}>GROUP {g} · ম্যাচ ফলাফল</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
                       {fixes.map(fix=>{
                         const r=results[fix.id]||{h:"",a:""};
                         const hasScore = r.h !== "" && r.a !== "" && !isNaN(+r.h) && !isNaN(+r.a);
                         const matchOver = matchUTC(fix.dateStr, fix.etTime) + 105*60000 < Date.now();
+                        const matchStarted = matchUTC(fix.dateStr, fix.etTime) < Date.now();
                         return (
-                          <div key={fix.id} style={{display:"flex",alignItems:"center",gap:7,padding:"9px 12px",background:T.card,border:`1px solid ${hasScore?c+"44":T.border}`,borderRadius:10,flexWrap:"wrap",boxShadow:T.sh}}>
-                            <span style={{fontSize:16}}>{FLAGS[fix.home]||"🏳"}</span>
-                            <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:60,color:hasScore&&+r.h>+r.a?c:T.text}}>{fix.home}</span>
-                            <input type="number" min="0" max="20" value={r.h} onChange={e=>setResult(fix.id,e.target.value,r.a)} placeholder="-"
-                              style={{width:38,padding:"4px",textAlign:"center",background:hasScore?T.acBg:T.inp,border:`1px solid ${hasScore?c+"55":T.inpB}`,borderRadius:6,color:hasScore?c:T.text,fontFamily:"'Bebas Neue',cursive",fontSize:17}}/>
-                            <span style={{color:T.sub,fontSize:11}}>–</span>
-                            <input type="number" min="0" max="20" value={r.a} onChange={e=>setResult(fix.id,r.h,e.target.value)} placeholder="-"
-                              style={{width:38,padding:"4px",textAlign:"center",background:hasScore?T.acBg:T.inp,border:`1px solid ${hasScore?c+"55":T.inpB}`,borderRadius:6,color:hasScore?c:T.text,fontFamily:"'Bebas Neue',cursive",fontSize:17}}/>
-                            <span style={{fontSize:16}}>{FLAGS[fix.away]||"🏳"}</span>
-                            <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:60,textAlign:"right",color:hasScore&&+r.a>+r.h?c:T.text}}>{fix.away}</span>
-                            <div style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                              <span style={{fontSize:10,color:T.sub}}>{fix.dateStr} · {bdTime(fix.etTime)}</span>
-                              {hasScore && <span style={{fontSize:9,color:c}}>✓ {matchOver?"FT":"LIVE"}</span>}
-                              {!hasScore && matchOver && <span style={{fontSize:9,color:"#fbbf24"}}>ফলাফল আসেনি</span>}
+                          <div key={fix.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:T.card,border:`1px solid ${hasScore?c+"44":T.border}`,borderRadius:9,flexWrap:"wrap",boxShadow:T.sh}}>
+                            <span style={{fontSize:15}}>{FLAGS[fix.home]||"🏳"}</span>
+                            <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:50,color:hasScore&&+r.h>+r.a?c:T.text}}>{fix.home}</span>
+                            <div style={{padding:"4px 12px",background:hasScore?T.acBg:T.muted,border:`1px solid ${hasScore?c+"44":T.border}`,borderRadius:6,textAlign:"center",minWidth:70}}>
+                              {hasScore
+                                ? <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:18,color:c}}>{r.h} – {r.a}</span>
+                                : <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:matchStarted?"#ef4444":T.sub}}>{matchStarted?"LIVE":"vs"}</span>
+                              }
+                            </div>
+                            <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:50,textAlign:"right",color:hasScore&&+r.a>+r.h?c:T.text}}>{fix.away}</span>
+                            <span style={{fontSize:15}}>{FLAGS[fix.away]||"🏳"}</span>
+                            <div style={{width:"100%",display:"flex",justifyContent:"space-between"}}>
+                              <span style={{fontSize:9,color:T.sub}}>{fix.dateStr} · {bdTime(fix.etTime)} BD</span>
+                              <span style={{fontSize:9,color:hasScore?c:matchStarted?"#ef4444":T.dim}}>{hasScore?(matchOver?"FT":"LIVE"):matchStarted?"চলছে":"আসছে"}</span>
                             </div>
                           </div>
                         );
@@ -1780,58 +1790,128 @@ export default function App() {
             </div>
           )}
 
-          {/* ═══ KNOCKOUT ═══ */}
-          {tab==="knockout" && (
-            <div className="fi">
-              <div style={{fontSize:12,color:T.sub,marginBottom:14}}>গ্রুপ পর্বের পর ৩২ দল knockout-এ লড়বে। সময় BD (GMT+6)।</div>
-              <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:18}}>
-                {KNOCKOUT_ROUNDS.map((r,i)=>(
-                  <button key={r.short} onClick={()=>setKoRound(i)}
-                    style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${koRound===i?(r.short==="FIN"?"#fbbf24":c):T.border}`,background:koRound===i?(r.short==="FIN"?"rgba(251,191,36,.12)":T.acBg):T.card,color:koRound===i?(r.short==="FIN"?"#fbbf24":c):T.sub,cursor:"pointer",fontSize:11,fontWeight:700,transition:"all .2s",boxShadow:T.sh}}>
-                    {r.round} <span style={{opacity:.6,fontSize:10}}>· {r.dates}</span>
-                  </button>
+          {/* ═══ BRACKET ═══ */}
+          {tab==="bracket" && (()=>{
+            // Build qualified teams from standings
+            // Winner = rank 1, Runner-up = rank 2 of each group
+            const getQualified = (grp, rank) => {
+              const rows = calcStandings(grp);
+              const fixes = ALL_GROUP_FIXTURES.filter(f=>f.grp===grp);
+              const played = fixes.filter(f=>{const r=results[f.id];return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);}).length;
+              if(played===0) return null;
+              return rows[rank] ? {team:rows[rank].team, flag:FLAGS[rows[rank].team]||"🏳", confirmed:played===6} : null;
+            };
+            // Slot labels matching FIFA WC26 R32 structure
+            // W=Winner, R=Runner-up, B=Best 3rd (TBD)
+            const slot = (grp, rank) => {
+              const q = getQualified(grp, rank);
+              if(!q) return {team: rank===0?`W Group ${grp}`:`2nd Group ${grp}`, flag:"❓", confirmed:false, tbd:true};
+              return q;
+            };
+            // R32 pairings (simplified FIFA WC26 bracket)
+            const r32 = [
+              {m:1, a:slot("A",1), b:slot("B",1), date:"Jun 28", bd:"রাত ১টা+1"},
+              {m:2, a:slot("C",0), b:slot("F",1), date:"Jun 29", bd:"রাত ১১টা"},
+              {m:3, a:slot("E",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jun 29", bd:"ভোর ২:৩০+1"},
+              {m:4, a:slot("F",0), b:slot("C",1), date:"Jun 29", bd:"সকাল ৭টা+1"},
+              {m:5, a:slot("E",1), b:slot("I",1), date:"Jun 30", bd:"রাত ১১টা"},
+              {m:6, a:slot("I",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jun 30", bd:"ভোর ৩টা+1"},
+              {m:7, a:slot("A",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jun 30", bd:"সকাল ৭টা+1"},
+              {m:8, a:slot("L",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jul 1", bd:"রাত ১০টা"},
+              {m:9, a:slot("G",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jul 1", bd:"ভোর ২টা+1"},
+              {m:10,a:slot("D",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jul 1", bd:"ভোর ৬টা+1"},
+              {m:11,a:slot("H",0), b:slot("J",1), date:"Jul 2", bd:"রাত ১টা+1"},
+              {m:12,a:slot("K",1), b:slot("L",1), date:"Jul 2", bd:"ভোর ৫টা+1"},
+              {m:13,a:slot("B",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jul 2", bd:"সকাল ৯টা+1"},
+              {m:14,a:slot("D",1), b:slot("G",1), date:"Jul 3", bd:"রাত ১২টা"},
+              {m:15,a:slot("J",0), b:slot("H",1), date:"Jul 3", bd:"ভোর ৪টা+1"},
+              {m:16,a:slot("K",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jul 3", bd:"সকাল ৭:৩০+1"},
+            ];
+            const r16 = [
+              {m:1,a:{team:"W R32-1",flag:"❓",tbd:true},b:{team:"W R32-2",flag:"❓",tbd:true},date:"Jul 4",bd:"রাত ১১টা"},
+              {m:2,a:{team:"W R32-3",flag:"❓",tbd:true},b:{team:"W R32-4",flag:"❓",tbd:true},date:"Jul 4",bd:"ভোর ৩টা+1"},
+              {m:3,a:{team:"W R32-5",flag:"❓",tbd:true},b:{team:"W R32-6",flag:"❓",tbd:true},date:"Jul 5",bd:"ভোর ২টা+1"},
+              {m:4,a:{team:"W R32-7",flag:"❓",tbd:true},b:{team:"W R32-8",flag:"❓",tbd:true},date:"Jul 5",bd:"ভোর ৬টা+1"},
+              {m:5,a:{team:"W R32-9",flag:"❓",tbd:true},b:{team:"W R32-10",flag:"❓",tbd:true},date:"Jul 6",bd:"রাত ১টা+1"},
+              {m:6,a:{team:"W R32-11",flag:"❓",tbd:true},b:{team:"W R32-12",flag:"❓",tbd:true},date:"Jul 6",bd:"ভোর ৬টা+1"},
+              {m:7,a:{team:"W R32-13",flag:"❓",tbd:true},b:{team:"W R32-14",flag:"❓",tbd:true},date:"Jul 7",bd:"রাত ১০টা"},
+              {m:8,a:{team:"W R32-15",flag:"❓",tbd:true},b:{team:"W R32-16",flag:"❓",tbd:true},date:"Jul 7",bd:"ভোর ২টা+1"},
+            ];
+            const qf = [
+              {m:1,a:{team:"W R16-1",flag:"❓",tbd:true},b:{team:"W R16-2",flag:"❓",tbd:true},date:"Jul 9",bd:"ভোর ২টা+1"},
+              {m:2,a:{team:"W R16-3",flag:"❓",tbd:true},b:{team:"W R16-4",flag:"❓",tbd:true},date:"Jul 10",bd:"রাত ১টা+1"},
+              {m:3,a:{team:"W R16-5",flag:"❓",tbd:true},b:{team:"W R16-6",flag:"❓",tbd:true},date:"Jul 11",bd:"ভোর ৩টা+1"},
+              {m:4,a:{team:"W R16-7",flag:"❓",tbd:true},b:{team:"W R16-8",flag:"❓",tbd:true},date:"Jul 11",bd:"সকাল ৭টা+1"},
+            ];
+            const sf = [
+              {m:1,a:{team:"W QF-1",flag:"❓",tbd:true},b:{team:"W QF-2",flag:"❓",tbd:true},date:"Jul 14",bd:"রাত ১টা+1"},
+              {m:2,a:{team:"W QF-3",flag:"❓",tbd:true},b:{team:"W QF-4",flag:"❓",tbd:true},date:"Jul 15",bd:"রাত ১টা+1"},
+            ];
+            const fin = [{m:1,a:{team:"W SF-1",flag:"❓",tbd:true},b:{team:"W SF-2",flag:"❓",tbd:true},date:"Jul 19",bd:"রাত ১টা+1"}];
+            const third = [{m:1,a:{team:"L SF-1",flag:"❓",tbd:true},b:{team:"L SF-2",flag:"❓",tbd:true},date:"Jul 18",bd:"ভোর ৩টা+1"}];
+
+            const MatchCard = ({match, color="#10b981", isFinal=false}) => (
+              <div style={{background:T.card,border:`1px solid ${isFinal?"rgba(251,191,36,.3)":color+"33"}`,borderRadius:10,padding:"8px 10px",minWidth:0,transition:"all .2s",boxShadow:T.sh}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                  <span style={{fontSize:9,fontFamily:"'Bebas Neue',cursive",color:T.sub,letterSpacing:1}}>M{match.m}</span>
+                  <span style={{fontSize:9,color:T.sub,marginLeft:"auto"}}>{match.date} · {match.bd}</span>
+                </div>
+                {[match.a, match.b].map((team,ti)=>(
+                  <div key={ti} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 6px",background:team.tbd?T.muted:isFinal?"rgba(251,191,36,.05)":color+"0d",borderRadius:6,marginBottom:ti===0?4:0,border:`1px solid ${team.tbd?T.border:team.confirmed?color+"44":"rgba(251,191,36,.2)"}`}}>
+                    <span style={{fontSize:14}}>{team.flag}</span>
+                    <span style={{fontSize:11,fontWeight:team.tbd?400:700,color:team.tbd?T.dim:isFinal?"#fbbf24":team.confirmed?color:T.text,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {team.team}
+                    </span>
+                    {team.confirmed && <span style={{fontSize:8,color:color}}>✓</span>}
+                  </div>
                 ))}
               </div>
-              {(()=>{
-                const r=KNOCKOUT_ROUNDS[koRound];
-                const fin=r.short==="FIN";
-                const rc=fin?"#fbbf24":c;
-                return (
-                  <div className="fi">
-                    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
-                      <div style={{width:40,height:40,background:fin?"linear-gradient(135deg,#fbbf24,#d97706)":`linear-gradient(135deg,${c},${dark?"#065f46":"#047857"})`,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>
-                        {fin?"🏆":r.short==="3PL"?"🥉":"⚔️"}
-                      </div>
-                      <div>
-                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:24,color:rc,letterSpacing:2}}>{r.round}</div>
-                        <div style={{fontSize:11,color:T.sub}}>{r.dates} · {r.matches.length} ম্যাচ</div>
-                      </div>
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {r.matches.map((m,i)=>(
-                        <div key={m.id} style={{background:T.card,border:`1px solid ${fin?"rgba(251,191,36,.2)":T.border}`,borderRadius:12,padding:"11px 13px",transition:"all .2s",boxShadow:T.sh}}>
-                          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:7,flexWrap:"wrap"}}>
-                            <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:11,color:T.sub}}>M{i+1}</span>
-                            <span style={{fontSize:11,fontWeight:700,color:T.text}}>{m.date} 2026</span>
-                            <span style={{fontSize:10,color:T.sub,marginLeft:"auto"}}>📍 {m.venue.split(",")[0]}</span>
-                          </div>
-                          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                            <span style={{flex:1,textAlign:"right",fontSize:13,fontWeight:700,color:fin?"#fbbf24":T.text}}>{m.home}</span>
-                            <div style={{padding:"5px 9px",background:fin?"rgba(251,191,36,.07)":T.acBg,border:`1px solid ${fin?"rgba(251,191,36,.2)":rc+"33"}`,borderRadius:7,textAlign:"center",minWidth:82,flexShrink:0}}>
-                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:9,color:T.sub}}>VS</div>
-                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:rc}}>{bdTime(m.etTime)}</div>
-                              <div style={{fontSize:8,color:T.dim}}>BD সময়</div>
-                            </div>
-                            <span style={{flex:1,fontSize:13,fontWeight:700,color:fin?"#fbbf24":T.text}}>{m.away}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+            );
+
+            const RoundSection = ({title, date, icon, matches, color, isFinal=false}) => (
+              <div style={{marginBottom:20}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,padding:"8px 12px",background:isFinal?"rgba(251,191,36,.1)":T.acBg,borderRadius:9,border:`1px solid ${isFinal?"rgba(251,191,36,.3)":color+"33"}`}}>
+                  <span style={{fontSize:18}}>{icon}</span>
+                  <div>
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,letterSpacing:2,color:isFinal?"#fbbf24":color}}>{title}</div>
+                    <div style={{fontSize:10,color:T.sub}}>{date} · {matches.length} ম্যাচ</div>
                   </div>
-                );
-              })()}
-            </div>
-          )}
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:8}}>
+                  {matches.map((m,i)=><MatchCard key={i} match={m} color={isFinal?"#fbbf24":color} isFinal={isFinal}/>)}
+                </div>
+              </div>
+            );
+
+            const confirmedCount = Object.keys(GROUPS).filter(g=>{
+              const fixes=ALL_GROUP_FIXTURES.filter(f=>f.grp===g);
+              return fixes.every(f=>{const r=results[f.id];return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);});
+            }).length;
+
+            return (
+              <div className="fi">
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,padding:"10px 14px",background:T.acBg,borderRadius:10,border:`1px solid ${c}22`,flexWrap:"wrap"}}>
+                  <span style={{fontSize:14}}>🗂️</span>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:T.text}}>Tournament Bracket — FIFA World Cup 2026</div>
+                    <div style={{fontSize:10,color:T.sub}}>গ্রুপ পর্বের ফলাফল অনুযায়ী auto-update হয় · {confirmedCount}/12 গ্রুপ সম্পন্ন</div>
+                  </div>
+                  <div style={{marginLeft:"auto",display:"flex",gap:8,fontSize:10,color:T.sub,flexWrap:"wrap"}}>
+                    <span>✓ = নিশ্চিত দল</span>
+                    <span>❓ = নির্ধারিত হবে</span>
+                  </div>
+                </div>
+                <RoundSection title="ROUND OF 32" date="Jun 28 – Jul 3" icon="⚽" matches={r32} color={c}/>
+                <RoundSection title="ROUND OF 16" date="Jul 4 – 7" icon="⚔️" matches={r16} color="#3b82f6"/>
+                <RoundSection title="QUARTER-FINALS" date="Jul 9 – 11" icon="🔥" matches={qf} color="#8b5cf6"/>
+                <RoundSection title="SEMI-FINALS" date="Jul 14 – 15" icon="🌟" matches={sf} color="#f59e0b"/>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
+                  <RoundSection title="3RD PLACE" date="Jul 18" icon="🥉" matches={third} color="#6b7280"/>
+                  <RoundSection title="FINAL 🏆" date="Jul 19" icon="🏆" matches={fin} color="#fbbf24" isFinal={true}/>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ═══ STADIUMS ═══ */}
           {tab==="stadiums" && (
