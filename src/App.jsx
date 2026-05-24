@@ -1289,8 +1289,6 @@ export default function App() {
   const [h2hLoading, setH2hLoading] = useState(false);
   // Feature: Bracket interactive
   const [bracketSelected, setBracketSelected] = useState(null);
-  // Feature: Ticker
-  const [tickerOffset, setTickerOffset] = useState(0);
 
   // Live BD clock
   useEffect(() => {
@@ -1378,11 +1376,7 @@ export default function App() {
     try { favTeam ? localStorage.setItem("wc26_fav",favTeam) : localStorage.removeItem("wc26_fav"); } catch {}
   }, [favTeam]);
 
-  // Ticker scroll
-  useEffect(() => {
-    const id = setInterval(() => setTickerOffset(o => o + 1), 40);
-    return () => clearInterval(id);
-  }, []);
+  // (ticker uses pure CSS animation)
 
   function setResult(id, h, a) { setResults(p => ({...p,[id]:{h,a}})); }
   function toggleFav(team) { setFavTeam(p => p===team ? null : team); }
@@ -1392,27 +1386,89 @@ export default function App() {
     setTimeout(() => { setDark(d => !d); setDarkAnimating(false); }, 180);
   }
 
-  // Head-to-Head AI fetch
+  // Head-to-Head AI fetch - properly handles web_search tool_use response
   const fetchH2H = useCallback(async (fix) => {
     const key = fix.id;
     if (h2hData[key]) { setH2hFixId(key); return; }
     setH2hLoading(true);
     setH2hFixId(key);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:1000,
-          tools:[{type:"web_search_20250305",name:"web_search"}],
-          system:`You are a football history expert. Return ONLY valid JSON, no markdown, no explanation. Format: {"summary":"2 sentence Bengali summary of head-to-head history","meetings":N,"home_wins":N,"draws":N,"away_wins":N,"last":"Last meeting result in 1 line","notable":"1 notable fact in Bengali"}`,
-          messages:[{role:"user",content:`Search and return head-to-head history between ${fix.home} and ${fix.away} in international football including World Cups. Return JSON only.`}]
-        })
-      });
-      const data = await res.json();
-      const text = data.content?.map(i=>i.type==="text"?i.text:"").join("").replace(/```json|```/g,"").trim();
-      try { setH2hData(p=>({...p,[key]:JSON.parse(text)})); } catch { setH2hData(p=>({...p,[key]:{summary:"তথ্য পাওয়া যায়নি।",meetings:"?",home_wins:"?",draws:"?",away_wins:"?",last:"N/A",notable:"N/A"}})); }
-    } catch { setH2hData(p=>({...p,[key]:{summary:"তথ্য লোড হয়নি।",meetings:"?",home_wins:"?",draws:"?",away_wins:"?",last:"N/A",notable:"N/A"}})); }
+      // Multi-turn: first call triggers web_search, second call gets the final text
+      const messages = [
+        { role:"user", content:`Search for complete head-to-head football history between ${fix.home} and ${fix.away} national teams. Find total meetings, wins for each side, draws, and recent results. Also search "${fix.home} vs ${fix.away} world cup history".` }
+      ];
+
+      let finalText = "";
+      // Agentic loop: keep sending until no more tool_use
+      for (let turn = 0; turn < 5; turn++) {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            model:"claude-sonnet-4-20250514",
+            max_tokens:1500,
+            tools:[{type:"web_search_20250305",name:"web_search"}],
+            system:`You are a football statistics expert. After searching, return ONLY a valid JSON object. No markdown fences, no explanation text before or after. Exact format:
+{"summary":"2-3 sentence Bengali summary of the head-to-head history","meetings":NUMBER,"home_wins":NUMBER,"draws":NUMBER,"away_wins":NUMBER,"home_team":"${fix.home}","away_team":"${fix.away}","last_match":"e.g. Brazil 3-0 Argentina (2023 World Cup Qualifier)","last_year":YEAR,"notable_fact":"1 interesting fact about this rivalry in Bengali","wc_meetings":NUMBER_OF_WORLD_CUP_MEETINGS}
+Use real numbers from search results. If a stat is unknown use 0.`,
+            messages
+          })
+        });
+        const data = await res.json();
+        if (!data.content) break;
+
+        // Collect assistant message
+        const assistantMsg = { role:"assistant", content: data.content };
+        messages.push(assistantMsg);
+
+        // Check for tool_use blocks
+        const toolUseBlocks = data.content.filter(b => b.type === "tool_use");
+        const textBlocks = data.content.filter(b => b.type === "text");
+
+        if (textBlocks.length > 0) {
+          finalText = textBlocks.map(b => b.text).join("");
+        }
+
+        if (toolUseBlocks.length === 0) break; // done
+
+        // Build tool_result for each tool_use
+        const toolResults = toolUseBlocks.map(tu => ({
+          type:"tool_result",
+          tool_use_id: tu.id,
+          content: tu.input ? JSON.stringify(tu.input) : "search completed"
+        }));
+        messages.push({ role:"user", content: toolResults });
+      }
+
+      // Extract JSON from finalText
+      const jsonMatch = finalText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // Validate it has useful data
+          if (parsed.summary || parsed.meetings !== undefined) {
+            setH2hData(p=>({...p,[key]:parsed}));
+            setH2hLoading(false);
+            return;
+          }
+        } catch {}
+      }
+      // Fallback
+      setH2hData(p=>({...p,[key]:{
+        summary:`${fix.home} ও ${fix.away}-এর মধ্যে ইতিহাস লোড করা সম্ভব হয়নি।`,
+        meetings:0,home_wins:0,draws:0,away_wins:0,
+        home_team:fix.home,away_team:fix.away,
+        last_match:"N/A",last_year:null,notable_fact:"তথ্য পাওয়া যায়নি।",wc_meetings:0
+      }}));
+    } catch(err) {
+      console.error("H2H error:", err);
+      setH2hData(p=>({...p,[key]:{
+        summary:"নেটওয়ার্ক সমস্যার কারণে তথ্য আনা যায়নি।",
+        meetings:0,home_wins:0,draws:0,away_wins:0,
+        home_team:fix.home,away_team:fix.away,
+        last_match:"N/A",last_year:null,notable_fact:"পুনরায় চেষ্টা করুন।",wc_meetings:0
+      }}));
+    }
     setH2hLoading(false);
   }, [h2hData]);
 
@@ -1548,7 +1604,7 @@ export default function App() {
         .theme-btn:hover::after{opacity:1;}
         .theme-animating{animation:themeFade .36s ease;}
         .ticker-wrap{overflow:hidden;white-space:nowrap;width:100%;}
-        .ticker-inner{display:inline-flex;gap:0;animation:tickerScroll 60s linear infinite;}
+        .ticker-inner{display:inline-flex;gap:0;animation:tickerScroll 120s linear infinite;}
         .ticker-inner:hover{animation-play-state:paused;}
         .q-badge-green{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);}
         .q-badge-yellow{background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
@@ -1830,22 +1886,61 @@ export default function App() {
                               {h2hFixId===fix.id && (
                                 <div style={{marginTop:8,padding:"12px 14px",background:T.acBg,border:`1px solid ${c}33`,borderRadius:10,animation:"fadeIn .2s ease"}}>
                                   {(h2hLoading&&!h2hData[fix.id]) ? (
-                                    <div style={{textAlign:"center",padding:"10px 0",color:T.sub,fontSize:12,animation:"pulse 1s infinite"}}>⏳ AI দিয়ে তথ্য খুঁজছে...</div>
+                                    <div style={{textAlign:"center",padding:"14px 0",color:T.sub,fontSize:12}}>
+                                      <div style={{fontSize:20,marginBottom:6,animation:"pulse 1s infinite"}}>🔍</div>
+                                      <div style={{fontWeight:600,color:T.text,marginBottom:3}}>AI দিয়ে তথ্য খুঁজছে...</div>
+                                      <div style={{fontSize:10,color:T.dim}}>{fix.home} vs {fix.away} · ইন্টারনেটে সার্চ চলছে</div>
+                                    </div>
                                   ) : h2hData[fix.id] ? (()=>{
                                     const d=h2hData[fix.id];
+                                    const hTeam = d.home_team||fix.home;
+                                    const aTeam = d.away_team||fix.away;
                                     return (
                                       <>
-                                        <div style={{fontSize:12,color:T.text,marginBottom:10,lineHeight:1.6}}>{d.summary}</div>
-                                        <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
-                                          {[["🤝 মিটিং",d.meetings],["🏠 "+fix.home,d.home_wins],["⚖️ ড্র",d.draws],["✈️ "+fix.away,d.away_wins]].map(([l,v])=>(
-                                            <div key={l} style={{flex:1,minWidth:60,textAlign:"center",padding:"6px 8px",background:T.card,border:`1px solid ${T.border}`,borderRadius:8}}>
-                                              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:18,color:c}}>{v}</div>
-                                              <div style={{fontSize:9,color:T.sub,marginTop:1}}>{l}</div>
-                                            </div>
-                                          ))}
+                                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+                                          <span style={{fontSize:14}}>⚔️</span>
+                                          <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c}}>HEAD TO HEAD</span>
+                                          {d.wc_meetings>0&&<span className="pill" style={{background:"rgba(251,191,36,.15)",color:"#fbbf24"}}>🏆 WC: {d.wc_meetings}বার</span>}
                                         </div>
-                                        {d.last&&d.last!=="N/A"&&<div style={{fontSize:11,color:T.sub,marginBottom:4}}>🕐 শেষ মুখোমুখি: <span style={{color:T.text,fontWeight:600}}>{d.last}</span></div>}
-                                        {d.notable&&d.notable!=="N/A"&&<div style={{fontSize:11,color:T.sub}}>💡 {d.notable}</div>}
+                                        {/* Stats boxes */}
+                                        <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:6,marginBottom:10,alignItems:"center"}}>
+                                          <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
+                                            <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[hTeam]||"🏳"} {hTeam}</div>
+                                            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.home_wins}</div>
+                                            <div style={{fontSize:9,color:T.sub}}>জয়</div>
+                                          </div>
+                                          <div style={{textAlign:"center"}}>
+                                            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:T.sub,lineHeight:1}}>{d.draws}</div>
+                                            <div style={{fontSize:9,color:T.dim}}>ড্র</div>
+                                            <div style={{fontSize:9,color:T.dim,marginTop:2}}>{d.meetings} মিটিং</div>
+                                          </div>
+                                          <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
+                                            <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[aTeam]||"🏳"} {aTeam}</div>
+                                            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.away_wins}</div>
+                                            <div style={{fontSize:9,color:T.sub}}>জয়</div>
+                                          </div>
+                                        </div>
+                                        {/* Win bar */}
+                                        {d.meetings>0&&<div style={{display:"flex",height:4,borderRadius:2,overflow:"hidden",marginBottom:10,gap:1}}>
+                                          <div style={{flex:d.home_wins||0,background:c,minWidth:d.home_wins>0?4:0}}/>
+                                          <div style={{flex:d.draws||0,background:"#6b7280",minWidth:d.draws>0?4:0}}/>
+                                          <div style={{flex:d.away_wins||0,background:"#f59e0b",minWidth:d.away_wins>0?4:0}}/>
+                                        </div>}
+                                        {/* Summary */}
+                                        <div style={{fontSize:11,color:T.text,lineHeight:1.65,marginBottom:8,padding:"8px 10px",background:T.card,borderRadius:8,border:`1px solid ${T.border}`}}>{d.summary}</div>
+                                        {/* Last match */}
+                                        {d.last_match&&d.last_match!=="N/A"&&(
+                                          <div style={{fontSize:11,color:T.sub,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+                                            <span style={{flexShrink:0,color:c}}>🕐</span>
+                                            <span><span style={{fontWeight:700,color:T.text}}>শেষ ম্যাচ{d.last_year?` (${d.last_year})`:""}: </span>{d.last_match}</span>
+                                          </div>
+                                        )}
+                                        {/* Notable */}
+                                        {d.notable_fact&&d.notable_fact!=="তথ্য পাওয়া যায়নি।"&&(
+                                          <div style={{fontSize:11,color:T.sub,padding:"6px 10px",background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.2)",borderRadius:7,display:"flex",gap:6}}>
+                                            <span style={{flexShrink:0}}>💡</span><span>{d.notable_fact}</span>
+                                          </div>
+                                        )}
                                       </>
                                     );
                                   })() : null}
