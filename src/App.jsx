@@ -1367,6 +1367,8 @@ export default function App() {
   const [scorers, setScorers] = useState([]);
   const [scorersLoading, setScorersLoading] = useState(false);
   const [scorersFetched, setScorersFetched] = useState(false);
+  // Feature: Visitor Counter
+  const [visitorCount, setVisitorCount] = useState(null);
 
   // Live BD clock
   useEffect(() => {
@@ -1453,6 +1455,26 @@ export default function App() {
   useEffect(() => {
     try { favTeam ? localStorage.setItem("wc26_fav",favTeam) : localStorage.removeItem("wc26_fav"); } catch {}
   }, [favTeam]);
+
+  // Visitor counter using window.storage (shared across all visitors)
+  useEffect(() => {
+    async function trackVisit() {
+      try {
+        // Get current count
+        let count = 1;
+        try {
+          const res = await window.storage.get("wc26_visitors", true);
+          count = (parseInt(res?.value || "0") || 0) + 1;
+        } catch { count = 1; }
+        // Save updated count
+        await window.storage.set("wc26_visitors", String(count), true);
+        setVisitorCount(count);
+      } catch (e) {
+        console.log("Visitor counter unavailable:", e);
+      }
+    }
+    trackVisit();
+  }, []);
 
   // (ticker uses pure CSS animation)
 
@@ -1730,6 +1752,7 @@ export default function App() {
                 {autoFetching && <div style={{fontSize:9,color:c,animation:"pulse 1s infinite"}}>⟳ আপডেট হচ্ছে...</div>}
                 {!autoFetching && lastFetched && <div style={{fontSize:9,color:T.sub,cursor:"pointer"}} onClick={fetchResults}>✓ {lastFetched.toLocaleTimeString("bn-BD")} · রিফ্রেশ</div>}
                 {!autoFetching && !lastFetched && <div style={{fontSize:9,color:T.sub,cursor:"pointer"}} onClick={fetchResults}>⟳ ফলাফল আনুন</div>}
+                {visitorCount && <div style={{fontSize:9,color:T.sub,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#10b981",display:"inline-block"}}/>👁 {visitorCount.toLocaleString()} ভিজিটর</div>}
               </div>
             </div>
 
@@ -2538,10 +2561,21 @@ export default function App() {
 
         <div style={{textAlign:"center",padding:"14px",borderTop:`1px solid ${T.border}`,fontSize:11,color:T.dim}}>
           FIFA World Cup 2026 · সকল সময় বাংলাদেশ সময় (GMT+6) · Jun 11 – Jul 19, 2026 · ফলাফল প্রতি ৫ মিনিটে auto-update হয়
+          {visitorCount && (
+            <div style={{marginTop:6,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              <span style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",background:T.acBg,borderRadius:999,border:`1px solid ${c}22`}}>
+                <span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",animation:"pulse 1s infinite"}}/>
+                <span style={{color:c,fontWeight:700,fontSize:11}}>{visitorCount.toLocaleString()}</span>
+                <span style={{color:T.sub,fontSize:10}}>জন ভিজিট করেছেন</span>
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* ── BOTTOM NAV (Mobile only) ── */}
-        <div className="bottom-nav" style={{position:"fixed",bottom:0,left:0,right:0,background:dark?"rgba(6,15,8,.95)":"rgba(248,250,252,.96)",backdropFilter:"blur(16px)",borderTop:`1px solid ${T.border}`,display:"flex",alignItems:"stretch",zIndex:200,boxShadow:`0 -4px 20px ${c}18`}}>
+      </div>
+
+        {/* ── BOTTOM NAV (Mobile only) — outside opacity div to avoid stacking context bug ── */}
+        <div className="bottom-nav" style={{position:"fixed",bottom:0,left:0,right:0,background:dark?"rgba(6,15,8,.97)":"rgba(248,250,252,.97)",borderTop:`1px solid ${T.border}`,display:"flex",alignItems:"stretch",zIndex:9999,boxShadow:`0 -4px 20px ${c}18`}}>
           {[
             {k:"fixtures",icon:"📅",label:"Fixtures"},
             {k:"standings",icon:"📊",label:"Standings"},
@@ -2558,7 +2592,6 @@ export default function App() {
             </button>
           ))}
         </div>
-      </div>
     </>
   );
 }
