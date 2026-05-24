@@ -1393,23 +1393,40 @@ export default function App() {
     setAutoFetching(true);
     try {
       const now = new Date();
-      const bdNow = new Date(now.getTime() + 6 * 3600000 - now.getTimezoneOffset() * 60000);
-      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      const todayBD = months[bdNow.getUTCMonth()] + " " + bdNow.getUTCDate();
 
-      // Find matches that should have results (started >100 min ago)
-      const pastMatches = ALL_GROUP_FIXTURES.filter(f => {
+      // match শুরু হয়েছে এমন সব matches
+      const startedMatches = ALL_GROUP_FIXTURES.filter(f => {
         try {
           const utc = matchUTC(f.dateStr, f.etTime);
-          return (now.getTime() - utc) > 100 * 60 * 1000; // 100 min past kickoff
+          return (now.getTime() - utc) > 0;
         } catch { return false; }
       });
 
-      if (pastMatches.length === 0) { setAutoFetching(false); return; }
+      if (startedMatches.length === 0) { setAutoFetching(false); return; }
 
-      const matchList = pastMatches.slice(-12).map(f =>
+      // Live match আছে কিনা (kickoff থেকে 115 min এর মধ্যে)
+      const liveMatches = startedMatches.filter(f => {
+        try {
+          const utc = matchUTC(f.dateStr, f.etTime);
+          const elapsed = now.getTime() - utc;
+          return elapsed >= 0 && elapsed < 115 * 60 * 1000;
+        } catch { return false; }
+      });
+
+      const hasLiveMatch = liveMatches.length > 0;
+      const targetMatches = hasLiveMatch ? liveMatches : startedMatches.slice(-12);
+
+      const matchList = targetMatches.map(f =>
         `ID:${f.id} | ${f.home} vs ${f.away} | ${f.dateStr} 2026`
       ).join("\n");
+
+      const systemPrompt = hasLiveMatch
+        ? `You are a LIVE FIFA World Cup 2026 score tracker. Search for CURRENT live scores RIGHT NOW and return ONLY valid JSON. Include live and final scores. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore, "status": "LIVE" or "FT"}, ...}}. No markdown.`
+        : `You are a FIFA World Cup 2026 score tracker. Search for final match results and return ONLY valid JSON. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore}, ...}}. Use null for no result. No markdown.`;
+
+      const userMsg = hasLiveMatch
+        ? `Search for LIVE/current scores of these FIFA World Cup 2026 matches RIGHT NOW:\n${matchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1, "status": "LIVE"}}}`
+        : `Search for final scores of these FIFA World Cup 2026 matches:\n${matchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1}, "2": {"h": 0, "a": 0}}}`;
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -1418,8 +1435,8 @@ export default function App() {
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
-          system: `You are a FIFA World Cup 2026 score tracker. Search for match results and return ONLY valid JSON. No markdown, no explanation. Return format: {"results": {"matchId": {"h": homeScore, "a": awayScore}, ...}}. Use null for matches not yet played or no result found. Only include matches with confirmed final scores.`,
-          messages: [{ role: "user", content: `Search for final scores of these FIFA World Cup 2026 group stage matches and return JSON:\n${matchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1}, "2": {"h": 0, "a": 0}}}` }]
+          system: systemPrompt,
+          messages: [{ role: "user", content: userMsg }]
         })
       });
       const data = await response.json();
@@ -1432,7 +1449,7 @@ export default function App() {
             const updated = { ...prev };
             Object.entries(parsed.results).forEach(([id, val]) => {
               if (val && val.h !== null && val.a !== null && !isNaN(+val.h) && !isNaN(+val.a)) {
-                updated[+id] = { h: String(val.h), a: String(val.a) };
+                updated[+id] = { h: String(val.h), a: String(val.a), status: val.status || "FT" };
               }
             });
             return updated;
@@ -1446,11 +1463,27 @@ export default function App() {
     setAutoFetching(false);
   }, []);
 
-  // Auto-fetch on mount and every 5 minutes
+  // Smart interval: live match থাকলে ৩০ সেকেন্ড, নইলে ১ মিনিট
   useEffect(() => {
     fetchResults();
-    const id = setInterval(fetchResults, 5 * 60 * 1000);
-    return () => clearInterval(id);
+    let timeoutId;
+    const scheduleNext = () => {
+      const now = Date.now();
+      const hasLive = ALL_GROUP_FIXTURES.some(f => {
+        try {
+          const utc = matchUTC(f.dateStr, f.etTime);
+          const elapsed = now - utc;
+          return elapsed >= 0 && elapsed < 115 * 60 * 1000;
+        } catch { return false; }
+      });
+      const delay = hasLive ? 30 * 1000 : 60 * 1000;
+      timeoutId = setTimeout(async () => {
+        await fetchResults();
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+    return () => clearTimeout(timeoutId);
   }, [fetchResults]);
 
   useEffect(() => {
@@ -1745,8 +1778,8 @@ export default function App() {
                     <span style={{fontSize:10,color:T.sub}} className="hide-sm">{dark?"Light":"Dark"}</span>
                   </button>
                 </div>
-                {autoFetching && <div style={{fontSize:9,color:c,animation:"pulse 1s infinite"}}>⟳ আপডেট হচ্ছে...</div>}
-                {!autoFetching && lastFetched && <div style={{fontSize:9,color:T.sub,cursor:"pointer"}} onClick={fetchResults}>✓ {lastFetched.toLocaleTimeString("bn-BD")} · রিফ্রেশ</div>}
+                {autoFetching && <div style={{fontSize:9,color:c,animation:"pulse 1s infinite",display:"flex",alignItems:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:c,display:"inline-block",animation:"pulse 1s infinite"}}/>⟳ আপডেট হচ্ছে...</div>}
+                {!autoFetching && lastFetched && <div style={{fontSize:9,color:T.sub,cursor:"pointer",display:"flex",alignItems:"center",gap:4}} onClick={fetchResults}><span style={{color:c}}>✓</span> {lastFetched.toLocaleTimeString("bn-BD")} · ট্যাপ করুন</div>}
                 {!autoFetching && !lastFetched && <div style={{fontSize:9,color:T.sub,cursor:"pointer"}} onClick={fetchResults}>⟳ ফলাফল আনুন</div>}
                 {visitorCount && <div style={{fontSize:9,color:T.sub,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#10b981",display:"inline-block"}}/>👁 {visitorCount.toLocaleString()} ভিজিটর</div>}
               </div>
@@ -1807,7 +1840,7 @@ export default function App() {
                             {hasScore ? (
                               <div style={{padding:"6px 14px",background:"rgba(16,185,129,.15)",border:`1.5px solid ${c}55`,borderRadius:10}}>
                                 <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:26,color:c,lineHeight:1}}>{r.h} – {r.a}</div>
-                                <div style={{fontSize:9,color:matchOver?T.sub:"#ef4444",fontWeight:800,letterSpacing:1}}>{matchOver?"FULL TIME":"🔴 LIVE"}</div>
+                                <div style={{fontSize:9,color:matchOver?T.sub:"#ef4444",fontWeight:800,letterSpacing:1}}>{r.status==="LIVE"?"🔴 LIVE":r.status==="FT"?"FULL TIME":matchOver?"FULL TIME":"🔴 LIVE"}</div>
                               </div>
                             ) : (
                               <div>
@@ -1923,7 +1956,7 @@ export default function App() {
                                   {hasScore ? (
                                     <>
                                       <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:c,lineHeight:1}}>{r.h} – {r.a}</div>
-                                      <div style={{fontSize:8,color:matchOver?T.sub:"#ef4444",fontWeight:700}}>{matchOver?"FT":"🔴 LIVE"}</div>
+                                      <div style={{fontSize:8,color:matchOver?T.sub:"#ef4444",fontWeight:700}}>{r.status==="LIVE"?"🔴 LIVE":r.status==="FT"?"FT":matchOver?"FT":"🔴 LIVE"}</div>
                                     </>
                                   ) : (
                                     <>
