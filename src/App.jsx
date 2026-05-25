@@ -1343,187 +1343,308 @@ function getTeamGroup(t) {
 }
 
 
-// ── Journey Map Component ────────────────────────────────────────────────────
-const JOURNEY_DATA_MAP = {
-  Argentina:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final","Semi-Final","Champion"],results:[{stage:"Group Stage",opponent:"Algeria",score:"3-0",result:"W",date:"Jun 16"},{stage:"Group Stage",opponent:"Austria",score:"2-1",result:"W",date:"Jun 22"},{stage:"Group Stage",opponent:"Jordan",score:"4-0",result:"W",date:"Jun 27"},{stage:"Round of 32",opponent:"Saudi Arabia",score:"2-0",result:"W",date:"Jul 3"},{stage:"Round of 16",opponent:"Ecuador",score:"1-0",result:"W",date:"Jul 6"},{stage:"Quarter-Final",opponent:"France",score:"2-1",result:"W",date:"Jul 11"},{stage:"Semi-Final",opponent:"England",score:"3-1",result:"W",date:"Jul 14"},{stage:"Final",opponent:"Brazil",score:"1-0",result:"W",date:"Jul 19"}],eliminated:null,group:"J"},
-  Brazil:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final","Semi-Final","Final"],results:[{stage:"Group Stage",opponent:"Morocco",score:"3-1",result:"W",date:"Jun 13"},{stage:"Group Stage",opponent:"Haiti",score:"5-0",result:"W",date:"Jun 19"},{stage:"Group Stage",opponent:"Scotland",score:"2-0",result:"W",date:"Jun 24"},{stage:"Round of 32",opponent:"Switzerland",score:"2-0",result:"W",date:"Jul 1"},{stage:"Round of 16",opponent:"USA",score:"2-1",result:"W",date:"Jul 5"},{stage:"Quarter-Final",opponent:"Germany",score:"3-2",result:"W",date:"Jul 10"},{stage:"Semi-Final",opponent:"Spain",score:"2-0",result:"W",date:"Jul 15"},{stage:"Final",opponent:"Argentina",score:"0-1",result:"L",date:"Jul 19"}],eliminated:"Final",group:"C"},
-  France:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final"],results:[{stage:"Group Stage",opponent:"Senegal",score:"2-0",result:"W",date:"Jun 16"},{stage:"Group Stage",opponent:"Iraq",score:"4-0",result:"W",date:"Jun 22"},{stage:"Group Stage",opponent:"Norway",score:"1-0",result:"W",date:"Jun 26"},{stage:"Round of 32",opponent:"Turkey",score:"2-0",result:"W",date:"Jul 2"},{stage:"Round of 16",opponent:"Belgium",score:"1-0",result:"W",date:"Jul 4"},{stage:"Quarter-Final",opponent:"Argentina",score:"1-2",result:"L",date:"Jul 11"}],eliminated:"Quarter-Final",group:"I"},
-  England:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final","Semi-Final"],results:[{stage:"Group Stage",opponent:"Croatia",score:"2-0",result:"W",date:"Jun 17"},{stage:"Group Stage",opponent:"Ghana",score:"3-0",result:"W",date:"Jun 23"},{stage:"Group Stage",opponent:"Panama",score:"4-1",result:"W",date:"Jun 27"},{stage:"Round of 32",opponent:"Netherlands",score:"2-1",result:"W",date:"Jul 3"},{stage:"Round of 16",opponent:"Portugal",score:"1-0",result:"W",date:"Jul 7"},{stage:"Quarter-Final",opponent:"Colombia",score:"2-0",result:"W",date:"Jul 9"},{stage:"Semi-Final",opponent:"Argentina",score:"1-3",result:"L",date:"Jul 14"}],eliminated:"Semi-Final",group:"L"},
-  Spain:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final","Semi-Final"],results:[{stage:"Group Stage",opponent:"Cape Verde",score:"5-0",result:"W",date:"Jun 15"},{stage:"Round of 32",opponent:"Morocco",score:"1-0",result:"W",date:"Jul 2"},{stage:"Round of 16",opponent:"Japan",score:"2-1",result:"W",date:"Jul 6"},{stage:"Quarter-Final",opponent:"Norway",score:"3-0",result:"W",date:"Jul 9"},{stage:"Semi-Final",opponent:"Brazil",score:"0-2",result:"L",date:"Jul 15"}],eliminated:"Semi-Final",group:"H"},
-  Germany:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final"],results:[{stage:"Group Stage",opponent:"Curaçao",score:"5-0",result:"W",date:"Jun 14"},{stage:"Round of 32",opponent:"Czech Republic",score:"3-0",result:"W",date:"Jul 1"},{stage:"Round of 16",opponent:"Sweden",score:"2-1",result:"W",date:"Jul 4"},{stage:"Quarter-Final",opponent:"Brazil",score:"2-3",result:"L",date:"Jul 10"}],eliminated:"Quarter-Final",group:"E"},
-  Portugal:{stages:["Group Stage","Round of 32","Round of 16"],results:[{stage:"Group Stage",opponent:"DR Congo",score:"4-0",result:"W",date:"Jun 17"},{stage:"Round of 32",opponent:"Ghana",score:"3-0",result:"W",date:"Jul 3"},{stage:"Round of 16",opponent:"England",score:"0-1",result:"L",date:"Jul 7"}],eliminated:"Round of 16",group:"K"},
-};
 
-const STAGE_X_POS = {"Group Stage":80,"Round of 32":200,"Round of 16":320,"Quarter-Final":430,"Semi-Final":530,"Final":620,"Champion":700};
-const STAGE_COLORS_MAP = {"Group Stage":"#10b981","Round of 32":"#3b82f6","Round of 16":"#8b5cf6","Quarter-Final":"#f59e0b","Semi-Final":"#ef4444","Final":"#ec4899","Champion":"#fbbf24"};
-const RESULT_CLR = {W:"#10b981",L:"#ef4444",D:"#f59e0b"};
+// ── My Team Component ────────────────────────────────────────────────────────
+function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
+  const [teamSearch, setTeamSearch] = useState("");
+  const [aiPred, setAiPred] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [countdown, setCountdown] = useState("");
+  const [nowMs, setNowMs] = useState(Date.now());
 
-function JourneyMap({T,c,dark}) {
-  const allTeams = Object.values(GROUPS).flat();
-  const [selTeam, setSelTeam] = useState("Argentina");
-  const [search, setSearch] = useState("");
-  const [animKey, setAnimKey] = useState(0);
+  // tick every second for countdown
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
-  useEffect(()=>{ setAnimKey(k=>k+1); },[selTeam]);
+  const team = favTeam;
+  const grp = team ? (Object.entries(GROUPS).find(([,ts]) => ts.includes(team))?.[0] || "?") : null;
+  const sq = team ? SQUADS[team] : null;
 
-  const journey = JOURNEY_DATA_MAP[selTeam] || {
-    stages:["Group Stage"],
-    results:[{stage:"Group Stage",opponent:"TBD",score:"–",result:"–",date:"Jun –"}],
-    eliminated:"Group Stage",
-    group: Object.entries(GROUPS).find(([,ts])=>ts.includes(selTeam))?.[0]||"?"
-  };
+  // All matches for this team
+  const teamFixtures = team
+    ? ALL_GROUP_FIXTURES.filter(f => f.home === team || f.away === team)
+    : [];
 
-  const isChampion = !journey.eliminated;
-  const filtered = allTeams.filter(t=>!search||t.toLowerCase().includes(search.toLowerCase()));
+  // Next upcoming match
+  const nextMatch = teamFixtures.find(f => {
+    try { return matchUTC(f.dateStr, f.etTime) > nowMs; } catch { return false; }
+  });
 
-  const stageOrder = ["Group Stage","Round of 32","Round of 16","Quarter-Final","Semi-Final","Final","Champion"];
-  const getFar = (team) => {
-    const j = JOURNEY_DATA_MAP[team];
-    if(!j) return "Group Stage";
-    if(!j.eliminated) return "Champion";
-    return j.stages[j.stages.length-1];
-  };
+  // Countdown string
+  useEffect(() => {
+    if (!nextMatch) { setCountdown(""); return; }
+    const diff = matchUTC(nextMatch.dateStr, nextMatch.etTime) - nowMs;
+    if (diff <= 0) { setCountdown("শুরু হয়ে গেছে!"); return; }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    if (d > 0) setCountdown(`${d}দিন ${h}ঘণ্টা ${m}মিনিট`);
+    else if (h > 0) setCountdown(`${h}ঘণ্টা ${m}মিনিট ${s}সেকেন্ড`);
+    else setCountdown(`${m}মিনিট ${s}সেকেন্ড`);
+  }, [nowMs, nextMatch]);
+
+  // Group standings calc
+  const groupTeams = grp ? GROUPS[grp] : [];
+  const standings = groupTeams.map(t => {
+    const fixes = ALL_GROUP_FIXTURES.filter(f => f.home === t || f.away === t);
+    let pts=0, w=0, d=0, l=0, gf=0, ga=0;
+    fixes.forEach(f => {
+      const r = results[f.id];
+      if (!r) return;
+      const h = parseInt(r.h), a = parseInt(r.a);
+      if (isNaN(h) || isNaN(a)) return;
+      const isHome = f.home === t;
+      const tg = isHome ? h : a, og = isHome ? a : h;
+      gf += tg; ga += og;
+      if (tg > og) { pts += 3; w++; }
+      else if (tg === og) { pts += 1; d++; }
+      else { l++; }
+    });
+    return { team: t, pts, w, d, l, gf, ga, gd: gf-ga };
+  }).sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+
+  // AI Prediction
+  async function fetchPrediction() {
+    if (!team) return;
+    setAiLoading(true); setAiPred("");
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          system: "তুমি একজন FIFA বিশেষজ্ঞ। বাংলায় সংক্ষেপে ও উত্তেজনাপূর্ণভাবে লেখো। ইমোজি ব্যবহার করো।",
+          messages: [{
+            role: "user",
+            content: `FIFA World Cup 2026 এ ${team} দলের সম্ভাবনা কেমন? তাদের squad শক্তি, সাম্প্রতিক form, ও tournament prediction বাংলায় লেখো। ৩-৪টি paragraph এ — squad analysis, strong points, weak points, এবং কতদূর যেতে পারে। Web search করে সাম্প্রতিক তথ্য দিও।`
+          }]
+        })
+      });
+      const data = await resp.json();
+      const text = data.content?.map(i => i.type === "text" ? i.text : "").filter(Boolean).join("") || "তথ্য আনা যায়নি।";
+      setAiPred(text);
+    } catch { setAiPred("⚠️ তথ্য আনতে সমস্যা হয়েছে। আবার চেষ্টা করুন।"); }
+    setAiLoading(false);
+  }
+
+  const posColors = { GK:"#f59e0b", DEF:"#3b82f6", MID:"#10b981", FWD:"#ef4444" };
+  const posLabel = { GK:"গোলকিপার", DEF:"ডিফেন্ডার", MID:"মিডফিল্ডার", FWD:"ফরওয়ার্ড" };
+
+  // Team selector screen
+  if (!team) {
+    const filtered = ALL_TEAMS.filter(t => !teamSearch || t.toLowerCase().includes(teamSearch.toLowerCase()));
+    return (
+      <div className="fi">
+        <div style={{textAlign:"center", padding:"24px 0 16px"}}>
+          <div style={{fontSize:48, marginBottom:8}}>⭐</div>
+          <div style={{fontFamily:"'Bebas Neue',cursive", fontSize:24, letterSpacing:3, color:c}}>আপনার প্রিয় দল বেছে নিন</div>
+          <div style={{fontSize:12, color:T.sub, marginTop:4}}>৪৮টি দল থেকে একটি বেছে নিন — তারপর সব তথ্য এক জায়গায়</div>
+        </div>
+        <input value={teamSearch} onChange={e=>setTeamSearch(e.target.value)}
+          placeholder="🔍 দলের নাম লিখুন..."
+          style={{background:T.card, border:`1px solid ${T.border}`, borderRadius:10, color:T.text, padding:"10px 14px", fontSize:13, outline:"none", width:"100%", fontFamily:"inherit", marginBottom:14}}/>
+        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:8}}>
+          {filtered.map(t => (
+            <button key={t} onClick={()=>setFavTeam(t)}
+              style={{background:T.card, border:`1px solid ${T.border}`, borderRadius:10, padding:"10px 12px", cursor:"pointer", display:"flex", alignItems:"center", gap:8, transition:"all .18s", textAlign:"left"}}>
+              <span style={{fontSize:22}}>{FLAGS[t]||"🏳"}</span>
+              <div>
+                <div style={{fontSize:12, fontWeight:700, color:T.text}}>{t}</div>
+                <div style={{fontSize:10, color:T.sub}}>Group {Object.entries(GROUPS).find(([,ts])=>ts.includes(t))?.[0]||"?"}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="fi" style={{paddingBottom:8}}>
-      <div style={{fontSize:12,color:T.sub,marginBottom:12}}>প্রতিটি দলের পুরো টুর্নামেন্ট যাত্রা — animated path · ৪৮ দল · ৭ রাউন্ড</div>
+    <div className="fi" style={{display:"flex",flexDirection:"column",gap:12}}>
 
-      <div style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:12}}>
-        {/* Team list */}
-        <div style={{display:"flex",flexDirection:"column",gap:6}}>
-          <input value={search} onChange={e=>setSearch(e.target.value)}
-            placeholder="🔍 দল খুঁজুন..."
-            style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,color:T.text,padding:"7px 10px",fontSize:12,outline:"none",width:"100%",fontFamily:"inherit"}}/>
-          <div style={{overflowY:"auto",maxHeight:"65vh",display:"flex",flexDirection:"column",gap:3}}>
-            {filtered.map(team=>{
-              const far=getFar(team);
-              const isChamp=JOURNEY_DATA_MAP[team]&&!JOURNEY_DATA_MAP[team].eliminated;
-              const si=stageOrder.indexOf(far);
-              return (
-                <button key={team} onClick={()=>setSelTeam(team)}
-                  style={{background:selTeam===team?T.acBg:T.card,border:`1px solid ${selTeam===team?c:T.border}`,borderRadius:8,padding:"6px 9px",cursor:"pointer",display:"flex",alignItems:"center",gap:7,textAlign:"left",width:"100%",transition:"all .18s"}}>
-                  <span style={{fontSize:16,flexShrink:0}}>{FLAGS[team]||"🏳"}</span>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:11,fontWeight:700,color:selTeam===team?c:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{team}</div>
-                    <div style={{fontSize:9,color:isChamp?"#fbbf24":si>=4?c:si>=2?"#3b82f6":T.sub,marginTop:1}}>
-                      {isChamp?"🏆 Champion":far}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right panel */}
-        <div style={{display:"flex",flexDirection:"column",gap:10,minWidth:0}}>
-          {/* Hero */}
-          <div key={selTeam+"h"} style={{background:T.acBg,border:`1px solid ${c}30`,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:14,animation:"fadeIn .3s ease"}}>
-            <span style={{fontSize:48}}>{FLAGS[selTeam]||"🏳"}</span>
-            <div>
-              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:26,letterSpacing:3,color:isChampion?"#fbbf24":c,lineHeight:1}}>{selTeam.toUpperCase()}</div>
-              <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:10,padding:"2px 8px",borderRadius:99,background:`${c}18`,color:c,border:`1px solid ${c}30`}}>Group {journey.group}</span>
-                <span style={{fontSize:10,padding:"2px 8px",borderRadius:99,background:isChampion?"rgba(251,191,36,.15)":T.card,color:isChampion?"#fbbf24":T.sub,border:`1px solid ${isChampion?"rgba(251,191,36,.3)":T.border}`}}>
-                  {isChampion?"🏆 CHAMPION":`বিদায়: ${journey.eliminated||"–"}`}
-                </span>
-                <span style={{fontSize:10,color:T.sub}}>{journey.results?.filter(r=>r.result==="W").length||0}জয় · {journey.results?.filter(r=>r.result==="L").length||0}হার</span>
-              </div>
+      {/* Hero Card */}
+      <div style={{background:`linear-gradient(135deg,${c}18,${c}06)`,border:`1px solid ${c}30`,borderRadius:16,padding:"18px 20px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-20,right:-20,fontSize:100,opacity:.06}}>{FLAGS[team]||"🏳"}</div>
+        <div style={{display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+          <span style={{fontSize:60}}>{FLAGS[team]||"🏳"}</span>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:32,letterSpacing:3,color:c,lineHeight:1}}>{team.toUpperCase()}</div>
+            <div style={{fontSize:12,color:T.sub,marginTop:4}}>
+              Group {grp} · {sq?.coach ? `কোচ: ${sq.coach}` : ""} · {sq?.players?.length||0} খেলোয়াড়
             </div>
-            {isChampion&&<span style={{fontSize:40,marginLeft:"auto"}}>🏆</span>}
-          </div>
-
-          {/* SVG Path */}
-          <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"14px 12px",overflowX:"auto"}}>
-            <div style={{fontSize:10,color:T.sub,letterSpacing:2,fontFamily:"'Bebas Neue',cursive",marginBottom:8}}>TOURNAMENT PATH</div>
-            <svg key={animKey+"s"} width="760" height="140" viewBox="0 0 760 140" style={{minWidth:600}}>
-              {/* Stage labels */}
-              {Object.entries(STAGE_X_POS).map(([s,x])=>(
-                <g key={s}>
-                    <text x={x} y={14} textAnchor="middle" fontSize="8" fill={T.sub} fontFamily="'Bebas Neue',cursive" letterSpacing="1">{s.toUpperCase()}</text>
-
-                  <line x1={x} y1={18} x2={x} y2={125} stroke={`${T.border}60`} strokeWidth="1" strokeDasharray="3,4"/>
-                </g>
-              ))}
-
-              {/* Other teams faded paths */}
-              {Object.entries(JOURNEY_DATA_MAP).filter(([t])=>t!==selTeam).map(([t,j])=>{
-                const pts=j.stages.map(s=>`${STAGE_X_POS[s]||80},80`);
-                if(pts.length<2) return null;
-                return <path key={t} d={`M ${pts[0]} `+pts.slice(1).map(p=>`L ${p}`).join(" ")} stroke="rgba(128,128,128,.08)" strokeWidth="1.5" fill="none"/>;
-              })}
-
-              {/* Selected path */}
-              {(()=>{
-                const pts=journey.stages.map(s=>`${STAGE_X_POS[s]||80},80`);
-                if(pts.length<2) return null;
-                const d=`M ${pts[0]} `+pts.slice(1).map(p=>`L ${p}`).join(" ");
-                const len=journey.stages.length*160;
-                return <>
-                  <path d={d} stroke={isChampion?"rgba(251,191,36,.2)":dark?"rgba(16,185,129,.2)":"rgba(16,185,129,.15)"} strokeWidth="10" fill="none" strokeLinecap="round"/>
-                  <path d={d} stroke={isChampion?"#fbbf24":c} strokeWidth="2.5" fill="none" strokeLinecap="round"
-                    strokeDasharray={len} style={{strokeDashoffset:len,animation:"drawJPath 1.2s ease forwards"}}/>
-                </>;
-              })()}
-
-              {/* Nodes */}
-              {journey.stages.map((stage,i)=>{
-                const x=STAGE_X_POS[stage]||80;
-                const isLast=i===journey.stages.length-1;
-                const nodeC=isLast&&!journey.eliminated?"#fbbf24":isLast?"#ef4444":c;
-                const r=journey.results?.find(rm=>rm.stage===stage);
-                return (
-                  <g key={stage} style={{animation:`popNode .4s ease ${i*0.15}s both`}}>
-                    <circle cx={x} cy={80} r={isLast?13:9} fill={`${nodeC}20`} stroke={nodeC} strokeWidth={isLast?2:1.5}/>
-                    <circle cx={x} cy={80} r={isLast?6:4} fill={nodeC}/>
-                    {r&&r.opponent!=="TBD"&&<>
-                      <text x={x} y={100} textAnchor="middle" fontSize="8" fill={T.sub} fontFamily="inherit">{r.opponent.length>9?r.opponent.slice(0,8)+"…":r.opponent}</text>
-                      <text x={x} y={112} textAnchor="middle" fontSize="9" fill={RESULT_CLR[r.result]||T.sub} fontFamily="'Bebas Neue',cursive">{r.score}</text>
-                    </>}
-                    {r&&<text x={x} y={65} textAnchor="middle" fontSize="7" fill={T.dim}>{r.date}</text>}
-                    {isLast&&!journey.eliminated&&<text x={x} y={84} textAnchor="middle" fontSize="11">🏆</text>}
-                  </g>
-                );
-              })}
-
-              <style>{`
-                @keyframes drawJPath { from{stroke-dashoffset:attr(stroke-dasharray)} to{stroke-dashoffset:0} }
-                @keyframes drawJPath { 0%{stroke-dashoffset:2000} 100%{stroke-dashoffset:0} }
-                @keyframes popNode { 0%{opacity:0;transform:scale(0)} 70%{transform:scale(1.2)} 100%{opacity:1;transform:scale(1)} }
-              `}</style>
-            </svg>
-          </div>
-
-          {/* Match results */}
-          <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"14px 16px"}}>
-            <div style={{fontSize:10,color:T.sub,letterSpacing:2,fontFamily:"'Bebas Neue',cursive",marginBottom:10}}>ম্যাচ বিবরণ</div>
-            <div style={{display:"flex",flexDirection:"column",gap:5}}>
-              {journey.results?.filter(r=>r.opponent!=="TBD").map((r,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",background:T.bg||"transparent",border:`1px solid ${T.border}`,borderRadius:8,flexWrap:"wrap",animation:`fadeIn .3s ease ${i*0.06}s both`}}>
-                  <span style={{fontSize:9,padding:"1px 6px",borderRadius:4,background:`${STAGE_COLORS_MAP[r.stage]||c}18`,color:STAGE_COLORS_MAP[r.stage]||c,fontFamily:"'Bebas Neue',cursive",letterSpacing:1,minWidth:80,textAlign:"center"}}>{r.stage}</span>
-                  <span style={{fontSize:10,color:T.dim,minWidth:40}}>{r.date}</span>
-                  <span style={{flex:1,display:"flex",alignItems:"center",gap:6,fontSize:12,flexWrap:"wrap"}}>
-                    <span>{FLAGS[selTeam]||"🏳"}</span>
-                    <span style={{fontWeight:700,color:T.text}}>{selTeam}</span>
-                    <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:15,color:RESULT_CLR[r.result]||T.sub,minWidth:50,textAlign:"center"}}>{r.score}</span>
-                    <span style={{fontWeight:700,color:T.text}}>{r.opponent}</span>
-                    <span>{FLAGS[r.opponent]||"🏳"}</span>
-                  </span>
-                  <span style={{padding:"2px 8px",borderRadius:99,background:`${RESULT_CLR[r.result]||T.sub}18`,color:RESULT_CLR[r.result]||T.sub,fontSize:10,fontWeight:700,border:`1px solid ${RESULT_CLR[r.result]||T.sub}40`}}>
-                    {r.result==="W"?"জয়":r.result==="L"?"হার":r.result==="D"?"ড্র":"–"}
-                  </span>
-                </div>
-              ))}
-              {(!journey.results||journey.results.every(r=>r.opponent==="TBD"))&&(
-                <div style={{textAlign:"center",padding:"24px 0",color:T.sub,fontSize:12}}>
-                  <div style={{fontSize:32,marginBottom:8}}>⏳</div>
-                  টুর্নামেন্ট শুরু হলে এখানে ম্যাচের বিবরণ আসবে
-                </div>
-              )}
-            </div>
+            <button onClick={()=>setFavTeam(null)}
+              style={{marginTop:8,padding:"4px 12px",borderRadius:99,border:`1px solid ${T.border}`,background:T.card,color:T.sub,fontSize:11,cursor:"pointer"}}>
+              ✕ দল পরিবর্তন
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Countdown */}
+      {nextMatch && (
+        <div style={{background:T.card,border:`1px solid ${c}30`,borderRadius:14,padding:"14px 18px",textAlign:"center"}}>
+          <div style={{fontSize:11,color:T.sub,letterSpacing:2,fontFamily:"'Bebas Neue',cursive",marginBottom:6}}>পরের ম্যাচ</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:10,flexWrap:"wrap"}}>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:18,fontWeight:700,color:T.text}}>{nextMatch.home}</div>
+              <div style={{fontSize:24}}>{FLAGS[nextMatch.home]||"🏳"}</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:c,letterSpacing:2}}>VS</div>
+              <div style={{fontSize:10,color:T.sub}}>{nextMatch.dateStr} · {bdTime(nextMatch.etTime).time} BD</div>
+              <div style={{fontSize:10,color:T.dim}}>{nextMatch.venue?.split(",")[0]}</div>
+            </div>
+            <div style={{textAlign:"left"}}>
+              <div style={{fontSize:24}}>{FLAGS[nextMatch.away]||"🏳"}</div>
+              <div style={{fontSize:18,fontWeight:700,color:T.text}}>{nextMatch.away}</div>
+            </div>
+          </div>
+          <div style={{background:dark?"rgba(0,0,0,.3)":"rgba(0,0,0,.05)",borderRadius:10,padding:"10px 0"}}>
+            <div style={{fontSize:11,color:T.sub,marginBottom:2}}>শুরু হতে আরও</div>
+            <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,letterSpacing:2}}>{countdown}</div>
+          </div>
+        </div>
+      )}
+      {!nextMatch && teamFixtures.length > 0 && (
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px",textAlign:"center",color:T.sub,fontSize:13}}>
+          ✅ গ্রুপ পর্বের সব ম্যাচ শেষ
+        </div>
+      )}
+
+      {/* Group Standings */}
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px 16px"}}>
+        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:c,marginBottom:10}}>GROUP {grp} পয়েন্ট টেবিল</div>
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+            <thead>
+              <tr style={{borderBottom:`1px solid ${T.border}`}}>
+                {["#","দল","ম্যাচ","জয়","ড্র","হার","পয়েন্ট"].map(h=>(
+                  <th key={h} style={{padding:"5px 6px",textAlign:h==="দল"?"left":"center",color:T.sub,fontWeight:600,fontSize:10,whiteSpace:"nowrap"}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {standings.map((s,i) => (
+                <tr key={s.team} style={{borderBottom:`1px solid ${T.border}`,background:s.team===team?`${c}10`:"transparent",transition:"background .2s"}}>
+                  <td style={{padding:"7px 6px",textAlign:"center",color:i<2?c:T.dim,fontWeight:700}}>{i+1}</td>
+                  <td style={{padding:"7px 6px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{fontSize:16}}>{FLAGS[s.team]||"🏳"}</span>
+                      <span style={{fontWeight:s.team===team?700:500,color:s.team===team?c:T.text,fontSize:12}}>{s.team}</span>
+                    </div>
+                  </td>
+                  <td style={{textAlign:"center",color:T.sub,padding:"7px 4px"}}>{s.w+s.d+s.l}</td>
+                  <td style={{textAlign:"center",color:"#10b981",padding:"7px 4px"}}>{s.w}</td>
+                  <td style={{textAlign:"center",color:T.sub,padding:"7px 4px"}}>{s.d}</td>
+                  <td style={{textAlign:"center",color:"#ef4444",padding:"7px 4px"}}>{s.l}</td>
+                  <td style={{textAlign:"center",padding:"7px 4px"}}>
+                    <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,color:s.team===team?c:T.text,fontWeight:700}}>{s.pts}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {standings.every(s=>s.pts===0) && (
+          <div style={{textAlign:"center",fontSize:11,color:T.dim,marginTop:8}}>ম্যাচ শুরু হলে পয়েন্ট আসবে</div>
+        )}
+      </div>
+
+      {/* All Fixtures */}
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px 16px"}}>
+        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:c,marginBottom:10}}>সম্পূর্ণ সূচি — BD সময়</div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {teamFixtures.map((f,i) => {
+            const r = results[f.id];
+            const done = r && r.h !== undefined;
+            const isPast = matchUTC(f.dateStr, f.etTime) < nowMs;
+            const isNext = nextMatch && f.id === nextMatch.id;
+            const isHome = f.home === team;
+            const bd = bdTime(f.etTime);
+            return (
+              <div key={f.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:isNext?`${c}12`:T.bg||"rgba(0,0,0,.1)",border:`1px solid ${isNext?c:T.border}`,borderRadius:10,flexWrap:"wrap",transition:"all .2s"}}>
+                <div style={{minWidth:40,fontSize:10,color:T.dim}}>{f.dateStr}</div>
+                <div style={{flex:1,display:"flex",alignItems:"center",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+                  <span style={{fontSize:20}}>{FLAGS[f.home]||"🏳"}</span>
+                  <span style={{fontWeight:isHome?700:400,color:isHome?c:T.text,fontSize:12}}>{f.home}</span>
+                  {done
+                    ? <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,color:c,minWidth:50,textAlign:"center"}}>{r.h} - {r.a}</span>
+                    : <span style={{fontSize:11,color:T.sub,minWidth:50,textAlign:"center"}}>{bd.time}<br/><span style={{fontSize:9}}>{bd.label}</span></span>
+                  }
+                  <span style={{fontWeight:!isHome?700:400,color:!isHome?c:T.text,fontSize:12}}>{f.away}</span>
+                  <span style={{fontSize:20}}>{FLAGS[f.away]||"🏳"}</span>
+                </div>
+                {isNext && <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:`${c}20`,color:c,border:`1px solid ${c}40`}}>পরের</span>}
+                {done && <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:"rgba(16,185,129,.1)",color:"#10b981"}}>FT</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Squad */}
+      {sq && (
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px 16px"}}>
+          <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:c,marginBottom:10}}>স্কোয়াড</div>
+          {["GK","DEF","MID","FWD"].map(pos => {
+            const pl = sq.players.filter(p=>p.pos===pos);
+            if(!pl.length) return null;
+            return (
+              <div key={pos} style={{marginBottom:12}}>
+                <div style={{fontSize:10,fontWeight:700,color:posColors[pos],letterSpacing:2,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:posColors[pos]}}/>
+                  {posLabel[pos]} ({pl.length})
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:5}}>
+                  {pl.map((p,i) => (
+                    <div key={i} style={{background:dark?"rgba(255,255,255,.03)":"rgba(0,0,0,.03)",border:`1px solid ${T.border}`,borderRadius:8,padding:"7px 10px",display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{width:28,height:28,borderRadius:"50%",background:`${posColors[pos]}18`,border:`1.5px solid ${posColors[pos]}40`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:12,color:posColors[pos],flexShrink:0}}>{p.num}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:600,fontSize:11,color:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                        <div style={{fontSize:9,color:T.sub,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.club}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* AI Prediction */}
+      <div style={{background:T.card,border:`1px solid ${c}30`,borderRadius:14,padding:"14px 16px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
+          <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:c}}>🤖 AI টুর্নামেন্ট প্রেডিকশন</div>
+          <button onClick={fetchPrediction} disabled={aiLoading}
+            style={{padding:"6px 14px",borderRadius:99,border:`1px solid ${c}`,background:aiLoading?T.card:T.acBg,color:aiLoading?T.sub:c,fontSize:12,fontWeight:700,cursor:aiLoading?"not-allowed":"pointer",transition:"all .2s",display:"flex",alignItems:"center",gap:6}}>
+            {aiLoading ? <><span style={{animation:"pulse 1s infinite",display:"inline-block"}}>⟳</span> বিশ্লেষণ হচ্ছে...</> : "✨ AI বিশ্লেষণ করো"}
+          </button>
+        </div>
+        {!aiPred && !aiLoading && (
+          <div style={{textAlign:"center",padding:"20px 0",color:T.sub,fontSize:12}}>
+            <div style={{fontSize:32,marginBottom:8}}>🔮</div>
+            বাটন চাপলে Claude AI {team} এর World Cup 2026 সম্ভাবনা বিশ্লেষণ করবে
+          </div>
+        )}
+        {aiLoading && (
+          <div style={{textAlign:"center",padding:"24px 0",color:T.sub}}>
+            <div style={{fontSize:28,animation:"pulse 1s infinite",marginBottom:8}}>🤖</div>
+            <div style={{fontSize:12}}>{team} এর তথ্য খোঁজা হচ্ছে...</div>
+          </div>
+        )}
+        {aiPred && (
+          <div style={{fontSize:13,color:T.text,lineHeight:1.8,whiteSpace:"pre-wrap",animation:"fadeIn .4s ease"}}>
+            {aiPred}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
@@ -1825,7 +1946,7 @@ export default function App() {
     {k:"scorers",l:"⚽ Scorers"},
     {k:"stadiums",l:"🏟️ Stadiums"},
     {k:"squads",l:"👕 Squads"},
-    {k:"journey",l:"🗺️ Journey"},
+    {k:"myteam",l:"⭐ আমার দল"},
   ];
 
   // today's matches helper
@@ -2687,10 +2808,6 @@ export default function App() {
           )}
 
           {/* ═══ SQUADS ═══ */}
-
-          {tab==="journey" && (
-            <JourneyMap T={T} c={c} dark={dark} />
-          )}
           {tab==="squads" && (
             <div className="fi">
               <div style={{fontSize:12,color:T.sub,marginBottom:10}}>সব ৪৮ দলের স্কোয়াড। ফ্ল্যাগে ক্লিক করলে সেই দল প্রিয় দল হবে।</div>
@@ -2781,6 +2898,9 @@ export default function App() {
           )}
         </div>
 
+          {tab==="myteam" && (
+            <MyTeamTab T={T} c={c} dark={dark} favTeam={favTeam} setFavTeam={setFavTeam} results={results} />
+          )}
         <div style={{textAlign:"center",padding:"14px",borderTop:`1px solid ${T.border}`,fontSize:11,color:T.dim}}>
           FIFA World Cup 2026 · সকল সময় বাংলাদেশ সময় (GMT+6) · Jun 11 – Jul 19, 2026 · ফলাফল প্রতি ৫ মিনিটে auto-update হয়
           {visitorCount && (
@@ -2798,7 +2918,7 @@ export default function App() {
 
         {/* ── BOTTOM NAV via Portal — renders directly in document.body, immune to any ancestor overflow/opacity/transform/backdrop-filter ── */}
         {createPortal(
-          <div className="bottom-nav" style={{position:"fixed",bottom:0,left:0,right:0,background:dark?"rgba(6,15,8,.97)":"rgba(248,250,252,.97)",borderTop:`1px solid ${T.border}`,display:"flex",alignItems:"stretch",zIndex:9999,boxShadow:`0 -4px 20px ${c}18`,overflowX:"auto",overflowY:"hidden"}}>
+          <div className="bottom-nav" style={{position:"fixed",bottom:0,left:0,right:0,background:dark?"rgba(6,15,8,.97)":"rgba(248,250,252,.97)",borderTop:`1px solid ${T.border}`,display:"flex",alignItems:"stretch",zIndex:9999,boxShadow:`0 -4px 20px ${c}18`,overflowX:"auto"}}>
             {[
               {k:"fixtures",icon:"📅",label:"Fixtures"},
               {k:"standings",icon:"📊",label:"Standings"},
@@ -2806,13 +2926,13 @@ export default function App() {
               {k:"scorers",icon:"⚽",label:"Scorers"},
               {k:"stadiums",icon:"🏟️",label:"Stadiums"},
               {k:"squads",icon:"👕",label:"Squads"},
-              {k:"journey",icon:"🗺️",label:"Journey"},
+              {k:"myteam",icon:"⭐",label:"আমার দল"},
             ].map(({k,icon,label})=>(
               <button key={k} className={`bottom-nav-btn${tab===k?" active":""}`} onClick={()=>setTab(k)}
-                style={{color:tab===k?c:T.sub,flexShrink:0,minWidth:52}}>
-                <span style={{fontSize:18,display:"block",transition:"transform .2s",transform:tab===k?"scale(1.15)":"scale(1)"}}>{icon}</span>
-                <span style={{fontSize:8,fontWeight:tab===k?800:500,letterSpacing:.2}}>{label}</span>
-                {tab===k&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:20,height:2,background:c,borderRadius:1}}/>}
+                style={{color:tab===k?c:T.sub,flexShrink:0,minWidth:50}}>
+                <span style={{fontSize:20,display:"block",transition:"transform .2s",transform:tab===k?"scale(1.15)":"scale(1)"}}>{icon}</span>
+                <span style={{fontSize:9,fontWeight:tab===k?800:500,letterSpacing:.3}}>{label}</span>
+                {tab===k&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:24,height:2,background:c,borderRadius:1}}/>}
               </button>
             ))}
           </div>,
