@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import TournamentJourneyMap from "./components/TournamentJourneyMap";
+import TournamentJourneyMap from "./TournamentJourneyMap";
 function etToBD(etTime) {
   const [h, m] = etTime.split(":").map(Number);
   const totalMin = h * 60 + (m || 0) + 600;
