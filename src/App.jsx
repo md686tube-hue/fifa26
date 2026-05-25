@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-
+import TournamentJourneyMap from "./components/TournamentJourneyMap";
 function etToBD(etTime) {
   const [h, m] = etTime.split(":").map(Number);
   const totalMin = h * 60 + (m || 0) + 600;
@@ -1639,6 +1639,7 @@ export default function App() {
     {k:"scorers",l:"⚽ Scorers"},
     {k:"stadiums",l:"🏟️ Stadiums"},
     {k:"squads",l:"👕 Squads"},
+    {k:"journey", l:"🗺️ Journey"},
   ];
 
   // today's matches helper
@@ -2165,6 +2166,7 @@ export default function App() {
               })()}
             </div>
           )}
+          {tab==="journey" && <TournamentJourneyMap />}
 
           {/* ═══ BRACKET ═══ */}
           {tab==="bracket" && (()=>{
