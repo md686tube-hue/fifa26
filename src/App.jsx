@@ -1912,6 +1912,8 @@ export default function App() {
         @media(min-width:601px){
           .bottom-nav{display:none!important;}
         }
+        .bottom-nav::-webkit-scrollbar{display:none;}
+        .bottom-nav{-ms-overflow-style:none;scrollbar-width:none;}
         @media(max-width:380px){
           .tab-txt{font-size:9px!important;padding:7px 6px!important;}
         }
@@ -2796,7 +2798,7 @@ export default function App() {
 
         {/* ── BOTTOM NAV via Portal — renders directly in document.body, immune to any ancestor overflow/opacity/transform/backdrop-filter ── */}
         {createPortal(
-          <div className="bottom-nav" style={{position:"fixed",bottom:0,left:0,right:0,background:dark?"rgba(6,15,8,.97)":"rgba(248,250,252,.97)",borderTop:`1px solid ${T.border}`,display:"flex",alignItems:"stretch",zIndex:9999,boxShadow:`0 -4px 20px ${c}18`}}>
+          <div className="bottom-nav" style={{position:"fixed",bottom:0,left:0,right:0,background:dark?"rgba(6,15,8,.97)":"rgba(248,250,252,.97)",borderTop:`1px solid ${T.border}`,display:"flex",alignItems:"stretch",zIndex:9999,boxShadow:`0 -4px 20px ${c}18`,overflowX:"auto",overflowY:"hidden"}}>
             {[
               {k:"fixtures",icon:"📅",label:"Fixtures"},
               {k:"standings",icon:"📊",label:"Standings"},
@@ -2807,10 +2809,10 @@ export default function App() {
               {k:"journey",icon:"🗺️",label:"Journey"},
             ].map(({k,icon,label})=>(
               <button key={k} className={`bottom-nav-btn${tab===k?" active":""}`} onClick={()=>setTab(k)}
-                style={{color:tab===k?c:T.sub}}>
-                <span style={{fontSize:20,display:"block",transition:"transform .2s",transform:tab===k?"scale(1.15)":"scale(1)"}}>{icon}</span>
-                <span style={{fontSize:9,fontWeight:tab===k?800:500,letterSpacing:.3}}>{label}</span>
-                {tab===k&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:24,height:2,background:c,borderRadius:1}}/>}
+                style={{color:tab===k?c:T.sub,flexShrink:0,minWidth:52}}>
+                <span style={{fontSize:18,display:"block",transition:"transform .2s",transform:tab===k?"scale(1.15)":"scale(1)"}}>{icon}</span>
+                <span style={{fontSize:8,fontWeight:tab===k?800:500,letterSpacing:.2}}>{label}</span>
+                {tab===k&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:20,height:2,background:c,borderRadius:1}}/>}
               </button>
             ))}
           </div>,
