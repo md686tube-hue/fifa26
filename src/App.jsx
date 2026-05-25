@@ -1347,8 +1347,9 @@ function getTeamGroup(t) {
 // ── My Team Component ────────────────────────────────────────────────────────
 function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
   const [teamSearch, setTeamSearch] = useState("");
-  const [aiPred, setAiPred] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
+  const [liveScore, setLiveScore] = useState(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [lastLiveFetch, setLastLiveFetch] = useState(null);
   const [countdown, setCountdown] = useState("");
   const [nowMs, setNowMs] = useState(Date.now());
 
@@ -1406,31 +1407,54 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
     return { team: t, pts, w, d, l, gf, ga, gd: gf-ga };
   }).sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
 
-  // AI Prediction
-  async function fetchPrediction() {
-    if (!team) return;
-    setAiLoading(true); setAiPred("");
+  // Live score fetch for today's match
+  const fetchLiveScore = useCallback(async (match) => {
+    if (!match) return;
+    setLiveLoading(true);
     try {
       const resp = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
+          max_tokens: 300,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
-          system: "তুমি একজন FIFA বিশেষজ্ঞ। বাংলায় সংক্ষেপে ও উত্তেজনাপূর্ণভাবে লেখো। ইমোজি ব্যবহার করো।",
+          system: `Search for the CURRENT live or latest score of this FIFA World Cup 2026 match and return ONLY valid JSON. No markdown. Format: {"h": homeScore, "a": awayScore, "status": "LIVE" or "FT" or "HT", "minute": currentMinute or null}`,
           messages: [{
             role: "user",
-            content: `FIFA World Cup 2026 এ ${team} দলের সম্ভাবনা কেমন? তাদের squad শক্তি, সাম্প্রতিক form, ও tournament prediction বাংলায় লেখো। ৩-৪টি paragraph এ — squad analysis, strong points, weak points, এবং কতদূর যেতে পারে। Web search করে সাম্প্রতিক তথ্য দিও।`
+            content: `What is the CURRENT score of FIFA World Cup 2026: ${match.home} vs ${match.away} on ${match.dateStr} 2026? Return ONLY JSON like: {"h": 1, "a": 0, "status": "LIVE", "minute": 67}`
           }]
         })
       });
       const data = await resp.json();
-      const text = data.content?.map(i => i.type === "text" ? i.text : "").filter(Boolean).join("") || "তথ্য আনা যায়নি।";
-      setAiPred(text);
-    } catch { setAiPred("⚠️ তথ্য আনতে সমস্যা হয়েছে। আবার চেষ্টা করুন।"); }
-    setAiLoading(false);
-  }
+      const text = data.content?.map(i => i.type==="text"?i.text:"").filter(Boolean).join("") || "";
+      const clean = text.replace(/```json|```/g,"").trim();
+      try {
+        const parsed = JSON.parse(clean);
+        if (parsed && parsed.h !== undefined && parsed.a !== undefined) {
+          setLiveScore(parsed);
+          setLastLiveFetch(new Date());
+        }
+      } catch {}
+    } catch {}
+    setLiveLoading(false);
+  }, []);
+
+  // Auto fetch live score every 30s when there's a today's match
+  useEffect(() => {
+    if (!team) return;
+    const todayMatches = ALL_GROUP_FIXTURES.filter(f => {
+      if (f.home !== team && f.away !== team) return false;
+      const utc = matchUTC(f.dateStr, f.etTime);
+      const elapsed = Date.now() - utc;
+      return elapsed > 0 && elapsed < 115 * 60 * 1000;
+    });
+    const todayMatch = todayMatches[0] || null;
+    if (!todayMatch) { setLiveScore(null); return; }
+    fetchLiveScore(todayMatch);
+    const id = setInterval(() => fetchLiveScore(todayMatch), 30000);
+    return () => clearInterval(id);
+  }, [team, fetchLiveScore]);
 
   const posColors = { GK:"#f59e0b", DEF:"#3b82f6", MID:"#10b981", FWD:"#ef4444" };
   const posLabel = { GK:"গোলকিপার", DEF:"ডিফেন্ডার", MID:"মিডফিল্ডার", FWD:"ফরওয়ার্ড" };
@@ -1617,33 +1641,60 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
         </div>
       )}
 
-      {/* AI Prediction */}
-      <div style={{background:T.card,border:`1px solid ${c}30`,borderRadius:14,padding:"14px 16px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
-          <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:c}}>🤖 AI টুর্নামেন্ট প্রেডিকশন</div>
-          <button onClick={fetchPrediction} disabled={aiLoading}
-            style={{padding:"6px 14px",borderRadius:99,border:`1px solid ${c}`,background:aiLoading?T.card:T.acBg,color:aiLoading?T.sub:c,fontSize:12,fontWeight:700,cursor:aiLoading?"not-allowed":"pointer",transition:"all .2s",display:"flex",alignItems:"center",gap:6}}>
-            {aiLoading ? <><span style={{animation:"pulse 1s infinite",display:"inline-block"}}>⟳</span> বিশ্লেষণ হচ্ছে...</> : "✨ AI বিশ্লেষণ করো"}
-          </button>
-        </div>
-        {!aiPred && !aiLoading && (
-          <div style={{textAlign:"center",padding:"20px 0",color:T.sub,fontSize:12}}>
-            <div style={{fontSize:32,marginBottom:8}}>🔮</div>
-            বাটন চাপলে Claude AI {team} এর World Cup 2026 সম্ভাবনা বিশ্লেষণ করবে
+      {/* Live Score Card — only shows when team has a match today */}
+      {(()=>{
+        const todayMatch = ALL_GROUP_FIXTURES.find(f => {
+          if (f.home !== team && f.away !== team) return false;
+          const utc = matchUTC(f.dateStr, f.etTime);
+          const elapsed = nowMs - utc;
+          return elapsed > -10*60*1000 && elapsed < 115*60*1000;
+        });
+        if (!todayMatch) return null;
+        const isHome = todayMatch.home === team;
+        const statusColor = liveScore?.status==="LIVE"?"#ef4444":liveScore?.status==="HT"?"#f59e0b":"#10b981";
+        return (
+          <div style={{background:liveScore?.status==="LIVE"?`rgba(239,68,68,.06)`:T.card, border:`2px solid ${liveScore?.status==="LIVE"?"#ef4444":c}`, borderRadius:16, padding:"18px 20px", animation:"fadeIn .3s ease"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                {liveScore?.status==="LIVE" && <span style={{width:8,height:8,borderRadius:"50%",background:"#ef4444",display:"inline-block",animation:"pulse 1s infinite"}}/>}
+                <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:liveScore?statusColor:c}}>
+                  {liveScore?.status==="LIVE"?"🔴 LIVE":liveScore?.status==="HT"?"⏸ হাফ টাইম":liveScore?.status==="FT"?"✅ ফুল টাইম":"⏳ আজকের ম্যাচ"}
+                  {liveScore?.status==="LIVE" && liveScore.minute ? ` · ${liveScore.minute}'` : ""}
+                </span>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                {lastLiveFetch && <span style={{fontSize:10,color:T.dim}}>{lastLiveFetch.toLocaleTimeString("bn-BD")}</span>}
+                <span style={{fontSize:10,color:T.dim,animation:liveLoading?"pulse 1s infinite":""}}>{liveLoading?"⟳ আপডেট...":"↻ ৩০সে"}</span>
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}>
+              <div style={{textAlign:"center",flex:1}}>
+                <div style={{fontSize:36,marginBottom:4}}>{FLAGS[todayMatch.home]||"🏳"}</div>
+                <div style={{fontSize:14,fontWeight:700,color:isHome?c:T.text}}>{todayMatch.home}</div>
+              </div>
+              <div style={{textAlign:"center",minWidth:100}}>
+                {liveScore ? (
+                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:52,color:liveScore.status==="LIVE"?"#ef4444":c,lineHeight:1,letterSpacing:4}}>
+                    {liveScore.h} - {liveScore.a}
+                  </div>
+                ) : (
+                  <div style={{textAlign:"center"}}>
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:c,letterSpacing:2}}>VS</div>
+                    <div style={{fontSize:11,color:T.sub,marginTop:4}}>{bdTime(todayMatch.etTime).time} BD</div>
+                  </div>
+                )}
+              </div>
+              <div style={{textAlign:"center",flex:1}}>
+                <div style={{fontSize:36,marginBottom:4}}>{FLAGS[todayMatch.away]||"🏳"}</div>
+                <div style={{fontSize:14,fontWeight:700,color:!isHome?c:T.text}}>{todayMatch.away}</div>
+              </div>
+            </div>
+            <div style={{textAlign:"center",marginTop:12,fontSize:11,color:T.dim}}>
+              {todayMatch.venue?.split(",")[0]} · {todayMatch.dateStr}
+            </div>
           </div>
-        )}
-        {aiLoading && (
-          <div style={{textAlign:"center",padding:"24px 0",color:T.sub}}>
-            <div style={{fontSize:28,animation:"pulse 1s infinite",marginBottom:8}}>🤖</div>
-            <div style={{fontSize:12}}>{team} এর তথ্য খোঁজা হচ্ছে...</div>
-          </div>
-        )}
-        {aiPred && (
-          <div style={{fontSize:13,color:T.text,lineHeight:1.8,whiteSpace:"pre-wrap",animation:"fadeIn .4s ease"}}>
-            {aiPred}
-          </div>
-        )}
-      </div>
+        );
+      })()}
 
     </div>
   );
