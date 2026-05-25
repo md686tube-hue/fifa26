@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import TournamentJourneyMap from "./TournamentJourneyMap";
+
 function etToBD(etTime) {
   const [h, m] = etTime.split(":").map(Number);
   const totalMin = h * 60 + (m || 0) + 600;
@@ -1342,6 +1342,192 @@ function getTeamGroup(t) {
   return "?";
 }
 
+
+// ── Journey Map Component ────────────────────────────────────────────────────
+const JOURNEY_DATA_MAP = {
+  Argentina:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final","Semi-Final","Champion"],results:[{stage:"Group Stage",opponent:"Algeria",score:"3-0",result:"W",date:"Jun 16"},{stage:"Group Stage",opponent:"Austria",score:"2-1",result:"W",date:"Jun 22"},{stage:"Group Stage",opponent:"Jordan",score:"4-0",result:"W",date:"Jun 27"},{stage:"Round of 32",opponent:"Saudi Arabia",score:"2-0",result:"W",date:"Jul 3"},{stage:"Round of 16",opponent:"Ecuador",score:"1-0",result:"W",date:"Jul 6"},{stage:"Quarter-Final",opponent:"France",score:"2-1",result:"W",date:"Jul 11"},{stage:"Semi-Final",opponent:"England",score:"3-1",result:"W",date:"Jul 14"},{stage:"Final",opponent:"Brazil",score:"1-0",result:"W",date:"Jul 19"}],eliminated:null,group:"J"},
+  Brazil:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final","Semi-Final","Final"],results:[{stage:"Group Stage",opponent:"Morocco",score:"3-1",result:"W",date:"Jun 13"},{stage:"Group Stage",opponent:"Haiti",score:"5-0",result:"W",date:"Jun 19"},{stage:"Group Stage",opponent:"Scotland",score:"2-0",result:"W",date:"Jun 24"},{stage:"Round of 32",opponent:"Switzerland",score:"2-0",result:"W",date:"Jul 1"},{stage:"Round of 16",opponent:"USA",score:"2-1",result:"W",date:"Jul 5"},{stage:"Quarter-Final",opponent:"Germany",score:"3-2",result:"W",date:"Jul 10"},{stage:"Semi-Final",opponent:"Spain",score:"2-0",result:"W",date:"Jul 15"},{stage:"Final",opponent:"Argentina",score:"0-1",result:"L",date:"Jul 19"}],eliminated:"Final",group:"C"},
+  France:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final"],results:[{stage:"Group Stage",opponent:"Senegal",score:"2-0",result:"W",date:"Jun 16"},{stage:"Group Stage",opponent:"Iraq",score:"4-0",result:"W",date:"Jun 22"},{stage:"Group Stage",opponent:"Norway",score:"1-0",result:"W",date:"Jun 26"},{stage:"Round of 32",opponent:"Turkey",score:"2-0",result:"W",date:"Jul 2"},{stage:"Round of 16",opponent:"Belgium",score:"1-0",result:"W",date:"Jul 4"},{stage:"Quarter-Final",opponent:"Argentina",score:"1-2",result:"L",date:"Jul 11"}],eliminated:"Quarter-Final",group:"I"},
+  England:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final","Semi-Final"],results:[{stage:"Group Stage",opponent:"Croatia",score:"2-0",result:"W",date:"Jun 17"},{stage:"Group Stage",opponent:"Ghana",score:"3-0",result:"W",date:"Jun 23"},{stage:"Group Stage",opponent:"Panama",score:"4-1",result:"W",date:"Jun 27"},{stage:"Round of 32",opponent:"Netherlands",score:"2-1",result:"W",date:"Jul 3"},{stage:"Round of 16",opponent:"Portugal",score:"1-0",result:"W",date:"Jul 7"},{stage:"Quarter-Final",opponent:"Colombia",score:"2-0",result:"W",date:"Jul 9"},{stage:"Semi-Final",opponent:"Argentina",score:"1-3",result:"L",date:"Jul 14"}],eliminated:"Semi-Final",group:"L"},
+  Spain:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final","Semi-Final"],results:[{stage:"Group Stage",opponent:"Cape Verde",score:"5-0",result:"W",date:"Jun 15"},{stage:"Round of 32",opponent:"Morocco",score:"1-0",result:"W",date:"Jul 2"},{stage:"Round of 16",opponent:"Japan",score:"2-1",result:"W",date:"Jul 6"},{stage:"Quarter-Final",opponent:"Norway",score:"3-0",result:"W",date:"Jul 9"},{stage:"Semi-Final",opponent:"Brazil",score:"0-2",result:"L",date:"Jul 15"}],eliminated:"Semi-Final",group:"H"},
+  Germany:{stages:["Group Stage","Round of 32","Round of 16","Quarter-Final"],results:[{stage:"Group Stage",opponent:"Curaçao",score:"5-0",result:"W",date:"Jun 14"},{stage:"Round of 32",opponent:"Czech Republic",score:"3-0",result:"W",date:"Jul 1"},{stage:"Round of 16",opponent:"Sweden",score:"2-1",result:"W",date:"Jul 4"},{stage:"Quarter-Final",opponent:"Brazil",score:"2-3",result:"L",date:"Jul 10"}],eliminated:"Quarter-Final",group:"E"},
+  Portugal:{stages:["Group Stage","Round of 32","Round of 16"],results:[{stage:"Group Stage",opponent:"DR Congo",score:"4-0",result:"W",date:"Jun 17"},{stage:"Round of 32",opponent:"Ghana",score:"3-0",result:"W",date:"Jul 3"},{stage:"Round of 16",opponent:"England",score:"0-1",result:"L",date:"Jul 7"}],eliminated:"Round of 16",group:"K"},
+};
+
+const STAGE_X_POS = {"Group Stage":80,"Round of 32":200,"Round of 16":320,"Quarter-Final":430,"Semi-Final":530,"Final":620,"Champion":700};
+const STAGE_COLORS_MAP = {"Group Stage":"#10b981","Round of 32":"#3b82f6","Round of 16":"#8b5cf6","Quarter-Final":"#f59e0b","Semi-Final":"#ef4444","Final":"#ec4899","Champion":"#fbbf24"};
+const RESULT_CLR = {W:"#10b981",L:"#ef4444",D:"#f59e0b"};
+
+function JourneyMap({T,c,dark}) {
+  const allTeams = Object.values(GROUPS).flat();
+  const [selTeam, setSelTeam] = useState("Argentina");
+  const [search, setSearch] = useState("");
+  const [animKey, setAnimKey] = useState(0);
+
+  useEffect(()=>{ setAnimKey(k=>k+1); },[selTeam]);
+
+  const journey = JOURNEY_DATA_MAP[selTeam] || {
+    stages:["Group Stage"],
+    results:[{stage:"Group Stage",opponent:"TBD",score:"–",result:"–",date:"Jun –"}],
+    eliminated:"Group Stage",
+    group: Object.entries(GROUPS).find(([,ts])=>ts.includes(selTeam))?.[0]||"?"
+  };
+
+  const isChampion = !journey.eliminated;
+  const filtered = allTeams.filter(t=>!search||t.toLowerCase().includes(search.toLowerCase()));
+
+  const stageOrder = ["Group Stage","Round of 32","Round of 16","Quarter-Final","Semi-Final","Final","Champion"];
+  const getFar = (team) => {
+    const j = JOURNEY_DATA_MAP[team];
+    if(!j) return "Group Stage";
+    if(!j.eliminated) return "Champion";
+    return j.stages[j.stages.length-1];
+  };
+
+  return (
+    <div className="fi" style={{paddingBottom:8}}>
+      <div style={{fontSize:12,color:T.sub,marginBottom:12}}>প্রতিটি দলের পুরো টুর্নামেন্ট যাত্রা — animated path · ৪৮ দল · ৭ রাউন্ড</div>
+
+      <div style={{display:"grid",gridTemplateColumns:"180px 1fr",gap:12}}>
+        {/* Team list */}
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="🔍 দল খুঁজুন..."
+            style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,color:T.text,padding:"7px 10px",fontSize:12,outline:"none",width:"100%",fontFamily:"inherit"}}/>
+          <div style={{overflowY:"auto",maxHeight:"65vh",display:"flex",flexDirection:"column",gap:3}}>
+            {filtered.map(team=>{
+              const far=getFar(team);
+              const isChamp=JOURNEY_DATA_MAP[team]&&!JOURNEY_DATA_MAP[team].eliminated;
+              const si=stageOrder.indexOf(far);
+              return (
+                <button key={team} onClick={()=>setSelTeam(team)}
+                  style={{background:selTeam===team?T.acBg:T.card,border:`1px solid ${selTeam===team?c:T.border}`,borderRadius:8,padding:"6px 9px",cursor:"pointer",display:"flex",alignItems:"center",gap:7,textAlign:"left",width:"100%",transition:"all .18s"}}>
+                  <span style={{fontSize:16,flexShrink:0}}>{FLAGS[team]||"🏳"}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:11,fontWeight:700,color:selTeam===team?c:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{team}</div>
+                    <div style={{fontSize:9,color:isChamp?"#fbbf24":si>=4?c:si>=2?"#3b82f6":T.sub,marginTop:1}}>
+                      {isChamp?"🏆 Champion":far}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right panel */}
+        <div style={{display:"flex",flexDirection:"column",gap:10,minWidth:0}}>
+          {/* Hero */}
+          <div key={selTeam+"h"} style={{background:T.acBg,border:`1px solid ${c}30`,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:14,animation:"fadeIn .3s ease"}}>
+            <span style={{fontSize:48}}>{FLAGS[selTeam]||"🏳"}</span>
+            <div>
+              <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:26,letterSpacing:3,color:isChampion?"#fbbf24":c,lineHeight:1}}>{selTeam.toUpperCase()}</div>
+              <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:10,padding:"2px 8px",borderRadius:99,background:`${c}18`,color:c,border:`1px solid ${c}30`}}>Group {journey.group}</span>
+                <span style={{fontSize:10,padding:"2px 8px",borderRadius:99,background:isChampion?"rgba(251,191,36,.15)":T.card,color:isChampion?"#fbbf24":T.sub,border:`1px solid ${isChampion?"rgba(251,191,36,.3)":T.border}`}}>
+                  {isChampion?"🏆 CHAMPION":`বিদায়: ${journey.eliminated||"–"}`}
+                </span>
+                <span style={{fontSize:10,color:T.sub}}>{journey.results?.filter(r=>r.result==="W").length||0}জয় · {journey.results?.filter(r=>r.result==="L").length||0}হার</span>
+              </div>
+            </div>
+            {isChampion&&<span style={{fontSize:40,marginLeft:"auto"}}>🏆</span>}
+          </div>
+
+          {/* SVG Path */}
+          <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"14px 12px",overflowX:"auto"}}>
+            <div style={{fontSize:10,color:T.sub,letterSpacing:2,fontFamily:"'Bebas Neue',cursive",marginBottom:8}}>TOURNAMENT PATH</div>
+            <svg key={animKey+"s"} width="760" height="140" viewBox="0 0 760 140" style={{minWidth:600}}>
+              {/* Stage labels */}
+              {Object.entries(STAGE_X_POS).map(([s,x])=>(
+                <g key={s}>
+                    <text x={x} y={14} textAnchor="middle" fontSize="8" fill={T.sub} fontFamily="'Bebas Neue',cursive" letterSpacing="1">{s.toUpperCase()}</text>
+
+                  <line x1={x} y1={18} x2={x} y2={125} stroke={`${T.border}60`} strokeWidth="1" strokeDasharray="3,4"/>
+                </g>
+              ))}
+
+              {/* Other teams faded paths */}
+              {Object.entries(JOURNEY_DATA_MAP).filter(([t])=>t!==selTeam).map(([t,j])=>{
+                const pts=j.stages.map(s=>`${STAGE_X_POS[s]||80},80`);
+                if(pts.length<2) return null;
+                return <path key={t} d={`M ${pts[0]} `+pts.slice(1).map(p=>`L ${p}`).join(" ")} stroke="rgba(128,128,128,.08)" strokeWidth="1.5" fill="none"/>;
+              })}
+
+              {/* Selected path */}
+              {(()=>{
+                const pts=journey.stages.map(s=>`${STAGE_X_POS[s]||80},80`);
+                if(pts.length<2) return null;
+                const d=`M ${pts[0]} `+pts.slice(1).map(p=>`L ${p}`).join(" ");
+                const len=journey.stages.length*160;
+                return <>
+                  <path d={d} stroke={isChampion?"rgba(251,191,36,.2)":dark?"rgba(16,185,129,.2)":"rgba(16,185,129,.15)"} strokeWidth="10" fill="none" strokeLinecap="round"/>
+                  <path d={d} stroke={isChampion?"#fbbf24":c} strokeWidth="2.5" fill="none" strokeLinecap="round"
+                    strokeDasharray={len} style={{strokeDashoffset:len,animation:"drawJPath 1.2s ease forwards"}}/>
+                </>;
+              })()}
+
+              {/* Nodes */}
+              {journey.stages.map((stage,i)=>{
+                const x=STAGE_X_POS[stage]||80;
+                const isLast=i===journey.stages.length-1;
+                const nodeC=isLast&&!journey.eliminated?"#fbbf24":isLast?"#ef4444":c;
+                const r=journey.results?.find(rm=>rm.stage===stage);
+                return (
+                  <g key={stage} style={{animation:`popNode .4s ease ${i*0.15}s both`}}>
+                    <circle cx={x} cy={80} r={isLast?13:9} fill={`${nodeC}20`} stroke={nodeC} strokeWidth={isLast?2:1.5}/>
+                    <circle cx={x} cy={80} r={isLast?6:4} fill={nodeC}/>
+                    {r&&r.opponent!=="TBD"&&<>
+                      <text x={x} y={100} textAnchor="middle" fontSize="8" fill={T.sub} fontFamily="inherit">{r.opponent.length>9?r.opponent.slice(0,8)+"…":r.opponent}</text>
+                      <text x={x} y={112} textAnchor="middle" fontSize="9" fill={RESULT_CLR[r.result]||T.sub} fontFamily="'Bebas Neue',cursive">{r.score}</text>
+                    </>}
+                    {r&&<text x={x} y={65} textAnchor="middle" fontSize="7" fill={T.dim}>{r.date}</text>}
+                    {isLast&&!journey.eliminated&&<text x={x} y={84} textAnchor="middle" fontSize="11">🏆</text>}
+                  </g>
+                );
+              })}
+
+              <style>{`
+                @keyframes drawJPath { from{stroke-dashoffset:attr(stroke-dasharray)} to{stroke-dashoffset:0} }
+                @keyframes drawJPath { 0%{stroke-dashoffset:2000} 100%{stroke-dashoffset:0} }
+                @keyframes popNode { 0%{opacity:0;transform:scale(0)} 70%{transform:scale(1.2)} 100%{opacity:1;transform:scale(1)} }
+              `}</style>
+            </svg>
+          </div>
+
+          {/* Match results */}
+          <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"14px 16px"}}>
+            <div style={{fontSize:10,color:T.sub,letterSpacing:2,fontFamily:"'Bebas Neue',cursive",marginBottom:10}}>ম্যাচ বিবরণ</div>
+            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+              {journey.results?.filter(r=>r.opponent!=="TBD").map((r,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",background:T.bg||"transparent",border:`1px solid ${T.border}`,borderRadius:8,flexWrap:"wrap",animation:`fadeIn .3s ease ${i*0.06}s both`}}>
+                  <span style={{fontSize:9,padding:"1px 6px",borderRadius:4,background:`${STAGE_COLORS_MAP[r.stage]||c}18`,color:STAGE_COLORS_MAP[r.stage]||c,fontFamily:"'Bebas Neue',cursive",letterSpacing:1,minWidth:80,textAlign:"center"}}>{r.stage}</span>
+                  <span style={{fontSize:10,color:T.dim,minWidth:40}}>{r.date}</span>
+                  <span style={{flex:1,display:"flex",alignItems:"center",gap:6,fontSize:12,flexWrap:"wrap"}}>
+                    <span>{FLAGS[selTeam]||"🏳"}</span>
+                    <span style={{fontWeight:700,color:T.text}}>{selTeam}</span>
+                    <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:15,color:RESULT_CLR[r.result]||T.sub,minWidth:50,textAlign:"center"}}>{r.score}</span>
+                    <span style={{fontWeight:700,color:T.text}}>{r.opponent}</span>
+                    <span>{FLAGS[r.opponent]||"🏳"}</span>
+                  </span>
+                  <span style={{padding:"2px 8px",borderRadius:99,background:`${RESULT_CLR[r.result]||T.sub}18`,color:RESULT_CLR[r.result]||T.sub,fontSize:10,fontWeight:700,border:`1px solid ${RESULT_CLR[r.result]||T.sub}40`}}>
+                    {r.result==="W"?"জয়":r.result==="L"?"হার":r.result==="D"?"ড্র":"–"}
+                  </span>
+                </div>
+              ))}
+              {(!journey.results||journey.results.every(r=>r.opponent==="TBD"))&&(
+                <div style={{textAlign:"center",padding:"24px 0",color:T.sub,fontSize:12}}>
+                  <div style={{fontSize:32,marginBottom:8}}>⏳</div>
+                  টুর্নামেন্ট শুরু হলে এখানে ম্যাচের বিবরণ আসবে
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ────────────────────────────────────────────────────────────────
 export default function App() {
   const [dark, setDark] = useState(true);
@@ -1639,7 +1825,7 @@ export default function App() {
     {k:"scorers",l:"⚽ Scorers"},
     {k:"stadiums",l:"🏟️ Stadiums"},
     {k:"squads",l:"👕 Squads"},
-    {k:"journey", l:"🗺️ Journey"},
+    {k:"journey",l:"🗺️ Journey"},
   ];
 
   // today's matches helper
@@ -2166,7 +2352,6 @@ export default function App() {
               })()}
             </div>
           )}
-          {tab==="journey" && <TournamentJourneyMap />}
 
           {/* ═══ BRACKET ═══ */}
           {tab==="bracket" && (()=>{
@@ -2500,6 +2685,10 @@ export default function App() {
           )}
 
           {/* ═══ SQUADS ═══ */}
+
+          {tab==="journey" && (
+            <JourneyMap T={T} c={c} dark={dark} />
+          )}
           {tab==="squads" && (
             <div className="fi">
               <div style={{fontSize:12,color:T.sub,marginBottom:10}}>সব ৪৮ দলের স্কোয়াড। ফ্ল্যাগে ক্লিক করলে সেই দল প্রিয় দল হবে।</div>
@@ -2615,6 +2804,7 @@ export default function App() {
               {k:"scorers",icon:"⚽",label:"Scorers"},
               {k:"stadiums",icon:"🏟️",label:"Stadiums"},
               {k:"squads",icon:"👕",label:"Squads"},
+              {k:"journey",icon:"🗺️",label:"Journey"},
             ].map(({k,icon,label})=>(
               <button key={k} className={`bottom-nav-btn${tab===k?" active":""}`} onClick={()=>setTab(k)}
                 style={{color:tab===k?c:T.sub}}>
