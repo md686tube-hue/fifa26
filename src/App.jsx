@@ -2530,8 +2530,7 @@ export default function App() {
           {/* ═══ BRACKET ═══ */}
           {tab==="bracket" && (()=>{
             try {
-            // Build qualified teams from standings
-            // Winner = rank 1, Runner-up = rank 2 of each group
+            // ── helpers ────────────────────────────────────────────────────
             const getQualified = (grp, rank) => {
               const rows = calcStandings(grp);
               const fixes = ALL_GROUP_FIXTURES.filter(f=>f.grp===grp);
@@ -2539,155 +2538,227 @@ export default function App() {
               if(played===0) return null;
               return rows[rank] ? {team:rows[rank].team, flag:FLAGS[rows[rank].team]||"🏳", confirmed:played===6} : null;
             };
-            // Slot labels matching FIFA WC26 R32 structure
-            // W=Winner, R=Runner-up, B=Best 3rd (TBD)
             const slot = (grp, rank) => {
               const q = getQualified(grp, rank);
-              if(!q) return {team: rank===0?`W Group ${grp}`:`2nd Group ${grp}`, flag:"❓", confirmed:false, tbd:true};
+              if(!q) return {team: rank===0?`W ${grp}`:`2nd ${grp}`, flag:"❓", tbd:true, confirmed:false};
               return q;
             };
-            // R32 pairings (simplified FIFA WC26 bracket)
-            const r32 = [
-              {m:1, a:slot("A",1), b:slot("B",1), date:"Jun 28", bd:"রাত ১টা+1"},
-              {m:2, a:slot("C",0), b:slot("F",1), date:"Jun 29", bd:"রাত ১১টা"},
-              {m:3, a:slot("E",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jun 29", bd:"ভোর ২:৩০+1"},
-              {m:4, a:slot("F",0), b:slot("C",1), date:"Jun 29", bd:"সকাল ৭টা+1"},
-              {m:5, a:slot("E",1), b:slot("I",1), date:"Jun 30", bd:"রাত ১১টা"},
-              {m:6, a:slot("I",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jun 30", bd:"ভোর ৩টা+1"},
-              {m:7, a:slot("A",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jun 30", bd:"সকাল ৭টা+1"},
-              {m:8, a:slot("L",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jul 1", bd:"রাত ১০টা"},
-              {m:9, a:slot("G",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jul 1", bd:"ভোর ২টা+1"},
-              {m:10,a:slot("D",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jul 1", bd:"ভোর ৬টা+1"},
-              {m:11,a:slot("H",0), b:slot("J",1), date:"Jul 2", bd:"রাত ১টা+1"},
-              {m:12,a:slot("K",1), b:slot("L",1), date:"Jul 2", bd:"ভোর ৫টা+1"},
-              {m:13,a:slot("B",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jul 2", bd:"সকাল ৯টা+1"},
-              {m:14,a:slot("D",1), b:slot("G",1), date:"Jul 3", bd:"রাত ১২টা"},
-              {m:15,a:slot("J",0), b:slot("H",1), date:"Jul 3", bd:"ভোর ৪টা+1"},
-              {m:16,a:slot("K",0), b:{team:"Best 3rd",flag:"❓",confirmed:false,tbd:true}, date:"Jul 3", bd:"সকাল ৭:৩০+1"},
-            ];
-            const r16 = [
-              {m:1,a:{team:"W R32-1",flag:"❓",tbd:true},b:{team:"W R32-2",flag:"❓",tbd:true},date:"Jul 4",bd:"রাত ১১টা"},
-              {m:2,a:{team:"W R32-3",flag:"❓",tbd:true},b:{team:"W R32-4",flag:"❓",tbd:true},date:"Jul 4",bd:"ভোর ৩টা+1"},
-              {m:3,a:{team:"W R32-5",flag:"❓",tbd:true},b:{team:"W R32-6",flag:"❓",tbd:true},date:"Jul 5",bd:"ভোর ২টা+1"},
-              {m:4,a:{team:"W R32-7",flag:"❓",tbd:true},b:{team:"W R32-8",flag:"❓",tbd:true},date:"Jul 5",bd:"ভোর ৬টা+1"},
-              {m:5,a:{team:"W R32-9",flag:"❓",tbd:true},b:{team:"W R32-10",flag:"❓",tbd:true},date:"Jul 6",bd:"রাত ১টা+1"},
-              {m:6,a:{team:"W R32-11",flag:"❓",tbd:true},b:{team:"W R32-12",flag:"❓",tbd:true},date:"Jul 6",bd:"ভোর ৬টা+1"},
-              {m:7,a:{team:"W R32-13",flag:"❓",tbd:true},b:{team:"W R32-14",flag:"❓",tbd:true},date:"Jul 7",bd:"রাত ১০টা"},
-              {m:8,a:{team:"W R32-15",flag:"❓",tbd:true},b:{team:"W R32-16",flag:"❓",tbd:true},date:"Jul 7",bd:"ভোর ২টা+1"},
-            ];
-            const qf = [
-              {m:1,a:{team:"W R16-1",flag:"❓",tbd:true},b:{team:"W R16-2",flag:"❓",tbd:true},date:"Jul 9",bd:"ভোর ২টা+1"},
-              {m:2,a:{team:"W R16-3",flag:"❓",tbd:true},b:{team:"W R16-4",flag:"❓",tbd:true},date:"Jul 10",bd:"রাত ১টা+1"},
-              {m:3,a:{team:"W R16-5",flag:"❓",tbd:true},b:{team:"W R16-6",flag:"❓",tbd:true},date:"Jul 11",bd:"ভোর ৩টা+1"},
-              {m:4,a:{team:"W R16-7",flag:"❓",tbd:true},b:{team:"W R16-8",flag:"❓",tbd:true},date:"Jul 11",bd:"সকাল ৭টা+1"},
-            ];
-            const sf = [
-              {m:1,a:{team:"W QF-1",flag:"❓",tbd:true},b:{team:"W QF-2",flag:"❓",tbd:true},date:"Jul 14",bd:"রাত ১টা+1"},
-              {m:2,a:{team:"W QF-3",flag:"❓",tbd:true},b:{team:"W QF-4",flag:"❓",tbd:true},date:"Jul 15",bd:"রাত ১টা+1"},
-            ];
-            const fin = [{m:1,a:{team:"W SF-1",flag:"❓",tbd:true},b:{team:"W SF-2",flag:"❓",tbd:true},date:"Jul 19",bd:"রাত ১টা+1"}];
-            const third = [{m:1,a:{team:"L SF-1",flag:"❓",tbd:true},b:{team:"L SF-2",flag:"❓",tbd:true},date:"Jul 18",bd:"ভোর ৩টা+1"}];
 
-            const MatchCard = ({match, color="#10b981", isFinal=false}) => {
-              const isSelected = bracketSelected === `${match.m}-${color}`;
+            // ── R32 pairings ─────────────────────────────────────────────
+            const r32 = [
+              {m:1,  a:slot("A",1), b:slot("B",1),  date:"Jun 28"}, {m:2,  a:slot("C",0), b:slot("F",1), date:"Jun 29"},
+              {m:3,  a:slot("E",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jun 29"}, {m:4,  a:slot("F",0), b:slot("C",1), date:"Jun 29"},
+              {m:5,  a:slot("E",1), b:slot("I",1),  date:"Jun 30"}, {m:6,  a:slot("I",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jun 30"},
+              {m:7,  a:slot("A",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jun 30"}, {m:8,  a:slot("L",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jul 1"},
+              {m:9,  a:slot("G",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jul 1"}, {m:10, a:slot("D",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jul 1"},
+              {m:11, a:slot("H",0), b:slot("J",1),  date:"Jul 2"}, {m:12, a:slot("K",1), b:slot("L",1), date:"Jul 2"},
+              {m:13, a:slot("B",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jul 2"}, {m:14, a:slot("D",1), b:slot("G",1), date:"Jul 3"},
+              {m:15, a:slot("J",0), b:slot("H",1),  date:"Jul 3"}, {m:16, a:slot("K",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jul 3"},
+            ];
+            const tbd = (label) => ({team:label, flag:"❓", tbd:true, confirmed:false});
+            const r16 = Array.from({length:8},(_,i)=>({m:i+1,a:tbd(`W M${i*2+1}`),b:tbd(`W M${i*2+2}`),date:["Jul 4","Jul 4","Jul 5","Jul 5","Jul 6","Jul 6","Jul 7","Jul 7"][i]}));
+            const qf  = Array.from({length:4},(_,i)=>({m:i+1,a:tbd(`W R16-${i*2+1}`),b:tbd(`W R16-${i*2+2}`),date:["Jul 9","Jul 10","Jul 11","Jul 11"][i]}));
+            const sf  = [{m:1,a:tbd("W QF-1"),b:tbd("W QF-2"),date:"Jul 14"},{m:2,a:tbd("W QF-3"),b:tbd("W QF-4"),date:"Jul 15"}];
+            const fin = [{m:1,a:tbd("W SF-1"),b:tbd("W SF-2"),date:"Jul 19"}];
+            const thirdP = [{m:1,a:tbd("L SF-1"),b:tbd("L SF-2"),date:"Jul 18"}];
+
+            // ── Team Slot component ────────────────────────────────────────
+            const TeamSlot = ({team, accent="#10b981", winner=false}) => (
+              <div style={{
+                display:"flex", alignItems:"center", gap:5,
+                padding:"5px 8px",
+                background: team.tbd ? (dark?"rgba(255,255,255,.03)":"rgba(0,0,0,.04)") : winner ? "rgba(251,191,36,.12)" : `${accent}0f`,
+                border:`1px solid ${team.tbd ? T.border : winner ? "rgba(251,191,36,.4)" : accent+"33"}`,
+                borderRadius:7, minWidth:0, transition:"all .2s"
+              }}>
+                <span style={{fontSize:15, flexShrink:0}}>{team.flag}</span>
+                <span style={{
+                  fontSize:10, fontWeight: team.tbd?400:700,
+                  color: team.tbd ? T.dim : winner ? "#fbbf24" : team.confirmed ? accent : T.text,
+                  flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"
+                }}>{team.team}</span>
+                {team.confirmed && !team.tbd && <span style={{fontSize:8,color:accent,flexShrink:0}}>✓</span>}
+              </div>
+            );
+
+            // ── Match Box ──────────────────────────────────────────────────
+            const MatchBox = ({match, accent="#10b981", isFinal=false, showDate=true}) => {
+              const both = !match.a.tbd && !match.b.tbd;
               return (
-              <div className={`bracket-card${isSelected?" selected":""}`}
-                onClick={()=>setBracketSelected(isSelected?null:`${match.m}-${color}`)}
-                style={{background:T.card,border:`1px solid ${isFinal?"rgba(251,191,36,.3)":color+"33"}`,borderRadius:10,padding:"8px 10px",minWidth:0,transition:"all .25s",boxShadow:T.sh,cursor:"pointer"}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                  <span style={{fontSize:9,fontFamily:"'Bebas Neue',cursive",color:T.sub,letterSpacing:1}}>M{match.m}</span>
-                  <span style={{fontSize:9,color:T.sub,marginLeft:"auto"}}>{match.date} · {match.bd}</span>
-                  <span style={{fontSize:9,color:isSelected?color:T.dim}}>{isSelected?"▲":"▼"}</span>
+              <div style={{
+                background: isFinal ? "rgba(251,191,36,.06)" : T.card,
+                border:`1.5px solid ${isFinal?"rgba(251,191,36,.35)":both?accent+"44":T.border}`,
+                borderRadius:10, padding:"7px 8px", width:"100%",
+                boxShadow: both ? `0 0 12px ${isFinal?"rgba(251,191,36,.15)":accent+"18"}` : "none",
+                transition:"all .2s"
+              }}>
+                {showDate && <div style={{fontSize:8,color:T.dim,marginBottom:4,textAlign:"center",fontFamily:"'Bebas Neue',cursive",letterSpacing:1}}>{match.date}</div>}
+                <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                  <TeamSlot team={match.a} accent={isFinal?"#fbbf24":accent}/>
+                  <div style={{textAlign:"center",fontSize:8,color:T.dim,fontFamily:"'Bebas Neue',cursive",letterSpacing:1}}>VS</div>
+                  <TeamSlot team={match.b} accent={isFinal?"#fbbf24":accent}/>
                 </div>
-                {[match.a, match.b].map((team,ti)=>(
-                  <div key={ti} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 6px",background:team.tbd?T.muted:isFinal?"rgba(251,191,36,.05)":color+"0d",borderRadius:6,marginBottom:ti===0?4:0,border:`1px solid ${team.tbd?T.border:team.confirmed?color+"44":"rgba(251,191,36,.2)"}`}}>
-                    <span style={{fontSize:14}}>{team.flag}</span>
-                    <span style={{fontSize:11,fontWeight:team.tbd?400:700,color:team.tbd?T.dim:isFinal?"#fbbf24":team.confirmed?color:T.text,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                      {team.team}
-                    </span>
-                    {team.confirmed && <span style={{fontSize:9,padding:"1px 5px",background:color+"22",color:color,borderRadius:4,fontWeight:700}}>✓</span>}
-                    {!team.tbd && !team.confirmed && <span style={{fontSize:8,color:T.sub}}>~</span>}
-                  </div>
-                ))}
-                {isSelected && (
-                  <div style={{marginTop:10,padding:"8px 10px",background:T.acBg,borderRadius:8,animation:"fadeIn .18s ease",border:`1px solid ${color}22`}}>
-                    <div style={{fontSize:10,color:T.sub,marginBottom:6,fontWeight:700,letterSpacing:.5}}>📋 MATCH INFO</div>
-                    {match.a.confirmed&&match.b.confirmed ? (
-                      <div style={{fontSize:11,color:T.text}}>
-                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                          <span>{match.a.flag} {match.a.team}</span><span style={{color:color,fontWeight:700}}>vs</span><span>{match.b.team} {match.b.flag}</span>
-                        </div>
-                        <div style={{fontSize:10,color:T.sub}}>📅 {match.date} · ⏰ {match.bd} BD</div>
-                        <button onClick={e=>{e.stopPropagation();shareMatch({home:match.a.team,away:match.b.team,dateStr:match.date,etTime:"15:00",venue:"TBD"});}}
-                          style={{marginTop:8,padding:"4px 10px",border:`1px solid ${color}44`,background:color+"18",color,borderRadius:6,cursor:"pointer",fontSize:10,fontWeight:700,width:"100%"}}>
-                          📤 শেয়ার করুন
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{fontSize:11,color:T.sub}}>
-                        <div style={{marginBottom:4}}>📅 {match.date} · ⏰ {match.bd} BD</div>
-                        <div style={{color:T.dim,fontSize:10}}>দলগুলো গ্রুপ পর্ব শেষে নির্ধারিত হবে।</div>
-                        <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-                          {[match.a,match.b].map((t,ti)=>t.team&&(
-                            <span key={ti} style={{padding:"2px 8px",background:t.confirmed?color+"18":T.pill,color:t.confirmed?color:T.sub,borderRadius:6,fontSize:10,fontWeight:600}}>
-                              {t.flag} {t.team}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
               );
             };
 
-            const RoundSection = ({title, date, icon, matches, color, isFinal=false}) => (
-              <div style={{marginBottom:20}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,padding:"8px 12px",background:isFinal?"rgba(251,191,36,.1)":T.acBg,borderRadius:9,border:`1px solid ${isFinal?"rgba(251,191,36,.3)":color+"33"}`}}>
-                  <span style={{fontSize:18}}>{icon}</span>
-                  <div>
-                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,letterSpacing:2,color:isFinal?"#fbbf24":color}}>{title}</div>
-                    <div style={{fontSize:10,color:T.sub}}>{date} · {matches.length} ম্যাচ</div>
-                  </div>
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:8}}>
-                  {matches.map((m,i)=><MatchCard key={i} match={m} color={isFinal?"#fbbf24":color} isFinal={isFinal}/>)}
-                </div>
+            // ── Connector line ─────────────────────────────────────────────
+            const Connector = ({accent}) => (
+              <div style={{display:"flex",alignItems:"center",flexShrink:0}}>
+                <div style={{width:12,height:1,background:`${accent}40`}}/>
               </div>
             );
 
-            const confirmedCount = Object.keys(GROUPS).filter(g=>{
-              const fixes=ALL_GROUP_FIXTURES.filter(f=>f.grp===g);
-              return fixes.every(f=>{const r=results[f.id];return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);});
-            }).length;
+            // ── Column of matches ─────────────────────────────────────────
+            const MatchColumn = ({matches, accent, isFinal=false, justify="center"}) => (
+              <div style={{display:"flex",flexDirection:"column",gap:6,justifyContent:justify}}>
+                {matches.map((m,i)=><MatchBox key={i} match={m} accent={accent} isFinal={isFinal}/>)}
+              </div>
+            );
+
+            // ── Left half R32 (matches 1–8) ────────────────────────────────
+            const leftR32 = r32.slice(0,8);
+            const leftR16 = r16.slice(0,4);
+            const leftQF  = qf.slice(0,2);
+            const leftSF  = sf.slice(0,1);
+
+            // ── Right half R32 (matches 9–16) ────────────────────────────
+            const rightR32 = r32.slice(8,16);
+            const rightR16 = r16.slice(4,8);
+            const rightQF  = qf.slice(2,4);
+            const rightSF  = sf.slice(1,2);
+
+            const matchW = 130; // match box width
+            const colGap = 6;
 
             return (
-              <div className="fi">
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,padding:"10px 14px",background:T.acBg,borderRadius:10,border:`1px solid ${c}22`,flexWrap:"wrap"}}>
-                  <span style={{fontSize:14}}>🗂️</span>
+              <div className="fi" style={{paddingBottom:8}}>
+                {/* Header */}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"10px 14px",background:T.acBg,borderRadius:10,border:`1px solid ${c}22`,flexWrap:"wrap"}}>
+                  <span style={{fontSize:16}}>🗂️</span>
                   <div>
-                    <div style={{fontSize:13,fontWeight:700,color:T.text}}>Tournament Bracket — FIFA World Cup 2026</div>
-                    <div style={{fontSize:10,color:T.sub}}>গ্রুপ পর্বের ফলাফল অনুযায়ী auto-update · {confirmedCount}/12 গ্রুপ সম্পন্ন · ক্লিক করলে বিস্তারিত দেখবেন</div>
+                    <div style={{fontSize:13,fontWeight:700,color:T.text}}>টুর্নামেন্ট ব্র্যাকেট — FIFA World Cup 2026</div>
+                    <div style={{fontSize:10,color:T.sub}}>Group পর্ব শেষে দলের নাম auto আসবে · ✓ = নিশ্চিত · ❓ = TBD</div>
                   </div>
-                  <div style={{marginLeft:"auto",display:"flex",gap:8,fontSize:10,color:T.sub,flexWrap:"wrap"}}>
-                    <span style={{padding:"2px 7px",background:c+"18",color:c,borderRadius:5,fontWeight:700}}>✓ নিশ্চিত</span>
-                    <span style={{padding:"2px 7px",background:T.pill,color:T.sub,borderRadius:5}}>❓ TBD</span>
+                  <div style={{marginLeft:"auto",display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {[["R32","#10b981"],["R16","#3b82f6"],["QF","#8b5cf6"],["SF","#f59e0b"],["🏆","#fbbf24"]].map(([l,col])=>(
+                      <span key={l} style={{padding:"2px 8px",background:`${col}18`,color:col,borderRadius:5,fontSize:10,fontWeight:700,border:`1px solid ${col}33`}}>{l}</span>
+                    ))}
                   </div>
                 </div>
-                <RoundSection title="ROUND OF 32" date="Jun 28 – Jul 3" icon="⚽" matches={r32} color={c}/>
-                <RoundSection title="ROUND OF 16" date="Jul 4 – 7" icon="⚔️" matches={r16} color="#3b82f6"/>
-                <RoundSection title="QUARTER-FINALS" date="Jul 9 – 11" icon="🔥" matches={qf} color="#8b5cf6"/>
-                <RoundSection title="SEMI-FINALS" date="Jul 14 – 15" icon="🌟" matches={sf} color="#f59e0b"/>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
-                  <RoundSection title="3RD PLACE" date="Jul 18" icon="🥉" matches={third} color="#6b7280"/>
-                  <RoundSection title="FINAL 🏆" date="Jul 19" icon="🏆" matches={fin} color="#fbbf24" isFinal={true}/>
+
+                {/* ── MAIN BRACKET — horizontal scroll ── */}
+                <div style={{overflowX:"auto",paddingBottom:8}}>
+                  <div style={{minWidth:900, display:"flex", alignItems:"center", gap:colGap, padding:"8px 4px"}}>
+
+                    {/* LEFT SIDE: R32 → R16 → QF → SF */}
+                    <div style={{display:"flex",gap:colGap,alignItems:"center",flex:1}}>
+                      {/* R32 left */}
+                      <div style={{width:matchW,flexShrink:0}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#10b981",textAlign:"center",marginBottom:5}}>ROUND OF 32</div>
+                        <MatchColumn matches={leftR32} accent="#10b981" justify="space-around"/>
+                      </div>
+                      <Connector accent="#10b981"/>
+                      {/* R16 left */}
+                      <div style={{width:matchW,flexShrink:0}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#3b82f6",textAlign:"center",marginBottom:5}}>ROUND OF 16</div>
+                        <MatchColumn matches={leftR16} accent="#3b82f6" justify="space-around"/>
+                      </div>
+                      <Connector accent="#3b82f6"/>
+                      {/* QF left */}
+                      <div style={{width:matchW,flexShrink:0}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#8b5cf6",textAlign:"center",marginBottom:5}}>QUARTER-FINAL</div>
+                        <MatchColumn matches={leftQF} accent="#8b5cf6" justify="space-around"/>
+                      </div>
+                      <Connector accent="#8b5cf6"/>
+                      {/* SF left */}
+                      <div style={{width:matchW,flexShrink:0}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#f59e0b",textAlign:"center",marginBottom:5}}>SEMI-FINAL</div>
+                        <MatchColumn matches={leftSF} accent="#f59e0b" justify="center"/>
+                      </div>
+                      <Connector accent="#f59e0b"/>
+                    </div>
+
+                    {/* CENTER: FINAL + TROPHY */}
+                    <div style={{flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:10, width:matchW+20}}>
+                      <div style={{fontSize:32, animation:"pulse 3s infinite"}}>🏆</div>
+                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:11,letterSpacing:2,color:"#fbbf24",textAlign:"center"}}>FINAL · Jul 19</div>
+                      <MatchBox match={fin[0]} accent="#fbbf24" isFinal={true} showDate={false}/>
+                      <div style={{width:"100%",height:1,background:"rgba(251,191,36,.2)"}}/>
+                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:9,letterSpacing:1,color:"#6b7280",textAlign:"center"}}>3RD PLACE · Jul 18</div>
+                      <MatchBox match={thirdP[0]} accent="#6b7280" showDate={false}/>
+                    </div>
+
+                    {/* RIGHT SIDE: SF → QF → R16 → R32 */}
+                    <div style={{display:"flex",gap:colGap,alignItems:"center",flex:1,flexDirection:"row-reverse"}}>
+                      {/* R32 right */}
+                      <div style={{width:matchW,flexShrink:0}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#10b981",textAlign:"center",marginBottom:5}}>ROUND OF 32</div>
+                        <MatchColumn matches={rightR32} accent="#10b981" justify="space-around"/>
+                      </div>
+                      <Connector accent="#10b981"/>
+                      {/* R16 right */}
+                      <div style={{width:matchW,flexShrink:0}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#3b82f6",textAlign:"center",marginBottom:5}}>ROUND OF 16</div>
+                        <MatchColumn matches={rightR16} accent="#3b82f6" justify="space-around"/>
+                      </div>
+                      <Connector accent="#3b82f6"/>
+                      {/* QF right */}
+                      <div style={{width:matchW,flexShrink:0}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#8b5cf6",textAlign:"center",marginBottom:5}}>QUARTER-FINAL</div>
+                        <MatchColumn matches={rightQF} accent="#8b5cf6" justify="space-around"/>
+                      </div>
+                      <Connector accent="#8b5cf6"/>
+                      {/* SF right */}
+                      <div style={{width:matchW,flexShrink:0}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#f59e0b",textAlign:"center",marginBottom:5}}>SEMI-FINAL</div>
+                        <MatchColumn matches={rightSF} accent="#f59e0b" justify="center"/>
+                      </div>
+                      <Connector accent="#f59e0b"/>
+                    </div>
+
+                  </div>
                 </div>
+
+                {/* ── LEGEND ── */}
+                <div style={{marginTop:10,padding:"10px 14px",background:T.card,border:`1px solid ${T.border}`,borderRadius:10,fontSize:11,color:T.sub}}>
+                  💡 বাম থেকে ডানে → মাঝে 🏆 Final · দলের নাম Group পর্ব শেষে auto আসবে · Scroll করে পুরো bracket দেখুন
+                </div>
+
+                {/* ── GROUP STANDINGS QUICK VIEW ── */}
+                <div style={{marginTop:16}}>
+                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:c,marginBottom:10}}>GROUP STANDINGS — দলের অবস্থান</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
+                    {Object.keys(GROUPS).map(grp => {
+                      const rows = calcStandings(grp);
+                      const fixes = ALL_GROUP_FIXTURES.filter(f=>f.grp===grp);
+                      const played = fixes.filter(f=>{const r=results[f.id];return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);}).length;
+                      return (
+                        <div key={grp} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                            <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c}}>GROUP {grp}</span>
+                            <span style={{fontSize:9,color:played===6?"#10b981":T.sub}}>{played}/6 ম্যাচ</span>
+                          </div>
+                          {rows.slice(0,4).map((row,ri) => (
+                            <div key={row.team} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 6px",background:ri<2?`${c}08`:"transparent",borderRadius:5,marginBottom:2,border:ri===0?`1px solid ${c}22`:ri===1?`1px solid ${c}11`:"1px solid transparent"}}>
+                              <span style={{fontSize:9,color:ri<2?c:T.dim,fontWeight:700,minWidth:10}}>{ri+1}</span>
+                              <span style={{fontSize:13}}>{FLAGS[row.team]||"🏳"}</span>
+                              <span style={{fontSize:10,fontWeight:ri<2?700:400,color:ri<2?T.text:T.sub,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{row.team}</span>
+                              <span style={{fontSize:11,fontFamily:"'Bebas Neue',cursive",color:ri<2?c:T.dim,fontWeight:700}}>{row.pts}</span>
+                            </div>
+                          ))}
+                          {played===0&&<div style={{textAlign:"center",fontSize:9,color:T.dim,padding:"4px 0"}}>ম্যাচ শুরু হয়নি</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
               </div>
             );
             } catch(e) {
               console.error("Bracket render error:", e);
-              return <div style={{padding:20,color:"#ef4444",fontSize:13}}>Bracket লোড করতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।</div>;
+              return <div style={{padding:20,color:"#ef4444",fontSize:13}}>Bracket লোড করতে সমস্যা হয়েছে।</div>;
             }
           })()}
 
