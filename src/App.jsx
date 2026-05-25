@@ -2628,28 +2628,46 @@ export default function App() {
             const rightQF  = qf.slice(2,4);
             const rightSF  = sf.slice(1,2);
 
-            const matchW = 130; // match box width
+            const [bracketScale, setBracketScale] = useState(0.55);
+            const matchW = 130;
             const colGap = 6;
 
             return (
               <div className="fi" style={{paddingBottom:8}}>
                 {/* Header */}
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"10px 14px",background:T.acBg,borderRadius:10,border:`1px solid ${c}22`,flexWrap:"wrap"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,padding:"10px 14px",background:T.acBg,borderRadius:10,border:`1px solid ${c}22`,flexWrap:"wrap"}}>
                   <span style={{fontSize:16}}>🗂️</span>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:700,color:T.text}}>টুর্নামেন্ট ব্র্যাকেট — FIFA World Cup 2026</div>
-                    <div style={{fontSize:10,color:T.sub}}>Group পর্ব শেষে দলের নাম auto আসবে · ✓ = নিশ্চিত · ❓ = TBD</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:700,color:T.text}}>টুর্নামেন্ট ব্র্যাকেট</div>
+                    <div style={{fontSize:10,color:T.sub}}>Group শেষে দল auto আসবে · স্লাইডার দিয়ে ছোট/বড় করুন</div>
                   </div>
-                  <div style={{marginLeft:"auto",display:"flex",gap:6,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                     {[["R32","#10b981"],["R16","#3b82f6"],["QF","#8b5cf6"],["SF","#f59e0b"],["🏆","#fbbf24"]].map(([l,col])=>(
-                      <span key={l} style={{padding:"2px 8px",background:`${col}18`,color:col,borderRadius:5,fontSize:10,fontWeight:700,border:`1px solid ${col}33`}}>{l}</span>
+                      <span key={l} style={{padding:"2px 7px",background:`${col}18`,color:col,borderRadius:5,fontSize:9,fontWeight:700}}>{l}</span>
                     ))}
                   </div>
                 </div>
 
-                {/* ── MAIN BRACKET — horizontal scroll ── */}
-                <div style={{overflowX:"auto",paddingBottom:8}}>
-                  <div style={{minWidth:900, display:"flex", alignItems:"center", gap:colGap, padding:"8px 4px"}}>
+                {/* ── ZOOM CONTROLS ── */}
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,padding:"8px 12px",background:T.card,border:`1px solid ${T.border}`,borderRadius:10}}>
+                  <button onClick={()=>setBracketScale(s=>Math.max(0.3,+(s-0.1).toFixed(1)))}
+                    style={{width:32,height:32,borderRadius:8,border:`1px solid ${T.border}`,background:T.acBg,color:c,cursor:"pointer",fontSize:18,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>−</button>
+                  <div style={{flex:1,display:"flex",alignItems:"center",gap:8}}>
+                    <input type="range" min="0.3" max="1.2" step="0.05" value={bracketScale}
+                      onChange={e=>setBracketScale(+e.target.value)}
+                      style={{flex:1,accentColor:c,cursor:"pointer",height:4}}/>
+                    <span style={{fontSize:11,color:T.sub,minWidth:36,textAlign:"right"}}>{Math.round(bracketScale*100)}%</span>
+                  </div>
+                  <button onClick={()=>setBracketScale(s=>Math.min(1.2,+(s+0.1).toFixed(1)))}
+                    style={{width:32,height:32,borderRadius:8,border:`1px solid ${T.border}`,background:T.acBg,color:c,cursor:"pointer",fontSize:18,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+                  <button onClick={()=>setBracketScale(0.55)}
+                    style={{padding:"4px 10px",borderRadius:7,border:`1px solid ${T.border}`,background:T.acBg,color:T.sub,cursor:"pointer",fontSize:10,flexShrink:0}}>রিসেট</button>
+                </div>
+
+                {/* ── MAIN BRACKET — pinch zoom + scroll ── */}
+                <div style={{overflowX:"auto",overflowY:"hidden",paddingBottom:8,borderRadius:10,border:`1px solid ${T.border}`,background:dark?"rgba(0,0,0,.2)":"rgba(0,0,0,.03)",touchAction:"pan-x pan-y"}}>
+                  <div style={{width:"fit-content",transformOrigin:"top left",transform:`scale(${bracketScale})`,transition:"transform .15s ease",padding:"8px 4px"}}>
+                  <div style={{minWidth:900, display:"flex", alignItems:"center", gap:colGap, padding:"4px"}}>
 
                     {/* LEFT SIDE: R32 → R16 → QF → SF */}
                     <div style={{display:"flex",gap:colGap,alignItems:"center",flex:1}}>
@@ -2718,11 +2736,13 @@ export default function App() {
                     </div>
 
                   </div>
+                  </div>
                 </div>
 
                 {/* ── LEGEND ── */}
-                <div style={{marginTop:10,padding:"10px 14px",background:T.card,border:`1px solid ${T.border}`,borderRadius:10,fontSize:11,color:T.sub}}>
-                  💡 বাম থেকে ডানে → মাঝে 🏆 Final · দলের নাম Group পর্ব শেষে auto আসবে · Scroll করে পুরো bracket দেখুন
+                <div style={{marginTop:10,padding:"8px 12px",background:T.card,border:`1px solid ${T.border}`,borderRadius:10,fontSize:11,color:T.sub,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                  <span>💡</span>
+                  <span>− / + বা স্লাইডার দিয়ে zoom করুন · Pinch করেও zoom হবে · Scroll করে পুরো bracket দেখুন</span>
                 </div>
 
                 {/* ── GROUP STANDINGS QUICK VIEW ── */}
