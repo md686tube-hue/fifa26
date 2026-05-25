@@ -1722,6 +1722,7 @@ export default function App() {
   const [h2hData, setH2hData] = useState({});
   // Feature: Bracket interactive
   const [bracketSelected, setBracketSelected] = useState(null);
+  const [bracketScale, setBracketScale] = useState(0.55);
   // Feature: Top Scorers
   const [scorers, setScorers] = useState([]);
   const [scorersLoading, setScorersLoading] = useState(false);
@@ -2628,7 +2629,6 @@ export default function App() {
             const rightQF  = qf.slice(2,4);
             const rightSF  = sf.slice(1,2);
 
-            const [bracketScale, setBracketScale] = useState(0.55);
             const matchW = 130;
             const colGap = 6;
 
