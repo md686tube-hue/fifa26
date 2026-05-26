@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 
+// ET → BD conversion (ET = UTC-4, BD = UTC+6, diff = +10h)
 function etToBD(etTime) {
   const [h, m] = etTime.split(":").map(Number);
-  const totalMin = h * 60 + (m || 0) + 600;
+  const totalMin = h * 60 + (m || 0) + 600; // +10h = +600min
   const bdH = Math.floor(totalMin / 60) % 24;
   const bdM = totalMin % 60;
   const nextDay = Math.floor(totalMin / 60) >= 24;
@@ -13,7 +14,24 @@ function etToBD(etTime) {
 }
 function bdTime(etTime) {
   const { time, label, nextDay } = etToBD(etTime);
-  return label + " " + time + (nextDay ? " (+1)" : "");
+  return label + " " + time + (nextDay ? " (পরদিন)" : "");
+}
+// Returns BD date string — adds 1 day if nextDay
+function bdDateStr(dateStr, etTime) {
+  const { nextDay } = etToBD(etTime);
+  if (!nextDay) return dateStr;
+  // increment the day
+  const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const mNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const [mon, day] = dateStr.split(" ");
+  const d = new Date(Date.UTC(2026, months[mon], Number(day) + 1));
+  return mNames[d.getUTCMonth()] + " " + d.getUTCDate();
+}
+// Full BD display: "Jun 14, ভোর 4:00"
+function bdFull(dateStr, etTime) {
+  const { time, label, nextDay } = etToBD(etTime);
+  const bdDate = bdDateStr(dateStr, etTime);
+  return { dateDisplay: bdDate, timeDisplay: label + " " + time };
 }
 function matchUTC(dateStr, etTime) {
   const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
@@ -1604,7 +1622,7 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
             const bd = bdTime(f.etTime);
             return (
               <div key={f.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:isNext?`${c}12`:T.bg||"rgba(0,0,0,.1)",border:`1px solid ${isNext?c:T.border}`,borderRadius:10,flexWrap:"wrap",transition:"all .2s"}}>
-                <div style={{minWidth:40,fontSize:10,color:T.dim}}>{f.dateStr}</div>
+                <div style={{minWidth:40,fontSize:10,color:T.dim}}>{bdDateStr(f.dateStr,f.etTime)}</div>
                 <div style={{flex:1,display:"flex",alignItems:"center",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
                   <span style={{fontSize:20}}>{FLAGS[f.home]||"🏳"}</span>
                   <span style={{fontWeight:isHome?700:400,color:isHome?c:T.text,fontSize:12}}>{f.home}</span>
@@ -1702,7 +1720,7 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
               </div>
             </div>
             <div style={{textAlign:"center",marginTop:12,fontSize:11,color:T.dim}}>
-              {todayMatch.venue?.split(",")[0]} · {todayMatch.dateStr}
+              {todayMatch.venue?.split(",")[0]} · {bdDateStr(todayMatch.dateStr, todayMatch.etTime)} (BD)
             </div>
           </div>
         );
@@ -2013,20 +2031,22 @@ export default function App() {
     {k:"myteam",l:"⭐ আমার দল"},
   ];
 
-  // today's matches helper
+  // today's matches helper — compare BD date (not ET date)
   const todayMatches = useMemo(()=>{
-    const now=Date.now(); const bd=new Date(now+6*3600000);
+    const now=Date.now();
+    const bd=new Date(now+6*3600000); // UTC+6
     const mn=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const today=mn[bd.getUTCMonth()]+" "+bd.getUTCDate();
-    return ALL_GROUP_FIXTURES.filter(f=>f.dateStr===today);
+    const todayBD = mn[bd.getUTCMonth()]+" "+bd.getUTCDate();
+    return ALL_GROUP_FIXTURES.filter(f=> bdDateStr(f.dateStr, f.etTime) === todayBD);
   },[]);
 
-  // Group fixtures by date for the fixture tab
+  // Group fixtures by BD date for the fixture tab
   const fixturesByDate = useMemo(() => {
     const grouped = {};
     filteredFix.forEach(f => {
-      if (!grouped[f.dateStr]) grouped[f.dateStr] = [];
-      grouped[f.dateStr].push(f);
+      const bdDate = bdDateStr(f.dateStr, f.etTime); // BD date
+      if (!grouped[bdDate]) grouped[bdDate] = [];
+      grouped[bdDate].push(f);
     });
     const mn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     return Object.entries(grouped).sort(([a],[b]) => {
@@ -3036,7 +3056,7 @@ export default function App() {
                         const home=fix.home===squadTeam;
                         return (
                           <div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:12,padding:"5px 0",borderBottom:`1px solid ${T.border}`,flexWrap:"wrap"}}>
-                            <span style={{color:T.sub,minWidth:44,fontSize:11}}>{fix.dateStr}</span>
+                            <span style={{color:T.sub,minWidth:44,fontSize:11}}>{bdDateStr(fix.dateStr,fix.etTime)}</span>
                             <span style={{fontWeight:home?700:400,color:home?c:T.sub}}>{fix.home}</span>
                             <span style={{color:T.dim,fontSize:10}}>vs</span>
                             <span style={{fontWeight:!home?700:400,color:!home?c:T.sub}}>{fix.away}</span>
