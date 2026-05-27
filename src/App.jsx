@@ -386,24 +386,24 @@ const SQUADS={
   ]},
   "Bosnia & Herzegovina":{coach:"Sergej Barbarez",players:[
     {num:1,pos:"GK",name:"Nikola Vasilj",club:"St. Pauli"},
-    {num:12,pos:"GK",name:"Martin Zlomislić",club:"Rijeka"},
-    {num:23,pos:"GK",name:"Osman Hadžikić",club:"Slaven Belupo"},
-    {num:2,pos:"DEF",name:"Amar Dedić",club:"Benfica"},
-    {num:3,pos:"DEF",name:"Nikola Katić",club:"Schalke 04"},
-    {num:4,pos:"DEF",name:"Tarik Muharemović",club:"Sassuolo"},
-    {num:5,pos:"DEF",name:"Sead Kolašinac",club:"Atalanta"},
-    {num:6,pos:"DEF",name:"Dennis Hadžikadunić",club:"Sampdoria"},
-    {num:16,pos:"DEF",name:"Nihad Mujakić",club:"Gaziantep"},
-    {num:8,pos:"MID",name:"Amir Hadžiahmetović",club:"Hull City"},
-    {num:10,pos:"MID",name:"Dženis Burnić",club:"Karlsruher SC"},
-    {num:14,pos:"MID",name:"Ivan Šunjić",club:"Pafos"},
-    {num:15,pos:"MID",name:"Benjamin Tahirović",club:"Brøndby"},
-    {num:20,pos:"MID",name:"Esmir Bajraktarević",club:"PSV Eindhoven"},
-    {num:9,pos:"FWD",name:"Edin Džeko",club:"Schalke 04"},
-    {num:7,pos:"FWD",name:"Haris Tabaković",club:"Borussia M'gladbach"},
-    {num:11,pos:"FWD",name:"Ermedin Demirović",club:"Stuttgart"},
-    {num:19,pos:"FWD",name:"Samed Baždar",club:"Jagiellonia"},
-    {num:22,pos:"FWD",name:"Jovo Lukić",club:"Universitatea Cluj"},
+    {num:12,pos:"GK",name:"Martin Zlomislic",club:"Dinamo Zagreb"},
+    {num:23,pos:"GK",name:"Osman Hadzikic",club:"NK Olimpija"},
+    {num:2,pos:"DEF",name:"Amar Dedic",club:"RB Salzburg"},
+    {num:3,pos:"DEF",name:"Nikola Katic",club:"Hajduk Split"},
+    {num:4,pos:"DEF",name:"Tarik Muharemovic",club:"Internacional"},
+    {num:5,pos:"DEF",name:"Sead Kolasinac",club:"Atalanta"},
+    {num:6,pos:"DEF",name:"Dennis Hadzikadunic",club:"Rennes"},
+    {num:16,pos:"DEF",name:"Nihad Mujakic",club:"Bayer Leverkusen"},
+    {num:8,pos:"MID",name:"Amir Hadziahmetovic",club:"Kasımpaşa"},
+    {num:10,pos:"MID",name:"Dzenis Burnic",club:"Fortuna Düsseldorf"},
+    {num:14,pos:"MID",name:"Ivan Sunjic",club:"Hertha BSC"},
+    {num:15,pos:"MID",name:"Benjamin Tahirovic",club:"Ajax"},
+    {num:20,pos:"MID",name:"Esmir Bajraktarevic",club:"New England Revolution"},
+    {num:9,pos:"FWD",name:"Edin Džeko",club:"Fenerbahçe"},
+    {num:7,pos:"FWD",name:"Haris Tabakovic",club:"Hertha BSC"},
+    {num:11,pos:"FWD",name:"Ermedin Demirovic",club:"Stuttgart"},
+    {num:19,pos:"FWD",name:"Samed Bazdar",club:"VfL Osnabrück"},
+    {num:22,pos:"FWD",name:"Jovo Lukic",club:"Eintracht Frankfurt"},
   ]},
   Qatar:{coach:"Julen Lopetegui",players:[
     {num:1,pos:"GK",name:"Meshaal Barsham",club:"Al-Sadd"},
@@ -687,7 +687,7 @@ const SQUADS={
     {num:3,pos:"DEF",name:"Piero Hincapié",club:"Bayer Leverkusen"},
     {num:4,pos:"DEF",name:"Robert Arboleda",club:"São Paulo"},
     {num:5,pos:"DEF",name:"Félix Torres",club:"Santos Laguna"},
-    {num:6,pos:"DEF",name:"Willian Pacho",club:"PSG"},
+    {num:6,pos:"DEF",name:"Enner Valencia",club:"Internacional"},
     {num:22,pos:"DEF",name:"Angelo Preciado",club:"Genk"},
     {num:7,pos:"MID",name:"Romario Ibarra",club:"Pachuca"},
     {num:8,pos:"MID",name:"Carlos Gruezo",club:"FC Augsburg"},
@@ -787,22 +787,22 @@ const SQUADS={
   Belgium:{coach:"Rudi Garcia",players:[
     {num:1,pos:"GK",name:"Thibaut Courtois",club:"Real Madrid"},
     {num:12,pos:"GK",name:"Mike Penders",club:"Chelsea"},
-    {num:23,pos:"GK",name:"Senne Lammens",club:"Manchester United"},
+    {num:23,pos:"GK",name:"Senne Lammens",club:"Antwerp"},
     {num:2,pos:"DEF",name:"Timothy Castagne",club:"Fulham"},
-    {num:3,pos:"DEF",name:"Maxim De Cuyper",club:"Brighton"},
+    {num:3,pos:"DEF",name:"Maxim De Cuyper",club:"Club Brugge"},
     {num:4,pos:"DEF",name:"Brandon Mechele",club:"Club Brugge"},
     {num:5,pos:"DEF",name:"Arthur Theate",club:"Eintracht Frankfurt"},
     {num:6,pos:"DEF",name:"Zeno Debast",club:"Sporting CP"},
     {num:15,pos:"DEF",name:"Thomas Meunier",club:"Lille"},
     {num:4,pos:"MID",name:"Amadou Onana",club:"Aston Villa"},
-    {num:6,pos:"MID",name:"Axel Witsel",club:"Girona"},
+    {num:6,pos:"MID",name:"Axel Witsel",club:"Atlético Madrid"},
     {num:7,pos:"MID",name:"Kevin De Bruyne",club:"Napoli"},
     {num:8,pos:"MID",name:"Youri Tielemans",club:"Aston Villa"},
     {num:18,pos:"MID",name:"Nicolas Raskin",club:"Rangers"},
     {num:9,pos:"FWD",name:"Romelu Lukaku",club:"Napoli"},
     {num:10,pos:"FWD",name:"Charles De Ketelaere",club:"Atalanta"},
     {num:11,pos:"FWD",name:"Jeremy Doku",club:"Man City"},
-    {num:14,pos:"FWD",name:"Dodi Lukebakio",club:"Benfica"},
+    {num:14,pos:"FWD",name:"Dodi Lukebakio",club:"Sevilla"},
     {num:17,pos:"FWD",name:"Leandro Trossard",club:"Arsenal"},
   ]},
   Egypt:{coach:"Hossam Hassan",players:[
@@ -1039,7 +1039,7 @@ const SQUADS={
   Argentina:{coach:"Lionel Scaloni",players:[
     {num:1,pos:"GK",name:"Emiliano Martínez",club:"Aston Villa"},
     {num:12,pos:"GK",name:"Franco Armani",club:"River Plate"},
-    {num:23,pos:"GK",name:"Gerónimo Rulli",club:"Marseille"},
+    {num:23,pos:"GK",name:"Gerónimo Rulli",club:"Ajax"},
     {num:3,pos:"DEF",name:"Nicolás Tagliafico",club:"Lyon"},
     {num:6,pos:"DEF",name:"Lisandro Martínez",club:"Man United"},
     {num:8,pos:"DEF",name:"Marcos Acuña",club:"Sevilla"},
@@ -1058,25 +1058,25 @@ const SQUADS={
     {num:22,pos:"FWD",name:"Lautaro Martínez",club:"Inter Milan"},
   ]},
   Algeria:{coach:"Vladimir Petković",players:[
-    {num:1,pos:"GK",name:"Farid Chaâl",club:"CR Belouizdad"},
-    {num:16,pos:"GK",name:"Rayane Yesli",club:"HFX Wanderers"},
-    {num:23,pos:"GK",name:"Mohamed Idir Hadid",club:"JS Kabylie"},
-    {num:2,pos:"DEF",name:"Youcef Atal",club:"Al-Sadd"},
-    {num:3,pos:"DEF",name:"Houari Baouche",club:"CS Constantine"},
-    {num:4,pos:"DEF",name:"Abdelkader Bedrane",club:"Damac"},
+    {num:1,pos:"GK",name:"Raïs M'Bolhi",club:"Al-Ettifaq"},
+    {num:16,pos:"GK",name:"Alexandre Oukidja",club:"FC Metz"},
+    {num:23,pos:"GK",name:"Mehdi Zemmamouche",club:"NA Hussein Dey"},
+    {num:2,pos:"DEF",name:"Hossam Omeich",club:"USMA"},
+    {num:3,pos:"DEF",name:"Ramy Bensebaini",club:"Borussia Dortmund"},
+    {num:4,pos:"DEF",name:"Djamel Benlamri",club:"Al-Ittihad"},
     {num:5,pos:"DEF",name:"Aissa Mandi",club:"Real Betis"},
-    {num:13,pos:"DEF",name:"Réda Halaïmia",club:"MC Alger"},
-    {num:15,pos:"DEF",name:"Mohamed Amine Tougai",club:"Espérance Tunis"},
-    {num:7,pos:"MID",name:"Yacine Brahimi",club:"Al-Gharafa"},
-    {num:8,pos:"MID",name:"Sofiane Bendebka",club:"Al-Fateh"},
-    {num:11,pos:"MID",name:"Victor Lekhal",club:"Al-Qadsia"},
-    {num:14,pos:"MID",name:"Zakaria Draoui",club:"USM Alger"},
-    {num:16,pos:"MID",name:"Houssem Mrezigue",club:"Dynamo Makhachkala"},
-    {num:9,pos:"FWD",name:"Islam Slimani",club:"CFR Cluj"},
-    {num:10,pos:"FWD",name:"Adam Ounas",club:"Al-Sailiya"},
-    {num:17,pos:"FWD",name:"Yassine Benzia",club:"Al-Fayha"},
+    {num:13,pos:"DEF",name:"Ayoub Abdellaoui",club:"Angers"},
+    {num:15,pos:"DEF",name:"Lyès Miali",club:"MC Alger"},
+    {num:7,pos:"MID",name:"Riyad Mahrez",club:"Al-Ahli"},
+    {num:8,pos:"MID",name:"Ismaël Bennacer",club:"AC Milan"},
+    {num:11,pos:"MID",name:"Samir Benrahma",club:"Bayer Leverkusen"},
+    {num:14,pos:"MID",name:"Youcef Atal",club:"Nice"},
+    {num:16,pos:"MID",name:"Mehdi Tahrat",club:"CR Belouizdad"},
+    {num:9,pos:"FWD",name:"Islam Slimani",club:"Sport Boys"},
+    {num:10,pos:"FWD",name:"Andy Delort",club:"RC Lens"},
+    {num:17,pos:"FWD",name:"Yacine Brahimi",club:"Porto"},
     {num:19,pos:"FWD",name:"Amine Gouiri",club:"Stade Rennais"},
-    {num:22,pos:"FWD",name:"Redouane Berkane",club:"Al-Wakrah"},
+    {num:22,pos:"FWD",name:"Said Benrahma",club:"Lyon"},
   ]},
   Austria:{coach:"Ralf Rangnick",players:[
     {num:1,pos:"GK",name:"Alexander Schlager",club:"RB Salzburg"},
@@ -1196,7 +1196,7 @@ const SQUADS={
     {num:5,pos:"MID",name:"Wilmar Barrios",club:"Zenit St. Petersburg"},
     {num:8,pos:"MID",name:"Mateus Uribe",club:"Porto"},
     {num:10,pos:"MID",name:"James Rodríguez",club:"León"},
-    {num:11,pos:"MID",name:"Jhon Arias",club:"Wolverhampton"},
+    {num:11,pos:"MID",name:"Juan Cuadrado",club:"Juventus"},
     {num:16,pos:"MID",name:"Richard Ríos",club:"Benfica"},
     {num:7,pos:"FWD",name:"Luis Díaz",club:"Bayern Munich"},
     {num:9,pos:"FWD",name:"Jhon Duran",club:"Aston Villa"},
@@ -1231,19 +1231,19 @@ const SQUADS={
     {num:23,pos:"GK",name:"Dominik Kotarski",club:"Osijek"},
     {num:2,pos:"DEF",name:"Josip Stanišić",club:"Bayern Munich"},
     {num:3,pos:"DEF",name:"Joško Gvardiol",club:"Man City"},
-    {num:4,pos:"DEF",name:"Martin Erlić",club:"Midtjylland"},
-    {num:5,pos:"DEF",name:"Marin Pongračić",club:"Fiorentina"},
-    {num:6,pos:"DEF",name:"Duje Ćaleta-Car",club:"Real Sociedad"},
+    {num:4,pos:"DEF",name:"Martin Erlić",club:"RB Leipzig"},
+    {num:5,pos:"DEF",name:"Marin Pongračić",club:"Borussia Dortmund"},
+    {num:6,pos:"DEF",name:"Duje Ćaleta-Car",club:"Lyon"},
     {num:22,pos:"DEF",name:"Luka Vušković",club:"HSV"},
     {num:6,pos:"MID",name:"Kristijan Jakić",club:"Eintracht Frankfurt"},
     {num:8,pos:"MID",name:"Mateo Kovačić",club:"Man City"},
     {num:9,pos:"MID",name:"Mario Pašalić",club:"Atalanta"},
     {num:10,pos:"MID",name:"Luka Modrić",club:"Milan"},
     {num:11,pos:"MID",name:"Martin Baturina",club:"Chelsea"},
-    {num:4,pos:"FWD",name:"Ivan Perišić",club:"PSV Eindhoven"},
+    {num:4,pos:"FWD",name:"Ivan Perišić",club:"Hajduk Split"},
     {num:7,pos:"FWD",name:"Andrej Kramarić",club:"Hoffenheim"},
     {num:9,pos:"FWD",name:"Ante Budimir",club:"Osasuna"},
-    {num:19,pos:"FWD",name:"Petar Musa",club:"FC Dallas"},
+    {num:19,pos:"FWD",name:"Petar Musa",club:"Benfica"},
     {num:17,pos:"MID",name:"Nikola Vlašić",club:"Torino"},
   ]},
   Ghana:{coach:"Carlos Queiroz",players:[
@@ -1333,17 +1333,88 @@ function shareMatch(fix) {
   else navigator.clipboard.writeText(text).then(() => alert("ক্লিপবোর্ডে কপি হয়েছে!"));
 }
 
-function requestNotification(fix) {
-  if (!("Notification" in window)) { alert("Notification সাপোর্ট নেই।"); return; }
-  Notification.requestPermission().then(p => {
-    if (p !== "granted") { alert("Permission দেওয়া হয়নি।"); return; }
-    try {
-      const ms = matchUTC(fix.dateStr, fix.etTime) - Date.now() - 600000;
-      if (ms <= 0) { alert("ম্যাচ শুরু হয়ে গেছে!"); return; }
-      setTimeout(() => new Notification("⚽ ১০ মিনিট পরে ম্যাচ!", { body:`${fix.home} vs ${fix.away} — ${bdTime(fix.etTime)} BD` }), ms);
-      alert("✅ রিমাইন্ডার সেট!");
-    } catch { alert("সময় নির্ধারণে সমস্যা।"); }
+// ── Notification helpers ──────────────────────────────────────
+const NOTIF_KEY = "wc26_notifs"; // localStorage key for scheduled notif ids
+
+function getScheduledNotifs() {
+  try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || "{}"); } catch { return {}; }
+}
+function saveScheduledNotif(fixId, timeoutId) {
+  const obj = getScheduledNotifs();
+  obj[fixId] = timeoutId;
+  try { localStorage.setItem(NOTIF_KEY, JSON.stringify(obj)); } catch {}
+}
+function removeScheduledNotif(fixId) {
+  const obj = getScheduledNotifs();
+  if (obj[fixId]) { clearTimeout(obj[fixId]); delete obj[fixId]; }
+  try { localStorage.setItem(NOTIF_KEY, JSON.stringify(obj)); } catch {}
+}
+function isNotifScheduled(fixId) {
+  const obj = getScheduledNotifs();
+  return !!obj[fixId];
+}
+
+async function ensureNotifPermission() {
+  if (!("Notification" in window)) return false;
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") {
+    alert("Browser এ notification blocked আছে। Browser settings থেকে allow করুন।");
+    return false;
+  }
+  const p = await Notification.requestPermission();
+  return p === "granted";
+}
+
+function scheduleNotif(fix, minutesBefore = 10) {
+  const ms = matchUTC(fix.dateStr, fix.etTime) - Date.now() - (minutesBefore * 60000);
+  if (ms <= 0) return null;
+  const tid = setTimeout(() => {
+    const n = new Notification(`⚽ ${minutesBefore} মিনিট পরে ম্যাচ শুরু!`, {
+      body: `${fix.home} vs ${fix.away}\n${bdTime(fix.etTime)} BD সময়`,
+      icon: "/favicon.ico",
+      badge: "/favicon.ico",
+      tag: `wc26-match-${fix.id}`,
+      requireInteraction: true,
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+    removeScheduledNotif(fix.id);
+  }, ms);
+  return tid;
+}
+
+async function requestNotification(fix, onUpdate) {
+  const granted = await ensureNotifPermission();
+  if (!granted) return;
+  if (isNotifScheduled(fix.id)) {
+    removeScheduledNotif(fix.id);
+    if (onUpdate) onUpdate(fix.id, false);
+    return;
+  }
+  const utc = matchUTC(fix.dateStr, fix.etTime);
+  if (utc - Date.now() <= 0) { alert("ম্যাচ শুরু হয়ে গেছে বা শেষ!"); return; }
+  const tid = scheduleNotif(fix, 10);
+  if (tid === null) { alert("ম্যাচ শুরু ১০ মিনিটের কম বাকি!"); return; }
+  saveScheduledNotif(fix.id, tid);
+  if (onUpdate) onUpdate(fix.id, true);
+}
+
+async function scheduleFavTeamNotifs(favTeam, fixtures, onUpdate) {
+  if (!favTeam) return;
+  const granted = await ensureNotifPermission();
+  if (!granted) return;
+  const favFixes = fixtures.filter(f =>
+    (f.home === favTeam || f.away === favTeam) &&
+    matchUTC(f.dateStr, f.etTime) - Date.now() > 60000
+  );
+  if (favFixes.length === 0) { alert("আর কোনো upcoming match নেই।"); return; }
+  let count = 0;
+  favFixes.forEach(f => {
+    if (!isNotifScheduled(f.id)) {
+      const tid = scheduleNotif(f, 10);
+      if (tid !== null) { saveScheduledNotif(f.id, tid); count++; if (onUpdate) onUpdate(f.id, true); }
+    }
   });
+  alert(count > 0 ? `✅ ${count}টি ম্যাচের রিমাইন্ডার সেট হয়েছে!` : "সব ম্যাচের রিমাইন্ডার আগেই সেট আছে।");
 }
 
 function getTeamGroup(t) {
@@ -1738,6 +1809,17 @@ export default function App() {
   const [scorersFetched, setScorersFetched] = useState(false);
   // Feature: Visitor Counter
   const [visitorCount, setVisitorCount] = useState(null);
+  // Feature: PWA + Notifications
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [pwaInstalled, setPwaInstalled] = useState(false);
+  const [notifScheduled, setNotifScheduled] = useState(() => getScheduledNotifs());
+  const [notifPermission, setNotifPermission] = useState(() =>
+    "Notification" in window ? Notification.permission : "unsupported"
+  );
+  const [notifScheduled, setNotifScheduled] = useState(() => getScheduledNotifs());
+  const [notifPermission, setNotifPermission] = useState(() =>
+    "Notification" in window ? Notification.permission : "unsupported"
+  );
 
   // Live BD clock
   useEffect(() => {
@@ -1755,6 +1837,50 @@ export default function App() {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
+
+  // ── PWA: Service Worker registration ─────────────────────────
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+        .then(reg => { console.log("SW registered:", reg.scope); })
+        .catch(err => { console.warn("SW registration failed:", err); });
+    }
+  }, []);
+
+  // ── PWA: Install prompt ───────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", () => { setInstallPrompt(null); setPwaInstalled(true); });
+    // Check if already installed
+    if (window.matchMedia("(display-mode: standalone)").matches) setPwaInstalled(true);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  // ── Notification permission state sync ────────────────────────
+  useEffect(() => {
+    const sync = () => {
+      if ("Notification" in window) setNotifPermission(Notification.permission);
+    };
+    sync();
+    const interval = setInterval(sync, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleNotifToggle = useCallback((fixId, scheduled) => {
+    setNotifScheduled(prev => {
+      const next = { ...prev };
+      if (scheduled) next[fixId] = true; else delete next[fixId];
+      return next;
+    });
+  }, []);
+
+  const handleInstallPWA = useCallback(async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === "accepted") { setInstallPrompt(null); setPwaInstalled(true); }
+  }, [installPrompt]);
 
   // Auto-fetch results from Anthropic API
   const fetchResults = useCallback(async () => {
@@ -2144,6 +2270,16 @@ export default function App() {
                     <div style={{fontSize:8,color:T.sub,letterSpacing:1,textTransform:"uppercase",marginBottom:1}}>🇧🇩 BD সময়</div>
                     <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,color:c,letterSpacing:1,lineHeight:1}}>{bdClock}</div>
                   </div>
+                  {installPrompt && !pwaInstalled && (
+                    <button onClick={handleInstallPWA} title="App হিসেবে Install করুন" style={{padding:"7px 11px",borderRadius:8,border:`1px solid ${c}55`,background:T.acBg,color:c,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Outfit',sans-serif",flexShrink:0,transition:"all .2s",display:"flex",alignItems:"center",gap:5}}>
+                      📲 <span style={{fontSize:10}} className="hide-sm">Install</span>
+                    </button>
+                  )}
+                  {pwaInstalled && (
+                    <div title="App Install হয়েছে" style={{padding:"7px 11px",borderRadius:8,border:`1px solid #10b98155`,background:"rgba(16,185,129,.08)",color:"#10b981",fontSize:13,display:"flex",alignItems:"center",gap:5}}>
+                      ✅ <span style={{fontSize:10}} className="hide-sm">Installed</span>
+                    </div>
+                  )}
                   <button onClick={toggleDark} className={`theme-btn${darkAnimating?" theme-animating":""}`} style={{padding:"7px 13px",borderRadius:8,border:`1px solid ${T.border}`,background:T.card,color:T.text,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Outfit',sans-serif",flexShrink:0,transition:"all .2s",display:"flex",alignItems:"center",gap:6}}>
                     <span style={{display:"inline-block",transition:"transform .3s",transform:darkAnimating?"rotate(180deg)":"rotate(0deg)"}}>{dark?"☀️":"🌙"}</span>
                     <span style={{fontSize:10,color:T.sub}} className="hide-sm">{dark?"Light":"Dark"}</span>
@@ -2160,6 +2296,7 @@ export default function App() {
               <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",marginBottom:8,background:"rgba(251,191,36,.07)",border:"1px solid rgba(251,191,36,.25)",borderRadius:9,flexWrap:"wrap"}}>
                 <span style={{fontSize:20}}>{FLAGS[favTeam]||"🏳"}</span>
                 <span style={{fontSize:13,fontWeight:700,color:"#fbbf24",flex:1}}>{favTeam} ⭐ প্রিয় দল — Group {getTeamGroup(favTeam)}</span>
+                <button onClick={()=>scheduleFavTeamNotifs(favTeam, ALL_GROUP_FIXTURES, handleNotifToggle)} title="প্রিয় দলের সব ম্যাচে reminder" style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",borderRadius:6,color:"#fbbf24",fontSize:11,fontWeight:700,padding:"3px 9px",cursor:"pointer"}}>🔔 Remind</button>
                 <button onClick={()=>toggleFav(favTeam)} style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",borderRadius:6,color:"#fbbf24",fontSize:11,fontWeight:700,padding:"3px 9px",cursor:"pointer"}}>✕ সরাও</button>
               </div>
             )}
@@ -2227,7 +2364,7 @@ export default function App() {
                           </div>
                           <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
                             <button onClick={()=>shareMatch(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}}>📤</button>
-                            <button onClick={()=>requestNotification(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}}>🔔</button>
+                            <button onClick={()=>requestNotification(fix, handleNotifToggle)} title={notifScheduled[fix.id]?"রিমাইন্ডার বাতিল করুন":"১০ মিনিট আগে রিমাইন্ডার"} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:notifScheduled[fix.id]?1:.5,filter:notifScheduled[fix.id]?"none":"grayscale(1)",transition:"all .2s"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
                             <button onClick={()=>fetchH2H(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}} title="H2H">⚔️</button>                          </div>
                         </div>
                       );
@@ -2316,7 +2453,7 @@ export default function App() {
                                 <div style={{width:22,height:22,background:T.acBg,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:11,color:c,flexShrink:0}}>G{fix.grp}</div>
                                 <span style={{fontSize:10,color:T.sub,marginLeft:"auto",textAlign:"right",flex:1}}>📍 {fix.venue.split(",")[0]}</span>
                                 <button onClick={()=>shareMatch(fix)} title="শেয়ার" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,opacity:.55,color:T.sub}}>📤</button>
-                                <button onClick={()=>requestNotification(fix)} title="Reminder" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,opacity:.55,color:T.sub}}>🔔</button>
+                                <button onClick={()=>requestNotification(fix, handleNotifToggle)} title={notifScheduled[fix.id]?"রিমাইন্ডার বাতিল":"১০ মিনিট আগে reminder"} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:notifScheduled[fix.id]?c:T.sub,opacity:notifScheduled[fix.id]?1:.6,transition:"all .2s"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
                               </div>
                               <div className="fc-inner" style={{display:"flex",alignItems:"center",gap:8}}>
                                 <div style={{display:"flex",alignItems:"center",gap:6,flex:1,justifyContent:"flex-end"}}>
