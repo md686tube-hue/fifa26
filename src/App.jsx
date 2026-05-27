@@ -1357,7 +1357,9 @@ async function ensureNotifPermission() {
   return p === "granted";
 }
 function scheduleNotif(fix, minutesBefore = 10) {
-  const ms = matchUTC(fix.dateStr, fix.etTime) - Date.now() - (minutesBefore * 60000);
+  // fix can be a group fixture (dateStr+etTime) or KO match (date+etTime)
+  const dateStr = fix.dateStr || fix.date;
+  const ms = matchUTC(dateStr, fix.etTime) - Date.now() - (minutesBefore * 60000);
   if (ms <= 0) return null;
   const tid = setTimeout(() => {
     const n = new Notification(`⚽ ${minutesBefore} মিনিট পরে ম্যাচ!`, {
@@ -1376,7 +1378,8 @@ async function requestNotification(fix, onUpdate) {
     removeScheduledNotif(fix.id);
     if (onUpdate) onUpdate(fix.id, false); return;
   }
-  const utc = matchUTC(fix.dateStr, fix.etTime);
+  const dateStr = fix.dateStr || fix.date;
+  const utc = matchUTC(dateStr, fix.etTime);
   if (utc - Date.now() <= 0) { alert("ম্যাচ শুরু হয়ে গেছে বা শেষ!"); return; }
   const tid = scheduleNotif(fix, 10);
   if (tid === null) { alert("ম্যাচ শুরু ১০ মিনিটের কম বাকি!"); return; }
@@ -1481,12 +1484,12 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 300,
+          max_tokens: 600,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
-          system: `Search for the CURRENT live or latest score of this FIFA World Cup 2026 match and return ONLY valid JSON. No markdown. Format: {"h": homeScore, "a": awayScore, "status": "LIVE" or "FT" or "HT", "minute": currentMinute or null}`,
+          system: `Search for the CURRENT live or latest score of this FIFA World Cup 2026 match and return ONLY valid JSON. No markdown. Format: {"h": homeScore, "a": awayScore, "status": "LIVE" or "FT" or "HT", "minute": currentMinute or null, "timeline": [{"minute": 23, "team": "TeamName", "player": "Player Name", "type": "goal" or "owngoal" or "penalty"}, ...]}. Include all goals in timeline array. If no goals yet, use empty array.`,
           messages: [{
             role: "user",
-            content: `What is the CURRENT score of FIFA World Cup 2026: ${match.home} vs ${match.away} on ${match.dateStr} 2026? Return ONLY JSON like: {"h": 1, "a": 0, "status": "LIVE", "minute": 67}`
+            content: `What is the CURRENT score and goal timeline of FIFA World Cup 2026: ${match.home} vs ${match.away} on ${match.dateStr} 2026? Return ONLY JSON like: {"h": 1, "a": 0, "status": "LIVE", "minute": 67, "timeline": [{"minute": 23, "team": "${match.home}", "player": "Scorer Name", "type": "goal"}]}`
           }]
         })
       });
@@ -1756,6 +1759,31 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
             <div style={{textAlign:"center",marginTop:12,fontSize:11,color:T.dim}}>
               {todayMatch.venue?.split(",")[0]} · {todayMatch.dateStr}
             </div>
+            {/* ── Match Timeline ── */}
+            {liveScore && Array.isArray(liveScore.timeline) && liveScore.timeline.length > 0 && (
+              <div style={{marginTop:14,padding:"10px 12px",background:T.card,border:`1px solid ${T.border}`,borderRadius:10}}>
+                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,letterSpacing:2,color:c,marginBottom:8}}>⚽ GOAL TIMELINE</div>
+                <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  {liveScore.timeline.filter(e=>e.type==="goal"||e.type==="owngoal"||e.type==="penalty").map((e,i)=>{
+                    const isHome = e.team === todayMatch.home;
+                    const icon = e.type==="owngoal"?"🔴":e.type==="penalty"?"⚽🅿️":"⚽";
+                    return (
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:6,justifyContent:isHome?"flex-start":"flex-end"}}>
+                        {isHome && <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:T.dim,minWidth:28}}>{e.minute}'</span>}
+                        {isHome && <span style={{fontSize:13}}>{icon}</span>}
+                        <div style={{padding:"3px 8px",background:isHome?`${c}18`:"rgba(239,68,68,.1)",border:`1px solid ${isHome?c+"33":"rgba(239,68,68,.3)"}`,borderRadius:6}}>
+                          <span style={{fontSize:11,fontWeight:700,color:isHome?c:"#ef4444"}}>{e.player}</span>
+                          {e.type==="owngoal" && <span style={{fontSize:9,color:"#ef4444",marginLeft:3}}>(OG)</span>}
+                          {e.type==="penalty" && <span style={{fontSize:9,color:T.sub,marginLeft:3}}>(P)</span>}
+                        </div>
+                        {!isHome && <span style={{fontSize:13}}>{icon}</span>}
+                        {!isHome && <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:T.dim,minWidth:28,textAlign:"right"}}>{e.minute}'</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}
@@ -1766,7 +1794,7 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
 
 // ── Main App ────────────────────────────────────────────────────────────────
 export default function App() {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(() => { try { const s=localStorage.getItem("wc26_theme"); return s ? s==="dark" : true; } catch { return true; } });
   const [darkAnimating, setDarkAnimating] = useState(false);
   const [tab, setTab] = useState("fixtures");
   const [search, setSearch] = useState("");
@@ -1776,6 +1804,7 @@ export default function App() {
   const [standGrp, setStandGrp] = useState("A");
   const [stadIdx, setStadIdx] = useState(null);
   const [results, setResults] = useState({});
+  const [koResults, setKoResults] = useState({});
   const [favTeam, setFavTeam] = useState(() => { try { return localStorage.getItem("wc26_fav")||null; } catch { return null; } });
   const [bdClock, setBdClock] = useState("");
   const [autoFetching, setAutoFetching] = useState(false);
@@ -1865,46 +1894,67 @@ export default function App() {
     try {
       const now = new Date();
 
-      // match শুরু হয়েছে এমন সব matches
+      // ── Group stage matches ──────────────────────────────────────────
       const startedMatches = ALL_GROUP_FIXTURES.filter(f => {
-        try {
-          const utc = matchUTC(f.dateStr, f.etTime);
-          return (now.getTime() - utc) > 0;
-        } catch { return false; }
+        try { return (now.getTime() - matchUTC(f.dateStr, f.etTime)) > 0; } catch { return false; }
       });
 
-      if (startedMatches.length === 0) { setAutoFetching(false); return; }
+      // ── KO matches that have started ─────────────────────────────────
+      const allKOMatches = KNOCKOUT_ROUNDS.flatMap(r => r.matches);
+      const koMatchUTC = (m) => {
+        const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+        const [mon, day] = m.date.split(" ");
+        const [h, mi] = (m.etTime||"12:00").split(":").map(Number);
+        return Date.UTC(2026, months[mon], Number(day), h + 4, mi || 0, 0);
+      };
+      const startedKO = allKOMatches.filter(m => {
+        try { return (now.getTime() - koMatchUTC(m)) > 0; } catch { return false; }
+      });
 
-      // Live match আছে কিনা (kickoff থেকে 115 min এর মধ্যে)
-      const liveMatches = startedMatches.filter(f => {
+      const liveGroupMatches = startedMatches.filter(f => {
         try {
-          const utc = matchUTC(f.dateStr, f.etTime);
-          const elapsed = now.getTime() - utc;
+          const elapsed = now.getTime() - matchUTC(f.dateStr, f.etTime);
           return elapsed >= 0 && elapsed < 115 * 60 * 1000;
         } catch { return false; }
       });
+      const liveKOMatches = startedKO.filter(m => {
+        try {
+          const elapsed = now.getTime() - koMatchUTC(m);
+          return elapsed >= 0 && elapsed < 125 * 60 * 1000;
+        } catch { return false; }
+      });
 
-      const hasLiveMatch = liveMatches.length > 0;
-      const targetMatches = hasLiveMatch ? liveMatches : startedMatches.slice(-12);
+      const hasLiveMatch = liveGroupMatches.length > 0 || liveKOMatches.length > 0;
 
-      const matchList = targetMatches.map(f =>
+      // Build group match list
+      const groupTarget = hasLiveMatch ? liveGroupMatches : startedMatches.slice(-12);
+      const groupMatchList = groupTarget.map(f =>
         `ID:${f.id} | ${f.home} vs ${f.away} | ${f.dateStr} 2026`
       ).join("\n");
 
+      // Build KO match list — always fetch last 8 started KO matches
+      const koTarget = hasLiveMatch ? liveKOMatches : startedKO.slice(-8);
+      const koMatchList = koTarget.map(m =>
+        `ID:${m.id} | ${m.home} vs ${m.away} | ${m.date} 2026`
+      ).join("\n");
+
+      const allMatchList = [groupMatchList, koMatchList].filter(Boolean).join("\n");
+      if (!allMatchList.trim()) { setAutoFetching(false); return; }
+
       const systemPrompt = hasLiveMatch
-        ? `You are a LIVE FIFA World Cup 2026 score tracker. Search for CURRENT live scores RIGHT NOW and return ONLY valid JSON. Include live and final scores. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore, "status": "LIVE" or "FT"}, ...}}. No markdown.`
-        : `You are a FIFA World Cup 2026 score tracker. Search for final match results and return ONLY valid JSON. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore}, ...}}. Use null for no result. No markdown.`;
+        ? `You are a LIVE FIFA World Cup 2026 score tracker. Search for CURRENT live scores RIGHT NOW and return ONLY valid JSON. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore, "status": "LIVE" or "FT"}, ...}}. For KO matches use the string ID as key (e.g. "r32-1"). No markdown.`
+        : `You are a FIFA World Cup 2026 score tracker. Search for final match results and return ONLY valid JSON. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore}, ...}}. For KO matches use the string ID as key (e.g. "r32-1"). Use null for no result. No markdown.`;
 
       const userMsg = hasLiveMatch
-        ? `Search for LIVE/current scores of these FIFA World Cup 2026 matches RIGHT NOW:\n${matchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1, "status": "LIVE"}}}`
-        : `Search for final scores of these FIFA World Cup 2026 matches:\n${matchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1}, "2": {"h": 0, "a": 0}}}`;
+        ? `Search for LIVE/current scores of these FIFA World Cup 2026 matches RIGHT NOW:\n${allMatchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1, "status": "LIVE"}, "r32-1": {"h": 1, "a": 0, "status": "FT"}}}`
+        : `Search for final scores of these FIFA World Cup 2026 matches:\n${allMatchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1}, "r32-1": {"h": 1, "a": 0}}}`;
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
+          max_tokens: 1500,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
           system: systemPrompt,
           messages: [{ role: "user", content: userMsg }]
@@ -1916,15 +1966,21 @@ export default function App() {
       try {
         const parsed = JSON.parse(clean);
         if (parsed.results && typeof parsed.results === "object") {
-          setResults(prev => {
-            const updated = { ...prev };
-            Object.entries(parsed.results).forEach(([id, val]) => {
-              if (val && val.h !== null && val.a !== null && !isNaN(+val.h) && !isNaN(+val.a)) {
-                updated[+id] = { h: String(val.h), a: String(val.a), status: val.status || "FT" };
-              }
-            });
-            return updated;
+          const newGroup = {};
+          const newKO = {};
+          Object.entries(parsed.results).forEach(([id, val]) => {
+            if (!val || val.h === null || val.a === null || isNaN(+val.h) || isNaN(+val.a)) return;
+            const entry = { h: String(val.h), a: String(val.a), status: val.status || "FT" };
+            // numeric IDs = group matches; string IDs (r32-*, r16-*, qf-*, sf-*, 3pl, fin) = KO matches
+            if (!isNaN(+id)) newGroup[+id] = entry;
+            else newKO[id] = entry;
           });
+          if (Object.keys(newGroup).length > 0) {
+            setResults(prev => ({ ...prev, ...newGroup }));
+          }
+          if (Object.keys(newKO).length > 0) {
+            setKoResults(prev => ({ ...prev, ...newKO }));
+          }
           setLastFetched(new Date());
         }
       } catch {}
@@ -1940,14 +1996,19 @@ export default function App() {
     let timeoutId;
     const scheduleNext = () => {
       const now = Date.now();
-      const hasLive = ALL_GROUP_FIXTURES.some(f => {
-        try {
-          const utc = matchUTC(f.dateStr, f.etTime);
-          const elapsed = now - utc;
-          return elapsed >= 0 && elapsed < 115 * 60 * 1000;
-        } catch { return false; }
+      const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+      const koMatchUTC2 = (m) => {
+        const [mon, day] = m.date.split(" ");
+        const [h, mi] = (m.etTime||"12:00").split(":").map(Number);
+        return Date.UTC(2026, months[mon], Number(day), h + 4, mi || 0, 0);
+      };
+      const hasLiveGroup = ALL_GROUP_FIXTURES.some(f => {
+        try { const e = now - matchUTC(f.dateStr, f.etTime); return e >= 0 && e < 115 * 60 * 1000; } catch { return false; }
       });
-      const delay = hasLive ? 30 * 1000 : 60 * 1000;
+      const hasLiveKO = KNOCKOUT_ROUNDS.flatMap(r=>r.matches).some(m => {
+        try { const e = now - koMatchUTC2(m); return e >= 0 && e < 125 * 60 * 1000; } catch { return false; }
+      });
+      const delay = (hasLiveGroup || hasLiveKO) ? 30 * 1000 : 60 * 1000;
       timeoutId = setTimeout(async () => {
         await fetchResults();
         scheduleNext();
@@ -1983,7 +2044,14 @@ export default function App() {
 
   function toggleDark() {
     setDarkAnimating(true);
-    setTimeout(() => { setDark(d => !d); setDarkAnimating(false); }, 180);
+    setTimeout(() => {
+      setDark(d => {
+        const next = !d;
+        try { localStorage.setItem("wc26_theme", next ? "dark" : "light"); } catch {}
+        return next;
+      });
+      setDarkAnimating(false);
+    }, 180);
   }
 
   // Head-to-Head - instant local data, no API needed
@@ -2535,6 +2603,26 @@ export default function App() {
           {tab==="standings" && (
             <div className="fi">
               <div style={{fontSize:12,color:T.sub,marginBottom:14}}>ফলাফল auto-update হয় · ম্যাচ শেষ হলে qualified দল স্বয়ংক্রিয় নির্ধারিত হবে</div>
+              {/* ── All Groups Done → Bracket Ready Banner ── */}
+              {(()=>{
+                const allGroupsDone = Object.keys(GROUPS).every(g => {
+                  const gFixes = ALL_GROUP_FIXTURES.filter(f=>f.grp===g);
+                  return gFixes.every(f=>{ const r=results[f.id]; return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a); });
+                });
+                if (!allGroupsDone) return null;
+                return (
+                  <div style={{marginBottom:16,padding:"14px 16px",background:"rgba(251,191,36,.08)",border:"2px solid rgba(251,191,36,.4)",borderRadius:12,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",animation:"fadeIn .4s ease"}}>
+                    <span style={{fontSize:28}}>🏆</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:15,letterSpacing:2,color:"#fbbf24"}}>সব গ্রুপ সম্পন্ন! BRACKET রেডি</div>
+                      <div style={{fontSize:11,color:T.sub,marginTop:2}}>৩২ দলের Round of 32 লাইনআপ তৈরি হয়ে গেছে</div>
+                    </div>
+                    <button onClick={()=>setTab("bracket")} style={{padding:"8px 16px",borderRadius:8,border:"1px solid rgba(251,191,36,.5)",background:"rgba(251,191,36,.15)",color:"#fbbf24",cursor:"pointer",fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:1,fontWeight:700}}>
+                      🗂️ BRACKET দেখুন
+                    </button>
+                  </div>
+                );
+              })()}
               <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:18}}>
                 {Object.keys(GROUPS).map(g=>(
                   <button key={g} onClick={()=>setStandGrp(g)} style={{padding:"6px 13px",borderRadius:8,border:`1px solid ${standGrp===g?c:T.border}`,background:standGrp===g?T.acBg:T.card,color:standGrp===g?c:T.sub,cursor:"pointer",fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,transition:"all .2s",boxShadow:T.sh}}>
@@ -2618,6 +2706,51 @@ export default function App() {
                       <span className="pill q-badge-red">✗ বিদায়</span> <span style={{color:T.sub}}>= ছিটকে গেছে</span>
                       {allMatchesDone && <span style={{color:c,fontWeight:700}}>✓ Group {standGrp} সম্পন্ন</span>}
                     </div>
+                    {/* ── Qualification Tracker ── */}
+                    {!allMatchesDone && playedCount > 0 && (
+                      <div style={{marginBottom:16,padding:"12px 14px",background:T.acBg,border:`1px solid ${c}22`,borderRadius:10}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c,marginBottom:10}}>🎯 QUALIFY করতে কী দরকার?</div>
+                        <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                          {rows.map((s,i)=>{
+                            const remainingFixes = fixes.filter(f=>(f.home===s.team||f.away===s.team)&&!(results[f.id]&&results[f.id].h!==""&&!isNaN(+results[f.id].h)));
+                            const rem = remainingFixes.length;
+                            if (rem === 0) return null;
+                            // current 2nd place pts
+                            const second = rows[1];
+                            const ptsTo2nd = second ? second.pts : 0;
+                            const ptsNeeded = Math.max(0, ptsTo2nd - s.pts + (i >= 2 ? 1 : 0));
+                            const maxPossible = s.pts + rem * 3;
+                            const canQualify = maxPossible >= ptsTo2nd + (i >= 2 ? 1 : 0);
+                            if (!canQualify) return null;
+                            if (i < 2 && s.pts > ptsTo2nd) return null; // already leading
+                            const winsNeeded = Math.ceil(ptsNeeded / 3);
+                            const msg = ptsNeeded === 0
+                              ? (rem === 1 ? "১ পয়েন্ট রাখলেই নিশ্চিত" : "বর্তমান অবস্থান ধরে রাখুন")
+                              : `${rem}টি ম্যাচে দরকার ${ptsNeeded}+ পয়েন্ট (≈ ${winsNeeded}জয়)`;
+                            return (
+                              <div key={s.team} style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                                <span style={{fontSize:15}}>{FLAGS[s.team]||"🏳"}</span>
+                                <span style={{fontSize:11,fontWeight:700,color:T.text,minWidth:100}}>{s.team}</span>
+                                <span style={{fontSize:11,color:c,flex:1}}>{msg}</span>
+                                <span style={{fontSize:10,color:T.sub}}>{rem} ম্যাচ বাকি</span>
+                              </div>
+                            );
+                          }).filter(Boolean)}
+                          {rows.slice(2).filter(s=>{
+                            const rem = fixes.filter(f=>(f.home===s.team||f.away===s.team)&&!(results[f.id]&&results[f.id].h!==""&&!isNaN(+results[f.id].h))).length;
+                            const maxPossible = s.pts + rem * 3;
+                            const ptsTo2nd = rows[1]?.pts || 0;
+                            return rem > 0 && maxPossible < ptsTo2nd;
+                          }).map(s=>(
+                            <div key={s.team+"e"} style={{display:"flex",alignItems:"center",gap:8}}>
+                              <span style={{fontSize:15}}>{FLAGS[s.team]||"🏳"}</span>
+                              <span style={{fontSize:11,fontWeight:700,color:T.text,minWidth:100}}>{s.team}</span>
+                              <span style={{fontSize:11,color:"#ef4444"}}>গাণিতিকভাবে বিদায় নিশ্চিত</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c,marginBottom:8}}>GROUP {g} · ম্যাচ ফলাফল</div>
                     <div style={{display:"flex",flexDirection:"column",gap:6}}>
                       {fixes.map(fix=>{
@@ -2668,23 +2801,82 @@ export default function App() {
               return q;
             };
 
+            // ── Best 3rd teams (top 8 from 12 groups by pts→gd→gf) ────────
+            const getBest3rd = () => {
+              const thirds = Object.keys(GROUPS).map(g => {
+                const rows = calcStandings(g);
+                const fixes = ALL_GROUP_FIXTURES.filter(f=>f.grp===g);
+                const played = fixes.filter(f=>{const r=results[f.id];return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);}).length;
+                if (played === 0 || !rows[2]) return null;
+                return { ...rows[2], grp: g, confirmed: played === 6 };
+              }).filter(Boolean);
+              thirds.sort((a,b) => b.pts-a.pts || (b.gd-a.gd) || (b.gf-a.gf));
+              return thirds.slice(0, 8);
+            };
+            const best3rd = getBest3rd();
+            const slotBest3rd = (idx) => {
+              const t = best3rd[idx];
+              if (!t) return {team:`Best 3rd`, flag:"❓", tbd:true, confirmed:false};
+              return {team:t.team, flag:FLAGS[t.team]||"🏳", tbd:false, confirmed:t.confirmed};
+            };
+
+            // ── KO winner helper ──────────────────────────────────────────
+            const koWinner = (matchId) => {
+              const r = koResults[matchId];
+              if (!r || r.h === "" || r.a === "" || isNaN(+r.h) || isNaN(+r.a)) return null;
+              // find match
+              const m = KNOCKOUT_ROUNDS.flatMap(x=>x.matches).find(x=>x.id===matchId);
+              if (!m) return null;
+              const hTeam = m.home; const aTeam = m.away;
+              if (+r.h > +r.a) return {team:hTeam, flag:FLAGS[hTeam]||"🏳", tbd:false, confirmed:true};
+              if (+r.a > +r.h) return {team:aTeam, flag:FLAGS[aTeam]||"🏳", tbd:false, confirmed:true};
+              return null; // draw — KO shouldn't draw but just in case
+            };
+            const koLoser = (matchId) => {
+              const r = koResults[matchId];
+              if (!r || r.h === "" || r.a === "" || isNaN(+r.h) || isNaN(+r.a)) return null;
+              const m = KNOCKOUT_ROUNDS.flatMap(x=>x.matches).find(x=>x.id===matchId);
+              if (!m) return null;
+              if (+r.h > +r.a) return {team:m.away, flag:FLAGS[m.away]||"🏳", tbd:false, confirmed:true};
+              if (+r.a > +r.h) return {team:m.home, flag:FLAGS[m.home]||"🏳", tbd:false, confirmed:true};
+              return null;
+            };
+            const slotKOWinner = (matchId, label) => koWinner(matchId) || {team:label, flag:"❓", tbd:true, confirmed:false};
+            const slotKOLoser  = (matchId, label) => koLoser(matchId)  || {team:label, flag:"❓", tbd:true, confirmed:false};
+
             // ── R32 pairings ─────────────────────────────────────────────
             const r32 = [
-              {m:1,  a:slot("A",1), b:slot("B",1),  date:"Jun 28"}, {m:2,  a:slot("C",0), b:slot("F",1), date:"Jun 29"},
-              {m:3,  a:slot("E",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jun 29"}, {m:4,  a:slot("F",0), b:slot("C",1), date:"Jun 29"},
-              {m:5,  a:slot("E",1), b:slot("I",1),  date:"Jun 30"}, {m:6,  a:slot("I",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jun 30"},
-              {m:7,  a:slot("A",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jun 30"}, {m:8,  a:slot("L",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jul 1"},
-              {m:9,  a:slot("G",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jul 1"}, {m:10, a:slot("D",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jul 1"},
-              {m:11, a:slot("H",0), b:slot("J",1),  date:"Jul 2"}, {m:12, a:slot("K",1), b:slot("L",1), date:"Jul 2"},
-              {m:13, a:slot("B",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jul 2"}, {m:14, a:slot("D",1), b:slot("G",1), date:"Jul 3"},
-              {m:15, a:slot("J",0), b:slot("H",1),  date:"Jul 3"}, {m:16, a:slot("K",0), b:{team:"Best 3rd",flag:"❓",tbd:true,confirmed:false}, date:"Jul 3"},
+              {m:1,  a:slot("A",1),        b:slot("B",1),                  date:"Jun 28"}, {m:2,  a:slot("C",0), b:slot("F",1),                  date:"Jun 29"},
+              {m:3,  a:slot("E",0),        b:slotBest3rd(0),               date:"Jun 29"}, {m:4,  a:slot("F",0), b:slot("C",1),                  date:"Jun 29"},
+              {m:5,  a:slot("E",1),        b:slot("I",1),                  date:"Jun 30"}, {m:6,  a:slot("I",0), b:slotBest3rd(1),               date:"Jun 30"},
+              {m:7,  a:slot("A",0),        b:slotBest3rd(2),               date:"Jun 30"}, {m:8,  a:slot("L",0), b:slotBest3rd(3),               date:"Jul 1"},
+              {m:9,  a:slot("G",0),        b:slotBest3rd(4),               date:"Jul 1"},  {m:10, a:slot("D",0), b:slotBest3rd(5),               date:"Jul 1"},
+              {m:11, a:slot("H",0),        b:slot("J",1),                  date:"Jul 2"},  {m:12, a:slot("K",1), b:slot("L",1),                  date:"Jul 2"},
+              {m:13, a:slot("B",0),        b:slotBest3rd(6),               date:"Jul 2"},  {m:14, a:slot("D",1), b:slot("G",1),                  date:"Jul 3"},
+              {m:15, a:slot("J",0),        b:slot("H",1),                  date:"Jul 3"},  {m:16, a:slot("K",0), b:slotBest3rd(7),               date:"Jul 3"},
             ];
-            const tbd = (label) => ({team:label, flag:"❓", tbd:true, confirmed:false});
-            const r16 = Array.from({length:8},(_,i)=>({m:i+1,a:tbd(`W M${i*2+1}`),b:tbd(`W M${i*2+2}`),date:["Jul 4","Jul 4","Jul 5","Jul 5","Jul 6","Jul 6","Jul 7","Jul 7"][i]}));
-            const qf  = Array.from({length:4},(_,i)=>({m:i+1,a:tbd(`W R16-${i*2+1}`),b:tbd(`W R16-${i*2+2}`),date:["Jul 9","Jul 10","Jul 11","Jul 11"][i]}));
-            const sf  = [{m:1,a:tbd("W QF-1"),b:tbd("W QF-2"),date:"Jul 14"},{m:2,a:tbd("W QF-3"),b:tbd("W QF-4"),date:"Jul 15"}];
-            const fin = [{m:1,a:tbd("W SF-1"),b:tbd("W SF-2"),date:"Jul 19"}];
-            const thirdP = [{m:1,a:tbd("L SF-1"),b:tbd("L SF-2"),date:"Jul 18"}];
+            const r16 = [
+              {m:1, a:slotKOWinner("r32-1","W M1"),  b:slotKOWinner("r32-2","W M2"),   date:"Jul 4"},
+              {m:2, a:slotKOWinner("r32-3","W M3"),  b:slotKOWinner("r32-4","W M4"),   date:"Jul 4"},
+              {m:3, a:slotKOWinner("r32-5","W M5"),  b:slotKOWinner("r32-6","W M6"),   date:"Jul 5"},
+              {m:4, a:slotKOWinner("r32-7","W M7"),  b:slotKOWinner("r32-8","W M8"),   date:"Jul 5"},
+              {m:5, a:slotKOWinner("r32-9","W M9"),  b:slotKOWinner("r32-10","W M10"), date:"Jul 6"},
+              {m:6, a:slotKOWinner("r32-11","W M11"),b:slotKOWinner("r32-12","W M12"), date:"Jul 6"},
+              {m:7, a:slotKOWinner("r32-13","W M13"),b:slotKOWinner("r32-14","W M14"), date:"Jul 7"},
+              {m:8, a:slotKOWinner("r32-15","W M15"),b:slotKOWinner("r32-16","W M16"), date:"Jul 7"},
+            ];
+            const qf = [
+              {m:1, a:slotKOWinner("r16-1","W R16-1"), b:slotKOWinner("r16-2","W R16-2"), date:"Jul 9"},
+              {m:2, a:slotKOWinner("r16-3","W R16-3"), b:slotKOWinner("r16-4","W R16-4"), date:"Jul 10"},
+              {m:3, a:slotKOWinner("r16-5","W R16-5"), b:slotKOWinner("r16-6","W R16-6"), date:"Jul 11"},
+              {m:4, a:slotKOWinner("r16-7","W R16-7"), b:slotKOWinner("r16-8","W R16-8"), date:"Jul 11"},
+            ];
+            const sf = [
+              {m:1, a:slotKOWinner("qf-1","W QF-1"), b:slotKOWinner("qf-2","W QF-2"), date:"Jul 14"},
+              {m:2, a:slotKOWinner("qf-3","W QF-3"), b:slotKOWinner("qf-4","W QF-4"), date:"Jul 15"},
+            ];
+            const fin     = [{m:1, a:slotKOWinner("sf-1","W SF-1"), b:slotKOWinner("sf-2","W SF-2"), date:"Jul 19"}];
+            const thirdP  = [{m:1, a:slotKOLoser("sf-1","L SF-1"),  b:slotKOLoser("sf-2","L SF-2"),  date:"Jul 18"}];
 
             // ── Team Slot component ────────────────────────────────────────
             const TeamSlot = ({team, accent="#10b981", winner=false}) => (
@@ -2764,7 +2956,22 @@ export default function App() {
                     <div style={{fontSize:13,fontWeight:700,color:T.text}}>টুর্নামেন্ট ব্র্যাকেট</div>
                     <div style={{fontSize:10,color:T.sub}}>Group শেষে দল auto আসবে · স্লাইডার দিয়ে ছোট/বড় করুন</div>
                   </div>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                    {(()=>{
+                      const allGroupsDone = Object.keys(GROUPS).every(g => {
+                        const gFixes = ALL_GROUP_FIXTURES.filter(f=>f.grp===g);
+                        return gFixes.every(f=>{ const r=results[f.id]; return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a); });
+                      });
+                      const confirmedGroups = Object.keys(GROUPS).filter(g => {
+                        const gFixes = ALL_GROUP_FIXTURES.filter(f=>f.grp===g);
+                        return gFixes.every(f=>{ const r=results[f.id]; return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a); });
+                      }).length;
+                      return allGroupsDone
+                        ? <span style={{padding:"3px 8px",background:"rgba(251,191,36,.15)",color:"#fbbf24",border:"1px solid rgba(251,191,36,.4)",borderRadius:6,fontSize:10,fontWeight:700}}>✓ সব গ্রুপ সম্পন্ন</span>
+                        : confirmedGroups > 0
+                          ? <span style={{padding:"3px 8px",background:`${c}15`,color:c,border:`1px solid ${c}33`,borderRadius:6,fontSize:10}}>{confirmedGroups}/12 গ্রুপ</span>
+                          : null;
+                    })()}
                     {[["R32","#10b981"],["R16","#3b82f6"],["QF","#8b5cf6"],["SF","#f59e0b"],["🏆","#fbbf24"]].map(([l,col])=>(
                       <span key={l} style={{padding:"2px 7px",background:`${col}18`,color:col,borderRadius:5,fontSize:9,fontWeight:700}}>{l}</span>
                     ))}
