@@ -2466,135 +2466,199 @@ export default function App() {
               </div>
               <div style={{fontSize:11,color:T.sub,marginBottom:10}}>{filteredFix.length}টি ম্যাচ{search&&<span style={{color:c}}> · "{search}"</span>}</div>
 
-              {/* Cards - Date grouped */}
-              <div style={{display:"flex",flexDirection:"column",gap:16}}>
-                {fixturesByDate.map(([dateStr, fixes]) => {
+              {/* ── IMAGE-STYLE FIXTURE TABLE ───────────────────── */}
+              <div style={{borderRadius:14,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:T.sh}}>
+                {/* Table Header */}
+                <div style={{display:"grid",gridTemplateColumns:"90px 1fr 1fr 100px",background:dark?"#0a1628":"#0f2044",padding:"9px 12px",gap:8,alignItems:"center"}}>
+                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,letterSpacing:2,color:"#94a3b8"}}>তারিখ</div>
+                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,letterSpacing:2,color:"#94a3b8",textAlign:"center",gridColumn:"2 / 4"}}>ম্যাচ</div>
+                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,letterSpacing:2,color:"#94a3b8",textAlign:"center"}}>BST সময়</div>
+                </div>
+
+                {/* Rows */}
+                {(()=>{
                   const now = Date.now();
-                  const bdNow = new Date(now + 6*3600000);
-                  const mn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-                  const todayStr = mn[bdNow.getUTCMonth()] + " " + bdNow.getUTCDate();
-                  const isToday = dateStr === todayStr;
-                  const allPast = fixes.every(f => { try { return matchUTC(f.dateStr, f.etTime) + 105*60000 < now; } catch { return false; } });
-                  return (
-                    <div key={dateStr}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                        <div style={{padding:"3px 10px",borderRadius:6,background:isToday?c:T.acBg,color:isToday?T.bg:c,fontFamily:"'Bebas Neue',cursive",fontSize:12,letterSpacing:1.5,flexShrink:0}}>
-                          {isToday?"🔴 আজ":""}{fixes[0]?bdDateStr(fixes[0].dateStr,fixes[0].etTime):dateStr} 2026
-                        </div>
-                        {allPast && <span style={{fontSize:9,color:T.sub}}>সম্পন্ন</span>}
-                        <div style={{flex:1,height:1,background:T.border}}/>
-                      </div>
-                      <div style={{display:"flex",flexDirection:"column",gap:7}}>
-                        {fixes.map(fix => {
-                          const isFav = favTeam && (fix.home === favTeam || fix.away === favTeam);
-                          const hl = search && (fix.home.toLowerCase().includes(search.toLowerCase()) || fix.away.toLowerCase().includes(search.toLowerCase()));
-                          const r = results[fix.id];
-                          const hasScore = r && r.h !== "" && r.a !== "" && !isNaN(+r.h) && !isNaN(+r.a);
-                          const matchStarted = matchUTC(fix.dateStr, fix.etTime) < now;
-                          const matchOver = matchUTC(fix.dateStr, fix.etTime) + 105*60000 < now;
-                          return (
-                            <div key={fix.id} className={`fc${isFav?" fav-card":""}`} style={{background:T.card,border:`1px solid ${isFav?"rgba(251,191,36,.4)":hl?c+"55":T.border}`,borderRadius:12,padding:"11px 13px",transition:"all .2s",boxShadow:T.sh}}>
-                              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
-                                <div style={{width:22,height:22,background:T.acBg,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:11,color:c,flexShrink:0}}>G{fix.grp}</div>
-                                <span style={{fontSize:10,color:T.sub,marginLeft:"auto",textAlign:"right",flex:1}}>📍 {fix.venue.split(",")[0]}</span>
-                                <button onClick={()=>shareMatch(fix)} title="শেয়ার" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,opacity:.55,color:T.sub}}>📤</button>
-                                <button onClick={()=>requestNotification(fix,handleNotifToggle)} title={notifScheduled[fix.id]?"রিমাইন্ডার বাতিল":"১০ মিনিট আগে reminder"} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:notifScheduled[fix.id]?c:T.sub,opacity:notifScheduled[fix.id]?1:.6,transition:"all .2s"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
+                  const rows = [];
+                  let lastDateGroup = null;
+                  fixturesByDate.forEach(([dateStr, fixes]) => {
+                    const bdNow = new Date(now + 6*3600000);
+                    const mn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+                    const todayStr = mn[bdNow.getUTCMonth()] + " " + bdNow.getUTCDate();
+                    const isToday = dateStr === todayStr;
+                    const bdDate = fixes[0] ? bdDateStr(fixes[0].dateStr, fixes[0].etTime) : dateStr;
+                    // Parse day name
+                    const dateObj = (()=>{
+                      try {
+                        const months2 = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+                        const [mon,day] = bdDate.split(" ");
+                        return new Date(2026, months2[mon], Number(day));
+                      } catch { return null; }
+                    })();
+                    const dayNames = ["রবি","সোম","মঙ্গল","বুধ","বৃহ","শুক্র","শনি"];
+                    const dayName = dateObj ? dayNames[dateObj.getDay()] : "";
+
+                    fixes.forEach((fix, fixIdx) => {
+                      const isFav = favTeam && (fix.home === favTeam || fix.away === favTeam);
+                      const hl = search && (fix.home.toLowerCase().includes(search.toLowerCase()) || fix.away.toLowerCase().includes(search.toLowerCase()));
+                      const r = results[fix.id];
+                      const hasScore = r && r.h !== "" && r.a !== "" && !isNaN(+r.h) && !isNaN(+r.a);
+                      const matchOver = matchUTC(fix.dateStr, fix.etTime) + 105*60000 < now;
+                      const isLive = !matchOver && matchUTC(fix.dateStr, fix.etTime) < now;
+                      const showDateCell = fixIdx === 0;
+                      const isLastInGroup = fixIdx === fixes.length - 1;
+                      const isGroupBorder = isLastInGroup;
+
+                      // BD time display
+                      const { time: bdT, label: bdL } = etToBD(fix.etTime);
+                      const bdFull = bdL + " " + bdT;
+                      const bdDay = bdDateStr(fix.dateStr, fix.etTime);
+
+                      rows.push(
+                        <div key={fix.id}>
+                          {/* Main row */}
+                          <div style={{
+                            display:"grid", gridTemplateColumns:"90px 1fr 1fr 100px",
+                            gap:8, alignItems:"center", padding:"10px 12px",
+                            background: isFav ? "rgba(251,191,36,.06)" : hl ? c+"0d" : fixIdx%2===0 ? T.card : (dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.015)"),
+                            borderTop: fixIdx===0 ? `1px solid ${isToday ? c+"66" : T.border}` : `1px solid ${T.border}55`,
+                            borderLeft: isFav ? "3px solid #fbbf24" : isToday&&fixIdx===0 ? `3px solid ${c}` : "3px solid transparent",
+                            transition:"background .15s", cursor:"default",
+                          }}>
+                            {/* DATE CELL — only first row of group */}
+                            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",opacity: showDateCell ? 1 : 0, pointerEvents: showDateCell ? "auto" : "none"}}>
+                              <div style={{
+                                background: isToday ? c : dark?"#1e3a5f":"#1e40af",
+                                color:"#fff", borderRadius:8, padding:"5px 7px", textAlign:"center", minWidth:72,
+                                boxShadow: isToday ? `0 0 12px ${c}66` : "none",
+                              }}>
+                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:18,lineHeight:1,letterSpacing:1}}>
+                                  {bdDate.split(" ")[0].toUpperCase()} {bdDate.split(" ")[1]}
+                                </div>
+                                <div style={{fontSize:9,fontWeight:700,letterSpacing:1,opacity:.85,marginTop:1}}>
+                                  {isToday?"🔴 আজ":dayName}
+                                </div>
                               </div>
-                              <div className="fc-inner" style={{display:"flex",alignItems:"center",gap:8}}>
-                                <div style={{display:"flex",alignItems:"center",gap:6,flex:1,justifyContent:"flex-end"}}>
-                                  <span style={{fontSize:13,fontWeight:700,color:hasScore&&+r.h>+r.a?c:favTeam===fix.home?"#fbbf24":T.text,textAlign:"right"}}>{fix.home}</span>
-                                  <span style={{fontSize:24,cursor:"pointer"}} onClick={()=>toggleFav(fix.home)} title="প্রিয় দল">{FLAGS[fix.home]||"🏳"}</span>
-                                </div>
-                                <div style={{padding:"5px 9px",background:hasScore?"rgba(16,185,129,.15)":isFav?"rgba(251,191,36,.07)":T.acBg,border:`1px solid ${hasScore?c+"66":isFav?"rgba(251,191,36,.2)":c+"33"}`,borderRadius:8,textAlign:"center",minWidth:82,flexShrink:0}}>
-                                  {hasScore ? (
-                                    <>
-                                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:c,lineHeight:1}}>{r.h} – {r.a}</div>
-                                      <div style={{fontSize:8,color:matchOver?T.sub:"#ef4444",fontWeight:700}}>{r.status==="LIVE"?"🔴 LIVE":r.status==="FT"?"FT":matchOver?"FT":"🔴 LIVE"}</div>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:9,color:T.sub,letterSpacing:1}}>VS</div>
-                                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:isFav?"#fbbf24":c,lineHeight:1.3}}>{bdTime(fix.etTime)}</div>
-                                      <div style={{fontSize:8,color:T.dim}}>BD সময়</div>
-                                    </>
-                                  )}
-                                </div>
-                                <div style={{display:"flex",alignItems:"center",gap:6,flex:1}}>
-                                  <span style={{fontSize:24,cursor:"pointer"}} onClick={()=>toggleFav(fix.away)} title="প্রিয় দল">{FLAGS[fix.away]||"🏳"}</span>
-                                  <span style={{fontSize:13,fontWeight:700,color:hasScore&&+r.a>+r.h?c:favTeam===fix.away?"#fbbf24":T.text}}>{fix.away}</span>
-                                </div>
-                              </div>
-                              {!hasScore && <Countdown dateStr={fix.dateStr} etTime={fix.etTime} accent={isFav?"#fbbf24":c}/>}
-                              {/* H2H toggle button */}
-                              <div style={{display:"flex",justifyContent:"flex-end",marginTop:6}}>
-                                <button onClick={()=>fetchH2H(fix)}
-                                  style={{background:"none",border:`1px solid ${h2hFixId===fix.id?c:T.border}`,borderRadius:6,padding:"3px 9px",cursor:"pointer",fontSize:10,color:h2hFixId===fix.id?c:T.sub,fontWeight:700,display:"flex",alignItems:"center",gap:4,transition:"all .2s"}}>
-                                  ⚔️ H2H {h2hFixId===fix.id?"▲":"▼"}
-                                </button>
-                              </div>
-                              {/* H2H Panel */}
-                              {h2hFixId===fix.id && h2hData[fix.id] && (()=>{
-                                const d = h2hData[fix.id];
-                                const hTeam = d.home_team||fix.home;
-                                const aTeam = d.away_team||fix.away;
-                                const hasRealData = d.meetings > 0;
-                                return (
-                                <div style={{marginTop:8,padding:"12px 14px",background:T.acBg,border:`1px solid ${c}33`,borderRadius:10,animation:"fadeIn .2s ease"}}>
-                                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
-                                    <span style={{fontSize:14}}>⚔️</span>
-                                    <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c}}>HEAD TO HEAD</span>
-                                    {d.wc_meetings>0 && <span className="pill" style={{background:"rgba(251,191,36,.15)",color:"#fbbf24"}}>🏆 WC: {d.wc_meetings}বার</span>}
-                                  </div>
-                                  {hasRealData ? (<>
-                                    <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:6,marginBottom:10,alignItems:"center"}}>
-                                      <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
-                                        <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[hTeam]||"🏳"} {hTeam}</div>
-                                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.home_wins}</div>
-                                        <div style={{fontSize:9,color:T.sub}}>জয়</div>
-                                      </div>
-                                      <div style={{textAlign:"center",padding:"0 4px"}}>
-                                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:T.sub,lineHeight:1}}>{d.draws}</div>
-                                        <div style={{fontSize:9,color:T.dim}}>ড্র</div>
-                                        <div style={{fontSize:9,color:T.dim,marginTop:2,whiteSpace:"nowrap"}}>{d.meetings} ম্যাচ</div>
-                                      </div>
-                                      <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
-                                        <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[aTeam]||"🏳"} {aTeam}</div>
-                                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:"#f59e0b",lineHeight:1}}>{d.away_wins}</div>
-                                        <div style={{fontSize:9,color:T.sub}}>জয়</div>
-                                      </div>
-                                    </div>
-                                    <div style={{display:"flex",height:5,borderRadius:3,overflow:"hidden",marginBottom:10,gap:1}}>
-                                      <div style={{flex:d.home_wins||0.01,background:c,transition:"flex .5s"}}/>
-                                      <div style={{flex:d.draws||0.01,background:"#6b7280",transition:"flex .5s"}}/>
-                                      <div style={{flex:d.away_wins||0.01,background:"#f59e0b",transition:"flex .5s"}}/>
-                                    </div>
-                                  </>) : (
-                                    <div style={{padding:"6px 10px",background:"rgba(251,191,36,.07)",border:"1px solid rgba(251,191,36,.2)",borderRadius:7,fontSize:11,color:"#fbbf24",marginBottom:8}}>
-                                      🆕 দুই দলের প্রথম সাক্ষাৎ
-                                    </div>
-                                  )}
-                                  <div style={{fontSize:11,color:T.text,lineHeight:1.7,marginBottom:8,padding:"8px 10px",background:T.card,borderRadius:8,border:`1px solid ${T.border}`}}>{d.summary}</div>
-                                  {d.last_match && d.last_match!=="তথ্য পাওয়া যায়নি" && (
-                                    <div style={{fontSize:11,color:T.sub,marginBottom:6,display:"flex",alignItems:"flex-start",gap:6}}>
-                                      <span style={{flexShrink:0,color:c}}>🕐</span>
-                                      <span><span style={{fontWeight:700,color:T.text}}>শেষ ম্যাচ{d.last_year?` (${d.last_year})`:""}: </span>{d.last_match}</span>
-                                    </div>
-                                  )}
-                                  {d.notable_fact && d.notable_fact.length>3 && (
-                                    <div style={{fontSize:11,color:T.sub,padding:"6px 10px",background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.2)",borderRadius:7,display:"flex",gap:6}}>
-                                      <span style={{flexShrink:0}}>💡</span><span>{d.notable_fact}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                );
-                              })()}
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+
+                            {/* HOME TEAM */}
+                            <div style={{display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
+                              <span style={{
+                                fontSize:12, fontWeight:700, textAlign:"right",
+                                color: hasScore&&+r.h>+r.a ? c : isFav&&fix.home===favTeam ? "#fbbf24" : T.text,
+                              }}>{fix.home}</span>
+                              <span style={{fontSize:22,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
+                            </div>
+
+                            {/* SCORE / TIME */}
+                            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
+                              {hasScore ? (
+                                <div style={{
+                                  padding:"3px 10px", borderRadius:7,
+                                  background:isLive?"rgba(239,68,68,.15)":"rgba(16,185,129,.12)",
+                                  border:`1px solid ${isLive?"#ef444466":c+"55"}`,
+                                  textAlign:"center",
+                                }}>
+                                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,color:isLive?"#ef4444":c,lineHeight:1}}>{r.h} – {r.a}</div>
+                                  <div style={{fontSize:7,fontWeight:800,color:isLive?"#ef4444":T.sub,letterSpacing:1}}>{isLive?"🔴 LIVE":matchOver?"FT":"🔴 LIVE"}</div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:9,color:T.sub,letterSpacing:1.5}}>VS</div>
+                                  <div style={{
+                                    padding:"2px 8px",borderRadius:5,
+                                    background:isFav?"rgba(251,191,36,.1)":T.acBg,
+                                    border:`1px solid ${isFav?"rgba(251,191,36,.25)":c+"22"}`,
+                                    textAlign:"center",
+                                  }}>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:11,color:isFav?"#fbbf24":c,lineHeight:1.2}}>{bdFull}</div>
+                                    <div style={{fontSize:7,color:T.dim,letterSpacing:.5}}>BD সময়</div>
+                                  </div>
+                                </>
+                              )}
+                              <div style={{display:"flex",gap:3,marginTop:1}}>
+                                <button onClick={()=>shareMatch(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:10,opacity:.5,padding:"0 2px"}}>📤</button>
+                                <button onClick={()=>requestNotification(fix,handleNotifToggle)} style={{background:"none",border:"none",cursor:"pointer",fontSize:10,opacity:notifScheduled[fix.id]?1:.5,padding:"0 2px"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
+                                <button onClick={()=>fetchH2H(fix)} style={{background:"none",border:`1px solid ${h2hFixId===fix.id?c:T.border+"88"}`,borderRadius:4,padding:"1px 5px",cursor:"pointer",fontSize:8,color:h2hFixId===fix.id?c:T.sub,fontWeight:700}}>H2H</button>
+                              </div>
+                            </div>
+
+                            {/* AWAY TEAM */}
+                            <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              <span style={{fontSize:22,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
+                              <span style={{
+                                fontSize:12, fontWeight:700,
+                                color: hasScore&&+r.a>+r.h ? c : isFav&&fix.away===favTeam ? "#fbbf24" : T.text,
+                              }}>{fix.away}</span>
+                            </div>
+                          </div>
+
+                          {/* Countdown row */}
+                          {!hasScore && (
+                            <div style={{paddingLeft:102,paddingRight:12,paddingBottom:6,background:isFav?"rgba(251,191,36,.03)":fixIdx%2===0?T.card:(dark?"rgba(255,255,255,.015)":"rgba(0,0,0,.015)")}}>
+                              <Countdown dateStr={fix.dateStr} etTime={fix.etTime} accent={isFav?"#fbbf24":c}/>
+                            </div>
+                          )}
+
+                          {/* H2H Panel */}
+                          {h2hFixId===fix.id && h2hData[fix.id] && (()=>{
+                            const d = h2hData[fix.id];
+                            const hTeam = d.home_team||fix.home;
+                            const aTeam = d.away_team||fix.away;
+                            const hasRealData = d.meetings > 0;
+                            return (
+                            <div style={{margin:"0 12px 8px",padding:"12px 14px",background:T.acBg,border:`1px solid ${c}33`,borderRadius:10,animation:"fadeIn .2s ease"}}>
+                              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+                                <span style={{fontSize:14}}>⚔️</span>
+                                <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c}}>HEAD TO HEAD</span>
+                                {d.wc_meetings>0 && <span className="pill" style={{background:"rgba(251,191,36,.15)",color:"#fbbf24"}}>🏆 WC: {d.wc_meetings}বার</span>}
+                              </div>
+                              {hasRealData ? (<>
+                                <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:6,marginBottom:10,alignItems:"center"}}>
+                                  <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
+                                    <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[hTeam]||"🏳"} {hTeam}</div>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.home_wins}</div>
+                                    <div style={{fontSize:9,color:T.sub}}>জয়</div>
+                                  </div>
+                                  <div style={{textAlign:"center",padding:"0 4px"}}>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:T.sub,lineHeight:1}}>{d.draws}</div>
+                                    <div style={{fontSize:9,color:T.dim}}>ড্র</div>
+                                    <div style={{fontSize:9,color:T.dim,marginTop:2,whiteSpace:"nowrap"}}>{d.meetings} ম্যাচ</div>
+                                  </div>
+                                  <div style={{textAlign:"center",padding:"10px 6px",background:T.card,border:`1px solid ${c}33`,borderRadius:10}}>
+                                    <div style={{fontSize:10,color:T.sub,marginBottom:2}}>{FLAGS[aTeam]||"🏳"} {aTeam}</div>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:28,color:c,lineHeight:1}}>{d.away_wins}</div>
+                                    <div style={{fontSize:9,color:T.sub}}>জয়</div>
+                                  </div>
+                                </div>
+                                {d.last_matches&&d.last_matches.length>0&&(
+                                  <div>
+                                    <div style={{fontSize:9,color:T.sub,marginBottom:5,letterSpacing:1,textTransform:"uppercase"}}>সাম্প্রতিক মুখোমুখি</div>
+                                    {d.last_matches.slice(0,3).map((m,i)=>(
+                                      <div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 0",borderBottom:`1px solid ${T.border}44`}}>
+                                        <span style={{fontSize:9,color:T.dim,minWidth:28}}>{m.year}</span>
+                                        <span style={{fontSize:10,flex:1,textAlign:"right",color:T.text}}>{m.home}</span>
+                                        <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,color:c,minWidth:32,textAlign:"center"}}>{m.score}</span>
+                                        <span style={{fontSize:10,flex:1,color:T.text}}>{m.away}</span>
+                                        {m.tournament&&<span style={{fontSize:8,color:T.dim,padding:"1px 5px",background:T.acBg,borderRadius:4}}>{m.tournament}</span>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </>) : (
+                                <div style={{textAlign:"center",padding:"16px 0",color:T.sub,fontSize:12}}>
+                                  <div style={{fontSize:24,marginBottom:6}}>📊</div>
+                                  এই দুই দলের কোনো আগের ম্যাচের রেকর্ড পাওয়া যায়নি
+                                </div>
+                              )}
+                            </div>
+                            );
+                          })()}
+                        </div>
+                      );
+                    });
+                  });
+                  return rows;
+                })()}
               </div>
             </div>
           )}
