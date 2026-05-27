@@ -369,15 +369,15 @@ const SQUADS={
     {num:18,pos:"GK",name:"Owen Goodman",club:"Huddersfield Town"},
     {num:2,pos:"DEF",name:"Richie Laryea",club:"Toronto FC"},
     {num:3,pos:"DEF",name:"Derek Cornelius",club:"Rangers"},
-    {num:5,pos:"DEF",name:"Kamal Miller",club:"Portland Timbers"},
     {num:6,pos:"DEF",name:"Zorhan Bassong",club:"Sporting Kansas City"},
+    {num:5,pos:"DEF",name:"Kamal Miller",club:"Portland Timbers"},
     {num:13,pos:"DEF",name:"Joel Waterman",club:"Chicago Fire"},
     {num:15,pos:"DEF",name:"Niko Sigur",club:"Hajduk Split"},
     {num:7,pos:"MID",name:"Stephen Eustaquio",club:"Porto"},
     {num:8,pos:"MID",name:"Jonathan Osorio",club:"Toronto FC"},
+    {num:20,pos:"MID",name:"Mathieu Choinière",club:"LA FC"},
     {num:16,pos:"MID",name:"Ismael Koné",club:"Sassuolo"},
     {num:17,pos:"MID",name:"Tajon Buchanan",club:"Villarreal"},
-    {num:20,pos:"MID",name:"Mathieu Choinière",club:"LA FC"},
     {num:9,pos:"FWD",name:"Cyle Larin",club:"Feyenoord"},
     {num:11,pos:"FWD",name:"Jonathan David",club:"Juventus"},
     {num:14,pos:"FWD",name:"Tani Oluwaseyi",club:"Villarreal"},
@@ -451,7 +451,7 @@ const SQUADS={
     {num:1,pos:"GK",name:"Ederson",club:"Fenerbahce"},
     {num:12,pos:"GK",name:"Bento",club:"Al-Nassr"},
     {num:23,pos:"GK",name:"John Victor",club:"Nottm Forest"},
-    {num:2,pos:"DEF",name:"Danilo",club:"Flamengo"},
+    {num:2,pos:"DEF",name:"Danilo",club:"Juventus"},
     {num:3,pos:"DEF",name:"Alex Sandro",club:"Flamengo"},
     {num:4,pos:"DEF",name:"Marquinhos",club:"PSG"},
     {num:5,pos:"DEF",name:"Gabriel Magalhães",club:"Arsenal"},
@@ -1333,15 +1333,13 @@ function shareMatch(fix) {
   else navigator.clipboard.writeText(text).then(() => alert("ক্লিপবোর্ডে কপি হয়েছে!"));
 }
 
-// ── Notification helpers ──────────────────────────────────────
-const NOTIF_KEY = "wc26_notifs"; // localStorage key for scheduled notif ids
-
+// ── Notification helpers ─────────────────────────────────────
+const NOTIF_KEY = "wc26_notifs";
 function getScheduledNotifs() {
   try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || "{}"); } catch { return {}; }
 }
 function saveScheduledNotif(fixId, timeoutId) {
-  const obj = getScheduledNotifs();
-  obj[fixId] = timeoutId;
+  const obj = getScheduledNotifs(); obj[fixId] = timeoutId;
   try { localStorage.setItem(NOTIF_KEY, JSON.stringify(obj)); } catch {}
 }
 function removeScheduledNotif(fixId) {
@@ -1349,46 +1347,34 @@ function removeScheduledNotif(fixId) {
   if (obj[fixId]) { clearTimeout(obj[fixId]); delete obj[fixId]; }
   try { localStorage.setItem(NOTIF_KEY, JSON.stringify(obj)); } catch {}
 }
-function isNotifScheduled(fixId) {
-  const obj = getScheduledNotifs();
-  return !!obj[fixId];
-}
+function isNotifScheduled(fixId) { return !!getScheduledNotifs()[fixId]; }
 
 async function ensureNotifPermission() {
   if (!("Notification" in window)) return false;
   if (Notification.permission === "granted") return true;
-  if (Notification.permission === "denied") {
-    alert("Browser এ notification blocked আছে। Browser settings থেকে allow করুন।");
-    return false;
-  }
+  if (Notification.permission === "denied") { alert("Browser এ notification blocked। Settings থেকে allow করুন।"); return false; }
   const p = await Notification.requestPermission();
   return p === "granted";
 }
-
 function scheduleNotif(fix, minutesBefore = 10) {
   const ms = matchUTC(fix.dateStr, fix.etTime) - Date.now() - (minutesBefore * 60000);
   if (ms <= 0) return null;
   const tid = setTimeout(() => {
-    const n = new Notification(`⚽ ${minutesBefore} মিনিট পরে ম্যাচ শুরু!`, {
+    const n = new Notification(`⚽ ${minutesBefore} মিনিট পরে ম্যাচ!`, {
       body: `${fix.home} vs ${fix.away}\n${bdTime(fix.etTime)} BD সময়`,
-      icon: "/favicon.ico",
-      badge: "/favicon.ico",
-      tag: `wc26-match-${fix.id}`,
-      requireInteraction: true,
+      icon: "/icon-192.png", tag: `wc26-match-${fix.id}`, requireInteraction: true,
     });
     n.onclick = () => { window.focus(); n.close(); };
     removeScheduledNotif(fix.id);
   }, ms);
   return tid;
 }
-
 async function requestNotification(fix, onUpdate) {
   const granted = await ensureNotifPermission();
   if (!granted) return;
   if (isNotifScheduled(fix.id)) {
     removeScheduledNotif(fix.id);
-    if (onUpdate) onUpdate(fix.id, false);
-    return;
+    if (onUpdate) onUpdate(fix.id, false); return;
   }
   const utc = matchUTC(fix.dateStr, fix.etTime);
   if (utc - Date.now() <= 0) { alert("ম্যাচ শুরু হয়ে গেছে বা শেষ!"); return; }
@@ -1397,14 +1383,12 @@ async function requestNotification(fix, onUpdate) {
   saveScheduledNotif(fix.id, tid);
   if (onUpdate) onUpdate(fix.id, true);
 }
-
 async function scheduleFavTeamNotifs(favTeam, fixtures, onUpdate) {
   if (!favTeam) return;
   const granted = await ensureNotifPermission();
   if (!granted) return;
   const favFixes = fixtures.filter(f =>
-    (f.home === favTeam || f.away === favTeam) &&
-    matchUTC(f.dateStr, f.etTime) - Date.now() > 60000
+    (f.home === favTeam || f.away === favTeam) && matchUTC(f.dateStr, f.etTime) - Date.now() > 60000
   );
   if (favFixes.length === 0) { alert("আর কোনো upcoming match নেই।"); return; }
   let count = 0;
@@ -1414,7 +1398,7 @@ async function scheduleFavTeamNotifs(favTeam, fixtures, onUpdate) {
       if (tid !== null) { saveScheduledNotif(f.id, tid); count++; if (onUpdate) onUpdate(f.id, true); }
     }
   });
-  alert(count > 0 ? `✅ ${count}টি ম্যাচের রিমাইন্ডার সেট হয়েছে!` : "সব ম্যাচের রিমাইন্ডার আগেই সেট আছে।");
+  alert(count > 0 ? `✅ ${count}টি ম্যাচের রিমাইন্ডার সেট!` : "সব ম্যাচের রিমাইন্ডার আগেই সেট আছে।");
 }
 
 function getTeamGroup(t) {
@@ -1812,13 +1796,9 @@ export default function App() {
   // Feature: PWA + Notifications
   const [installPrompt, setInstallPrompt] = useState(null);
   const [pwaInstalled, setPwaInstalled] = useState(false);
-  const [notifScheduled, setNotifScheduled] = useState(() => getScheduledNotifs());
-  const [notifPermission, setNotifPermission] = useState(() =>
-    "Notification" in window ? Notification.permission : "unsupported"
-  );
-  const [notifScheduled, setNotifScheduled] = useState(() => getScheduledNotifs());
-  const [notifPermission, setNotifPermission] = useState(() =>
-    "Notification" in window ? Notification.permission : "unsupported"
+  const [notifScheduled, setNotifScheduled] = useState({});
+  const [notifPermission, setNotifPermission] = useState(
+    () => "Notification" in window ? Notification.permission : "unsupported"
   );
 
   // Live BD clock
@@ -1838,12 +1818,12 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // ── PWA: Service Worker registration ─────────────────────────
+  // ── PWA: Service Worker ──────────────────────────────────────
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js")
-        .then(reg => { console.log("SW registered:", reg.scope); })
-        .catch(err => { console.warn("SW registration failed:", err); });
+        .then(reg => console.log("SW:", reg.scope))
+        .catch(err => console.warn("SW failed:", err));
     }
   }, []);
 
@@ -1852,19 +1832,16 @@ export default function App() {
     const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
     window.addEventListener("beforeinstallprompt", handler);
     window.addEventListener("appinstalled", () => { setInstallPrompt(null); setPwaInstalled(true); });
-    // Check if already installed
     if (window.matchMedia("(display-mode: standalone)").matches) setPwaInstalled(true);
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  // ── Notification permission state sync ────────────────────────
+  // ── Notification permission sync ──────────────────────────────
   useEffect(() => {
-    const sync = () => {
+    const id = setInterval(() => {
       if ("Notification" in window) setNotifPermission(Notification.permission);
-    };
-    sync();
-    const interval = setInterval(sync, 3000);
-    return () => clearInterval(interval);
+    }, 3000);
+    return () => clearInterval(id);
   }, []);
 
   const handleNotifToggle = useCallback((fixId, scheduled) => {
@@ -2271,13 +2248,13 @@ export default function App() {
                     <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,color:c,letterSpacing:1,lineHeight:1}}>{bdClock}</div>
                   </div>
                   {installPrompt && !pwaInstalled && (
-                    <button onClick={handleInstallPWA} title="App হিসেবে Install করুন" style={{padding:"7px 11px",borderRadius:8,border:`1px solid ${c}55`,background:T.acBg,color:c,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Outfit',sans-serif",flexShrink:0,transition:"all .2s",display:"flex",alignItems:"center",gap:5}}>
-                      📲 <span style={{fontSize:10}} className="hide-sm">Install</span>
+                    <button onClick={handleInstallPWA} title="App হিসেবে Install করুন" style={{padding:"7px 11px",borderRadius:8,border:`1px solid ${c}55`,background:T.acBg,color:c,cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
+                      📲<span style={{fontSize:10}} className="hide-sm">Install</span>
                     </button>
                   )}
                   {pwaInstalled && (
-                    <div title="App Install হয়েছে" style={{padding:"7px 11px",borderRadius:8,border:`1px solid #10b98155`,background:"rgba(16,185,129,.08)",color:"#10b981",fontSize:13,display:"flex",alignItems:"center",gap:5}}>
-                      ✅ <span style={{fontSize:10}} className="hide-sm">Installed</span>
+                    <div style={{padding:"7px 11px",borderRadius:8,border:"1px solid #10b98155",background:"rgba(16,185,129,.08)",color:"#10b981",fontSize:13,display:"flex",alignItems:"center",gap:5}}>
+                      ✅<span style={{fontSize:10}} className="hide-sm">Installed</span>
                     </div>
                   )}
                   <button onClick={toggleDark} className={`theme-btn${darkAnimating?" theme-animating":""}`} style={{padding:"7px 13px",borderRadius:8,border:`1px solid ${T.border}`,background:T.card,color:T.text,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Outfit',sans-serif",flexShrink:0,transition:"all .2s",display:"flex",alignItems:"center",gap:6}}>
@@ -2296,7 +2273,7 @@ export default function App() {
               <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",marginBottom:8,background:"rgba(251,191,36,.07)",border:"1px solid rgba(251,191,36,.25)",borderRadius:9,flexWrap:"wrap"}}>
                 <span style={{fontSize:20}}>{FLAGS[favTeam]||"🏳"}</span>
                 <span style={{fontSize:13,fontWeight:700,color:"#fbbf24",flex:1}}>{favTeam} ⭐ প্রিয় দল — Group {getTeamGroup(favTeam)}</span>
-                <button onClick={()=>scheduleFavTeamNotifs(favTeam, ALL_GROUP_FIXTURES, handleNotifToggle)} title="প্রিয় দলের সব ম্যাচে reminder" style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",borderRadius:6,color:"#fbbf24",fontSize:11,fontWeight:700,padding:"3px 9px",cursor:"pointer"}}>🔔 Remind</button>
+                <button onClick={()=>scheduleFavTeamNotifs(favTeam,ALL_GROUP_FIXTURES,handleNotifToggle)} style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",borderRadius:6,color:"#fbbf24",fontSize:11,fontWeight:700,padding:"3px 9px",cursor:"pointer"}}>🔔 Remind</button>
                 <button onClick={()=>toggleFav(favTeam)} style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",borderRadius:6,color:"#fbbf24",fontSize:11,fontWeight:700,padding:"3px 9px",cursor:"pointer"}}>✕ সরাও</button>
               </div>
             )}
@@ -2364,7 +2341,7 @@ export default function App() {
                           </div>
                           <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
                             <button onClick={()=>shareMatch(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}}>📤</button>
-                            <button onClick={()=>requestNotification(fix, handleNotifToggle)} title={notifScheduled[fix.id]?"রিমাইন্ডার বাতিল করুন":"১০ মিনিট আগে রিমাইন্ডার"} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:notifScheduled[fix.id]?1:.5,filter:notifScheduled[fix.id]?"none":"grayscale(1)",transition:"all .2s"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
+                            <button onClick={()=>requestNotification(fix,handleNotifToggle)} title={notifScheduled[fix.id]?"রিমাইন্ডার বাতিল":"১০ মিনিট আগে reminder"} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:notifScheduled[fix.id]?1:.5,transition:"all .2s"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
                             <button onClick={()=>fetchH2H(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}} title="H2H">⚔️</button>                          </div>
                         </div>
                       );
@@ -2453,7 +2430,7 @@ export default function App() {
                                 <div style={{width:22,height:22,background:T.acBg,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:11,color:c,flexShrink:0}}>G{fix.grp}</div>
                                 <span style={{fontSize:10,color:T.sub,marginLeft:"auto",textAlign:"right",flex:1}}>📍 {fix.venue.split(",")[0]}</span>
                                 <button onClick={()=>shareMatch(fix)} title="শেয়ার" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,opacity:.55,color:T.sub}}>📤</button>
-                                <button onClick={()=>requestNotification(fix, handleNotifToggle)} title={notifScheduled[fix.id]?"রিমাইন্ডার বাতিল":"১০ মিনিট আগে reminder"} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:notifScheduled[fix.id]?c:T.sub,opacity:notifScheduled[fix.id]?1:.6,transition:"all .2s"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
+                                <button onClick={()=>requestNotification(fix,handleNotifToggle)} title={notifScheduled[fix.id]?"রিমাইন্ডার বাতিল":"১০ মিনিট আগে reminder"} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:notifScheduled[fix.id]?c:T.sub,opacity:notifScheduled[fix.id]?1:.6,transition:"all .2s"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
                               </div>
                               <div className="fc-inner" style={{display:"flex",alignItems:"center",gap:8}}>
                                 <div style={{display:"flex",alignItems:"center",gap:6,flex:1,justifyContent:"flex-end"}}>
