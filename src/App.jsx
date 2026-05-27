@@ -15,6 +15,15 @@ function bdTime(etTime) {
   const { time, label, nextDay } = etToBD(etTime);
   return label + " " + time + (nextDay ? " (+1)" : "");
 }
+function bdDateStr(dateStr, etTime) {
+  const { nextDay } = etToBD(etTime);
+  if (!nextDay) return dateStr;
+  const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const [mon, day] = dateStr.split(" ");
+  const d = new Date(2026, months[mon], Number(day) + 1);
+  return monthNames[d.getMonth()] + " " + d.getDate();
+}
 function matchUTC(dateStr, etTime) {
   const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
   const [mon, day] = dateStr.split(" ");
@@ -286,7 +295,7 @@ const SQUADS={
     {num:18,pos:"MID",name:"Luis Romo",club:"Cruz Azul"},
     {num:20,pos:"MID",name:"Roberto Alvarado",club:"Chivas"},
     {num:7,pos:"FWD",name:"Henry Martín",club:"Club América"},
-    {num:9,pos:"FWD",name:"Raúl Jiménez",club:"Fulham"},
+    {num:9,pos:"FWD",name:"Raúl Jiménez",club:"Club América"},
     {num:11,pos:"FWD",name:"Alexis Vega",club:"Querétaro"},
     {num:17,pos:"FWD",name:"Santiago Giménez",club:"Feyenoord"},
     {num:22,pos:"FWD",name:"Hirving Lozano",club:"PSV"},
@@ -328,7 +337,7 @@ const SQUADS={
     {num:11,pos:"MID",name:"Yang Hyun-jun",club:"Celtic"},
     {num:17,pos:"MID",name:"Hwang Hee-chan",club:"Wolves"},
     {num:19,pos:"MID",name:"Lee Kang-in",club:"PSG"},
-    {num:7,pos:"FWD",name:"Son Heung-min",club:"LA FC"},
+    {num:7,pos:"FWD",name:"Son Heung-min",club:"Tottenham"},
     {num:9,pos:"FWD",name:"Cho Gue-sung",club:"Middlesbrough"},
     {num:18,pos:"FWD",name:"Oh Hyeon-gyu",club:"Celtic"},
     {num:22,pos:"FWD",name:"Kwon Chang-hoon",club:"Jeonbuk Hyundai"},
@@ -355,46 +364,46 @@ const SQUADS={
     {num:18,pos:"FWD",name:"Martin Fillo",club:"Sparta Prague"},
   ]},
   Canada:{coach:"Jesse Marsch",players:[
-    {num:1,pos:"GK",name:"Maxime Crépeau",club:"LA Galaxy"},
-    {num:12,pos:"GK",name:"Dayne St Clair",club:"Minnesota United"},
-    {num:18,pos:"GK",name:"Milan Borjan",club:"Red Star Belgrade"},
+    {num:1,pos:"GK",name:"Dayne St Clair",club:"Minnesota United"},
+    {num:12,pos:"GK",name:"Maxime Crépeau",club:"Portland Timbers"},
+    {num:18,pos:"GK",name:"Owen Goodman",club:"Huddersfield Town"},
     {num:2,pos:"DEF",name:"Richie Laryea",club:"Toronto FC"},
-    {num:3,pos:"DEF",name:"Alphonso Davies",club:"Bayern Munich"},
-    {num:4,pos:"DEF",name:"Derek Cornelius",club:"Mallorca"},
+    {num:3,pos:"DEF",name:"Derek Cornelius",club:"Rangers"},
     {num:5,pos:"DEF",name:"Kamal Miller",club:"Portland Timbers"},
-    {num:6,pos:"DEF",name:"Steven Vitória",club:"Sporting CP"},
-    {num:13,pos:"DEF",name:"Doneil Henry",club:"Vancouver Whitecaps"},
+    {num:6,pos:"DEF",name:"Zorhan Bassong",club:"Sporting Kansas City"},
+    {num:13,pos:"DEF",name:"Joel Waterman",club:"Chicago Fire"},
+    {num:15,pos:"DEF",name:"Niko Sigur",club:"Hajduk Split"},
     {num:7,pos:"MID",name:"Stephen Eustaquio",club:"Porto"},
-    {num:8,pos:"MID",name:"Samuel Piette",club:"CF Montréal"},
-    {num:14,pos:"MID",name:"Atiba Hutchinson",club:"Besiktas"},
-    {num:16,pos:"MID",name:"Ismael Koné",club:"Marseille"},
-    {num:20,pos:"MID",name:"Jonathan David",club:"Lille"},
-    {num:9,pos:"FWD",name:"Cyle Larin",club:"Mallorca"},
-    {num:11,pos:"FWD",name:"Tajon Buchanan",club:"Club Brugge"},
-    {num:15,pos:"FWD",name:"David Wotherspoon",club:"St Johnstone"},
-    {num:17,pos:"FWD",name:"Liam Millar",club:"Mainz"},
-    {num:19,pos:"FWD",name:"Lucas Cavallini",club:"Vancouver Whitecaps"},
+    {num:8,pos:"MID",name:"Jonathan Osorio",club:"Toronto FC"},
+    {num:16,pos:"MID",name:"Ismael Koné",club:"Sassuolo"},
+    {num:17,pos:"MID",name:"Tajon Buchanan",club:"Villarreal"},
+    {num:20,pos:"MID",name:"Mathieu Choinière",club:"LA FC"},
+    {num:9,pos:"FWD",name:"Cyle Larin",club:"Feyenoord"},
+    {num:11,pos:"FWD",name:"Jonathan David",club:"Juventus"},
+    {num:14,pos:"FWD",name:"Tani Oluwaseyi",club:"Villarreal"},
+    {num:19,pos:"FWD",name:"Marcelo Flores",club:"Tigres UANL"},
+    {num:21,pos:"FWD",name:"Promise David",club:"Union SG"},
   ]},
   "Bosnia & Herzegovina":{coach:"Sergej Barbarez",players:[
     {num:1,pos:"GK",name:"Nikola Vasilj",club:"St. Pauli"},
-    {num:12,pos:"GK",name:"Martin Zlomislic",club:"Dinamo Zagreb"},
-    {num:23,pos:"GK",name:"Osman Hadzikic",club:"NK Olimpija"},
-    {num:2,pos:"DEF",name:"Amar Dedic",club:"RB Salzburg"},
-    {num:3,pos:"DEF",name:"Nikola Katic",club:"Hajduk Split"},
-    {num:4,pos:"DEF",name:"Tarik Muharemovic",club:"Internacional"},
-    {num:5,pos:"DEF",name:"Sead Kolasinac",club:"Atalanta"},
-    {num:6,pos:"DEF",name:"Dennis Hadzikadunic",club:"Rennes"},
-    {num:16,pos:"DEF",name:"Nihad Mujakic",club:"Bayer Leverkusen"},
-    {num:8,pos:"MID",name:"Amir Hadziahmetovic",club:"Kasımpaşa"},
-    {num:10,pos:"MID",name:"Dzenis Burnic",club:"Fortuna Düsseldorf"},
-    {num:14,pos:"MID",name:"Ivan Sunjic",club:"Hertha BSC"},
-    {num:15,pos:"MID",name:"Benjamin Tahirovic",club:"Ajax"},
-    {num:20,pos:"MID",name:"Esmir Bajraktarevic",club:"New England Revolution"},
-    {num:9,pos:"FWD",name:"Edin Džeko",club:"Fenerbahçe"},
-    {num:7,pos:"FWD",name:"Haris Tabakovic",club:"Hertha BSC"},
-    {num:11,pos:"FWD",name:"Ermedin Demirovic",club:"Stuttgart"},
-    {num:19,pos:"FWD",name:"Samed Bazdar",club:"VfL Osnabrück"},
-    {num:22,pos:"FWD",name:"Jovo Lukic",club:"Eintracht Frankfurt"},
+    {num:12,pos:"GK",name:"Martin Zlomislić",club:"Rijeka"},
+    {num:23,pos:"GK",name:"Osman Hadžikić",club:"Slaven Belupo"},
+    {num:2,pos:"DEF",name:"Amar Dedić",club:"Benfica"},
+    {num:3,pos:"DEF",name:"Nikola Katić",club:"Schalke 04"},
+    {num:4,pos:"DEF",name:"Tarik Muharemović",club:"Sassuolo"},
+    {num:5,pos:"DEF",name:"Sead Kolašinac",club:"Atalanta"},
+    {num:6,pos:"DEF",name:"Dennis Hadžikadunić",club:"Sampdoria"},
+    {num:16,pos:"DEF",name:"Nihad Mujakić",club:"Gaziantep"},
+    {num:8,pos:"MID",name:"Amir Hadžiahmetović",club:"Hull City"},
+    {num:10,pos:"MID",name:"Dženis Burnić",club:"Karlsruher SC"},
+    {num:14,pos:"MID",name:"Ivan Šunjić",club:"Pafos"},
+    {num:15,pos:"MID",name:"Benjamin Tahirović",club:"Brøndby"},
+    {num:20,pos:"MID",name:"Esmir Bajraktarević",club:"PSV Eindhoven"},
+    {num:9,pos:"FWD",name:"Edin Džeko",club:"Schalke 04"},
+    {num:7,pos:"FWD",name:"Haris Tabaković",club:"Borussia M'gladbach"},
+    {num:11,pos:"FWD",name:"Ermedin Demirović",club:"Stuttgart"},
+    {num:19,pos:"FWD",name:"Samed Baždar",club:"Jagiellonia"},
+    {num:22,pos:"FWD",name:"Jovo Lukić",club:"Universitatea Cluj"},
   ]},
   Qatar:{coach:"Julen Lopetegui",players:[
     {num:1,pos:"GK",name:"Meshaal Barsham",club:"Al-Sadd"},
@@ -428,7 +437,7 @@ const SQUADS={
     {num:6,pos:"DEF",name:"Eray Comert",club:"Valencia"},
     {num:13,pos:"DEF",name:"Ricardo Rodríguez",club:"Torino"},
     {num:8,pos:"MID",name:"Remo Freuler",club:"Bologna"},
-    {num:10,pos:"MID",name:"Granit Xhaka",club:"Sunderland"},
+    {num:10,pos:"MID",name:"Granit Xhaka",club:"Bayer Leverkusen"},
     {num:15,pos:"MID",name:"Denis Zakaria",club:"Chelsea"},
     {num:16,pos:"MID",name:"Djibril Sow",club:"Eintracht Frankfurt"},
     {num:19,pos:"MID",name:"Fabian Rieder",club:"Stade Rennais"},
@@ -439,26 +448,26 @@ const SQUADS={
     {num:18,pos:"FWD",name:"Cedric Itten",club:"Young Boys"},
   ]},
   Brazil:{coach:"Carlo Ancelotti",players:[
-    {num:1,pos:"GK",name:"Alisson",club:"Liverpool"},
-    {num:12,pos:"GK",name:"Weverton",club:"Palmeiras"},
-    {num:23,pos:"GK",name:"Ederson",club:"Man City"},
-    {num:2,pos:"DEF",name:"Danilo",club:"Juventus"},
-    {num:3,pos:"DEF",name:"Alex Sandro",club:"Juventus"},
+    {num:1,pos:"GK",name:"Ederson",club:"Fenerbahce"},
+    {num:12,pos:"GK",name:"Bento",club:"Al-Nassr"},
+    {num:23,pos:"GK",name:"John Victor",club:"Nottm Forest"},
+    {num:2,pos:"DEF",name:"Danilo",club:"Flamengo"},
+    {num:3,pos:"DEF",name:"Alex Sandro",club:"Flamengo"},
     {num:4,pos:"DEF",name:"Marquinhos",club:"PSG"},
     {num:5,pos:"DEF",name:"Gabriel Magalhães",club:"Arsenal"},
-    {num:6,pos:"DEF",name:"Bremer",club:"Juventus"},
-    {num:13,pos:"DEF",name:"Wesley",club:"Flamengo"},
+    {num:6,pos:"DEF",name:"Fabricio Bruno",club:"Cruzeiro"},
+    {num:13,pos:"DEF",name:"Wesley",club:"Roma"},
     {num:8,pos:"MID",name:"Casemiro",club:"Man United"},
     {num:10,pos:"MID",name:"Lucas Paquetá",club:"West Ham"},
     {num:14,pos:"MID",name:"Fabinho",club:"Al-Ittihad"},
-    {num:16,pos:"MID",name:"Danilo Santos",club:"Nottm Forest"},
+    {num:16,pos:"MID",name:"Andrey Santos",club:"Chelsea"},
     {num:17,pos:"MID",name:"Bruno Guimarães",club:"Newcastle"},
     {num:7,pos:"FWD",name:"Vinicius Jr",club:"Real Madrid"},
-    {num:9,pos:"FWD",name:"Gabriel Martinelli",club:"Arsenal"},
-    {num:10,pos:"FWD",name:"Neymar",club:"Al-Hilal"},
-    {num:11,pos:"FWD",name:"Raphinha",club:"Barcelona"},
-    {num:18,pos:"FWD",name:"Matheus Cunha",club:"Wolves"},
-    {num:19,pos:"FWD",name:"Endrick",club:"Real Madrid"},
+    {num:9,pos:"FWD",name:"Richarlison",club:"Tottenham"},
+    {num:11,pos:"FWD",name:"Joao Pedro",club:"Chelsea"},
+    {num:18,pos:"FWD",name:"Matheus Cunha",club:"Man United"},
+    {num:19,pos:"FWD",name:"Vitor Roque",club:"Palmeiras"},
+    {num:20,pos:"FWD",name:"Luiz Henrique",club:"Zenit"},
   ]},
   Morocco:{coach:"Walid Regragui",players:[
     {num:1,pos:"GK",name:"Yassine Bounou",club:"Al-Hilal"},
@@ -566,25 +575,25 @@ const SQUADS={
     {num:22,pos:"FWD",name:"Carlos González",club:"Washington DC"},
   ]},
   Australia:{coach:"Tony Popovic",players:[
-    {num:1,pos:"GK",name:"Mathew Ryan",club:"Stade de Reims"},
-    {num:12,pos:"GK",name:"Thomas Glover",club:"Midtjylland"},
-    {num:18,pos:"GK",name:"Danny Vukovic",club:"Central Coast Mariners"},
-    {num:2,pos:"DEF",name:"Milos Degenek",club:"Columbus Crew"},
-    {num:3,pos:"DEF",name:"Aziz Behich",club:"Dundee Utd"},
-    {num:5,pos:"DEF",name:"Kye Rowles",club:"Hearts"},
-    {num:6,pos:"DEF",name:"Aleksandar Susnjar",club:"Red Star Belgrade"},
-    {num:16,pos:"DEF",name:"Nathaniel Atkinson",club:"Hearts"},
-    {num:19,pos:"DEF",name:"Ryan Strain",club:"Cádiz"},
+    {num:1,pos:"GK",name:"Mathew Ryan",club:"Levante"},
+    {num:12,pos:"GK",name:"Paul Izzo",club:"Randers"},
+    {num:18,pos:"GK",name:"Patrick Beach",club:"Melbourne City"},
+    {num:2,pos:"DEF",name:"Milos Degenek",club:"TSC"},
+    {num:3,pos:"DEF",name:"Lewis Miller",club:"Blackburn Rovers"},
+    {num:5,pos:"DEF",name:"Kye Rowles",club:"DC United"},
+    {num:6,pos:"DEF",name:"Cameron Burgess",club:"Swansea City"},
+    {num:16,pos:"DEF",name:"Jason Geria",club:"Albirex Niigata"},
+    {num:19,pos:"DEF",name:"Callum Elder",club:"Derby County"},
     {num:7,pos:"MID",name:"Riley McGree",club:"Middlesbrough"},
     {num:8,pos:"MID",name:"Jackson Irvine",club:"St Pauli"},
-    {num:10,pos:"MID",name:"Tom Rogic",club:"West Brom"},
-    {num:14,pos:"MID",name:"Denis Genreau",club:"Toulouse"},
-    {num:20,pos:"MID",name:"Lachlan Wales",club:"Western United"},
-    {num:9,pos:"FWD",name:"Mitch Duke",club:"Fagiano Okayama"},
+    {num:10,pos:"MID",name:"Connor Metcalfe",club:"St Pauli"},
+    {num:14,pos:"MID",name:"Cameron Devlin",club:"Heart of Midlothian"},
+    {num:20,pos:"MID",name:"Aiden O'Neill",club:"New York City"},
+    {num:9,pos:"FWD",name:"Nestory Irankunda",club:"Watford"},
     {num:11,pos:"FWD",name:"Martin Boyle",club:"Hibernian"},
-    {num:13,pos:"FWD",name:"Adam Taggart",club:"Central Coast Mariners"},
-    {num:17,pos:"FWD",name:"Mathew Leckie",club:"Melbourne City"},
-    {num:22,pos:"FWD",name:"Jason Cummings",club:"Central Coast Mariners"},
+    {num:13,pos:"FWD",name:"Craig Goodwin",club:"Adelaide United"},
+    {num:17,pos:"FWD",name:"Nicholas D'Agostino",club:"Viking"},
+    {num:22,pos:"FWD",name:"Mohamed Toure",club:"Randers"},
   ]},
   Turkey:{coach:"Vincenzo Montella",players:[
     {num:1,pos:"GK",name:"Uğurcan Çakır",club:"Trabzonspor"},
@@ -615,7 +624,7 @@ const SQUADS={
     {num:3,pos:"DEF",name:"Nico Schlotterbeck",club:"Borussia Dortmund"},
     {num:4,pos:"DEF",name:"Jonathan Tah",club:"Bayer Leverkusen"},
     {num:5,pos:"DEF",name:"Malick Thiaw",club:"AC Milan"},
-    {num:6,pos:"DEF",name:"Joshua Kimmich",club:"Bayern Munich"},
+    {num:6,pos:"MID",name:"Joshua Kimmich",club:"Bayern Munich"},
     {num:14,pos:"DEF",name:"Pascal Gross",club:"Borussia Dortmund"},
     {num:7,pos:"MID",name:"Jamal Musiala",club:"Bayern Munich"},
     {num:8,pos:"MID",name:"Leon Goretzka",club:"Bayern Munich"},
@@ -678,13 +687,13 @@ const SQUADS={
     {num:3,pos:"DEF",name:"Piero Hincapié",club:"Bayer Leverkusen"},
     {num:4,pos:"DEF",name:"Robert Arboleda",club:"São Paulo"},
     {num:5,pos:"DEF",name:"Félix Torres",club:"Santos Laguna"},
-    {num:6,pos:"DEF",name:"Enner Valencia",club:"Internacional"},
+    {num:6,pos:"DEF",name:"Willian Pacho",club:"PSG"},
     {num:22,pos:"DEF",name:"Angelo Preciado",club:"Genk"},
     {num:7,pos:"MID",name:"Romario Ibarra",club:"Pachuca"},
     {num:8,pos:"MID",name:"Carlos Gruezo",club:"FC Augsburg"},
     {num:10,pos:"MID",name:"Moisés Caicedo",club:"Chelsea"},
     {num:14,pos:"MID",name:"Jeremy Sarmiento",club:"Brighton"},
-    {num:16,pos:"MID",name:"Gonzalo Plata",club:"Valladolid"},
+    {num:16,pos:"MID",name:"Gonzalo Plata",club:"Flamengo"},
     {num:9,pos:"FWD",name:"Leonardo Campana",club:"Inter Miami"},
     {num:11,pos:"FWD",name:"Kevin Rodríguez",club:"Ipswich Town"},
     {num:17,pos:"FWD",name:"Alan Minda",club:"Famalicão"},
@@ -778,22 +787,22 @@ const SQUADS={
   Belgium:{coach:"Rudi Garcia",players:[
     {num:1,pos:"GK",name:"Thibaut Courtois",club:"Real Madrid"},
     {num:12,pos:"GK",name:"Mike Penders",club:"Chelsea"},
-    {num:23,pos:"GK",name:"Senne Lammens",club:"Antwerp"},
+    {num:23,pos:"GK",name:"Senne Lammens",club:"Manchester United"},
     {num:2,pos:"DEF",name:"Timothy Castagne",club:"Fulham"},
-    {num:3,pos:"DEF",name:"Maxim De Cuyper",club:"Club Brugge"},
+    {num:3,pos:"DEF",name:"Maxim De Cuyper",club:"Brighton"},
     {num:4,pos:"DEF",name:"Brandon Mechele",club:"Club Brugge"},
     {num:5,pos:"DEF",name:"Arthur Theate",club:"Eintracht Frankfurt"},
     {num:6,pos:"DEF",name:"Zeno Debast",club:"Sporting CP"},
     {num:15,pos:"DEF",name:"Thomas Meunier",club:"Lille"},
     {num:4,pos:"MID",name:"Amadou Onana",club:"Aston Villa"},
-    {num:6,pos:"MID",name:"Axel Witsel",club:"Atlético Madrid"},
+    {num:6,pos:"MID",name:"Axel Witsel",club:"Girona"},
     {num:7,pos:"MID",name:"Kevin De Bruyne",club:"Napoli"},
     {num:8,pos:"MID",name:"Youri Tielemans",club:"Aston Villa"},
     {num:18,pos:"MID",name:"Nicolas Raskin",club:"Rangers"},
     {num:9,pos:"FWD",name:"Romelu Lukaku",club:"Napoli"},
     {num:10,pos:"FWD",name:"Charles De Ketelaere",club:"Atalanta"},
     {num:11,pos:"FWD",name:"Jeremy Doku",club:"Man City"},
-    {num:14,pos:"FWD",name:"Dodi Lukebakio",club:"Sevilla"},
+    {num:14,pos:"FWD",name:"Dodi Lukebakio",club:"Benfica"},
     {num:17,pos:"FWD",name:"Leandro Trossard",club:"Arsenal"},
   ]},
   Egypt:{coach:"Hossam Hassan",players:[
@@ -1030,7 +1039,7 @@ const SQUADS={
   Argentina:{coach:"Lionel Scaloni",players:[
     {num:1,pos:"GK",name:"Emiliano Martínez",club:"Aston Villa"},
     {num:12,pos:"GK",name:"Franco Armani",club:"River Plate"},
-    {num:23,pos:"GK",name:"Gerónimo Rulli",club:"Ajax"},
+    {num:23,pos:"GK",name:"Gerónimo Rulli",club:"Marseille"},
     {num:3,pos:"DEF",name:"Nicolás Tagliafico",club:"Lyon"},
     {num:6,pos:"DEF",name:"Lisandro Martínez",club:"Man United"},
     {num:8,pos:"DEF",name:"Marcos Acuña",club:"Sevilla"},
@@ -1049,25 +1058,25 @@ const SQUADS={
     {num:22,pos:"FWD",name:"Lautaro Martínez",club:"Inter Milan"},
   ]},
   Algeria:{coach:"Vladimir Petković",players:[
-    {num:1,pos:"GK",name:"Raïs M'Bolhi",club:"Al-Ettifaq"},
-    {num:16,pos:"GK",name:"Alexandre Oukidja",club:"FC Metz"},
-    {num:23,pos:"GK",name:"Mehdi Zemmamouche",club:"NA Hussein Dey"},
-    {num:2,pos:"DEF",name:"Hossam Omeich",club:"USMA"},
-    {num:3,pos:"DEF",name:"Ramy Bensebaini",club:"Borussia Dortmund"},
-    {num:4,pos:"DEF",name:"Djamel Benlamri",club:"Al-Ittihad"},
+    {num:1,pos:"GK",name:"Farid Chaâl",club:"CR Belouizdad"},
+    {num:16,pos:"GK",name:"Rayane Yesli",club:"HFX Wanderers"},
+    {num:23,pos:"GK",name:"Mohamed Idir Hadid",club:"JS Kabylie"},
+    {num:2,pos:"DEF",name:"Youcef Atal",club:"Al-Sadd"},
+    {num:3,pos:"DEF",name:"Houari Baouche",club:"CS Constantine"},
+    {num:4,pos:"DEF",name:"Abdelkader Bedrane",club:"Damac"},
     {num:5,pos:"DEF",name:"Aissa Mandi",club:"Real Betis"},
-    {num:13,pos:"DEF",name:"Ayoub Abdellaoui",club:"Angers"},
-    {num:15,pos:"DEF",name:"Lyès Miali",club:"MC Alger"},
-    {num:7,pos:"MID",name:"Riyad Mahrez",club:"Al-Ahli"},
-    {num:8,pos:"MID",name:"Ismaël Bennacer",club:"AC Milan"},
-    {num:11,pos:"MID",name:"Samir Benrahma",club:"Bayer Leverkusen"},
-    {num:14,pos:"MID",name:"Youcef Atal",club:"Nice"},
-    {num:16,pos:"MID",name:"Mehdi Tahrat",club:"CR Belouizdad"},
-    {num:9,pos:"FWD",name:"Islam Slimani",club:"Sport Boys"},
-    {num:10,pos:"FWD",name:"Andy Delort",club:"RC Lens"},
-    {num:17,pos:"FWD",name:"Yacine Brahimi",club:"Porto"},
+    {num:13,pos:"DEF",name:"Réda Halaïmia",club:"MC Alger"},
+    {num:15,pos:"DEF",name:"Mohamed Amine Tougai",club:"Espérance Tunis"},
+    {num:7,pos:"MID",name:"Yacine Brahimi",club:"Al-Gharafa"},
+    {num:8,pos:"MID",name:"Sofiane Bendebka",club:"Al-Fateh"},
+    {num:11,pos:"MID",name:"Victor Lekhal",club:"Al-Qadsia"},
+    {num:14,pos:"MID",name:"Zakaria Draoui",club:"USM Alger"},
+    {num:16,pos:"MID",name:"Houssem Mrezigue",club:"Dynamo Makhachkala"},
+    {num:9,pos:"FWD",name:"Islam Slimani",club:"CFR Cluj"},
+    {num:10,pos:"FWD",name:"Adam Ounas",club:"Al-Sailiya"},
+    {num:17,pos:"FWD",name:"Yassine Benzia",club:"Al-Fayha"},
     {num:19,pos:"FWD",name:"Amine Gouiri",club:"Stade Rennais"},
-    {num:22,pos:"FWD",name:"Said Benrahma",club:"Lyon"},
+    {num:22,pos:"FWD",name:"Redouane Berkane",club:"Al-Wakrah"},
   ]},
   Austria:{coach:"Ralf Rangnick",players:[
     {num:1,pos:"GK",name:"Alexander Schlager",club:"RB Salzburg"},
@@ -1084,9 +1093,9 @@ const SQUADS={
     {num:8,pos:"MID",name:"Marcel Sabitzer",club:"Borussia Dortmund"},
     {num:10,pos:"MID",name:"Xaver Schlager",club:"RB Leipzig"},
     {num:11,pos:"MID",name:"Romano Schmid",club:"Werder Bremen"},
-    {num:9,pos:"FWD",name:"Marko Arnautovic",club:"Inter Milan"},
+    {num:9,pos:"FWD",name:"Marko Arnautovic",club:"Red Star Belgrade"},
     {num:17,pos:"MID",name:"Konrad Laimer",club:"Bayern Munich"},
-    {num:18,pos:"FWD",name:"Sasa Kalajdzic",club:"Eintracht Frankfurt"},
+    {num:18,pos:"FWD",name:"Sasa Kalajdzic",club:"Brondby"},
     {num:19,pos:"FWD",name:"Michael Gregoritsch",club:"SC Freiburg"},
     {num:22,pos:"FWD",name:"Patrick Wimmer",club:"Wolfsburg"},
   ]},
@@ -1186,14 +1195,14 @@ const SQUADS={
     {num:18,pos:"DEF",name:"Daniel Muñoz",club:"Crystal Palace"},
     {num:5,pos:"MID",name:"Wilmar Barrios",club:"Zenit St. Petersburg"},
     {num:8,pos:"MID",name:"Mateus Uribe",club:"Porto"},
-    {num:10,pos:"MID",name:"James Rodríguez",club:"Rayo Vallecano"},
-    {num:11,pos:"MID",name:"Juan Cuadrado",club:"Juventus"},
-    {num:16,pos:"MID",name:"Richard Ríos",club:"Palmeiras"},
-    {num:7,pos:"FWD",name:"Luis Díaz",club:"Liverpool"},
+    {num:10,pos:"MID",name:"James Rodríguez",club:"León"},
+    {num:11,pos:"MID",name:"Jhon Arias",club:"Wolverhampton"},
+    {num:16,pos:"MID",name:"Richard Ríos",club:"Benfica"},
+    {num:7,pos:"FWD",name:"Luis Díaz",club:"Bayern Munich"},
     {num:9,pos:"FWD",name:"Jhon Duran",club:"Aston Villa"},
     {num:15,pos:"FWD",name:"Cucho Hernández",club:"Columbus Crew"},
     {num:19,pos:"FWD",name:"Rafael Santos Borré",club:"Werder Bremen"},
-    {num:9,pos:"FWD",name:"Radamel Falcao",club:"Rayo Vallecano"},
+    {num:9,pos:"FWD",name:"Jhon Córdoba",club:"Krasnodar"},
   ]},
   England:{coach:"Thomas Tuchel",players:[
     {num:1,pos:"GK",name:"Jordan Pickford",club:"Everton"},
@@ -1217,24 +1226,24 @@ const SQUADS={
     {num:18,pos:"FWD",name:"Ivan Toney",club:"Al-Ahli"},
   ]},
   Croatia:{coach:"Zlatko Dalić",players:[
-    {num:1,pos:"GK",name:"Dominik Livaković",club:"Fenerbahçe"},
+    {num:1,pos:"GK",name:"Dominik Livaković",club:"Girona"},
     {num:12,pos:"GK",name:"Ivor Pandur",club:"Lugano"},
     {num:23,pos:"GK",name:"Dominik Kotarski",club:"Osijek"},
     {num:2,pos:"DEF",name:"Josip Stanišić",club:"Bayern Munich"},
     {num:3,pos:"DEF",name:"Joško Gvardiol",club:"Man City"},
-    {num:4,pos:"DEF",name:"Martin Erlić",club:"RB Leipzig"},
-    {num:5,pos:"DEF",name:"Marin Pongračić",club:"Borussia Dortmund"},
-    {num:6,pos:"DEF",name:"Duje Ćaleta-Car",club:"Lyon"},
+    {num:4,pos:"DEF",name:"Martin Erlić",club:"Midtjylland"},
+    {num:5,pos:"DEF",name:"Marin Pongračić",club:"Fiorentina"},
+    {num:6,pos:"DEF",name:"Duje Ćaleta-Car",club:"Real Sociedad"},
     {num:22,pos:"DEF",name:"Luka Vušković",club:"HSV"},
     {num:6,pos:"MID",name:"Kristijan Jakić",club:"Eintracht Frankfurt"},
     {num:8,pos:"MID",name:"Mateo Kovačić",club:"Man City"},
     {num:9,pos:"MID",name:"Mario Pašalić",club:"Atalanta"},
-    {num:10,pos:"MID",name:"Luka Modrić",club:"Real Madrid"},
+    {num:10,pos:"MID",name:"Luka Modrić",club:"Milan"},
     {num:11,pos:"MID",name:"Martin Baturina",club:"Chelsea"},
-    {num:4,pos:"FWD",name:"Ivan Perišić",club:"Hajduk Split"},
+    {num:4,pos:"FWD",name:"Ivan Perišić",club:"PSV Eindhoven"},
     {num:7,pos:"FWD",name:"Andrej Kramarić",club:"Hoffenheim"},
     {num:9,pos:"FWD",name:"Ante Budimir",club:"Osasuna"},
-    {num:19,pos:"FWD",name:"Petar Musa",club:"Benfica"},
+    {num:19,pos:"FWD",name:"Petar Musa",club:"FC Dallas"},
     {num:17,pos:"MID",name:"Nikola Vlašić",club:"Torino"},
   ]},
   Ghana:{coach:"Carlos Queiroz",players:[
@@ -1253,7 +1262,7 @@ const SQUADS={
     {num:14,pos:"MID",name:"Daniel Kofi Kyereh",club:"SC Freiburg"},
     {num:16,pos:"MID",name:"Salis Abdul Samed",club:"Lens"},
     {num:9,pos:"FWD",name:"Inaki Williams",club:"Athletic Bilbao"},
-    {num:11,pos:"FWD",name:"Antoine Semenyo",club:"Man City"},
+    {num:11,pos:"FWD",name:"Antoine Semenyo",club:"Bournemouth"},
     {num:17,pos:"FWD",name:"Kamaldeen Sulemana",club:"Southampton"},
     {num:19,pos:"FWD",name:"Osman Bukari",club:"Red Star Belgrade"},
     {num:22,pos:"FWD",name:"Jordan Ayew",club:"Leicester"},
@@ -1319,7 +1328,7 @@ function Countdown({ dateStr, etTime, accent }) {
 }
 
 function shareMatch(fix) {
-  const text = `⚽ ${fix.home} vs ${fix.away}\n📅 ${fix.dateStr} 2026 | ${bdTime(fix.etTime)} BD সময়\n📍 ${fix.venue.split(",")[0]}\n#FIFAWorldCup2026`;
+  const text = `⚽ ${fix.home} vs ${fix.away}\n📅 ${bdDateStr(fix.dateStr,fix.etTime)} 2026 | ${bdTime(fix.etTime)} BD সময়\n📍 ${fix.venue.split(",")[0]}\n#FIFAWorldCup2026`;
   if (navigator.share) navigator.share({ title:"FIFA World Cup 2026", text });
   else navigator.clipboard.writeText(text).then(() => alert("ক্লিপবোর্ডে কপি হয়েছে!"));
 }
@@ -2236,7 +2245,7 @@ export default function App() {
                       <span style={{fontWeight:700,fontSize:13}}>{nextMatch.away}</span>
                       <span style={{fontSize:18}}>{FLAGS[nextMatch.away]||"🏳"}</span>
                     </div>
-                    <div style={{fontSize:11,color:T.sub,marginTop:2}}>{nextMatch.dateStr} 2026 · {bdTime(nextMatch.etTime)} · {nextMatch.venue.split(",")[0]}</div>
+                    <div style={{fontSize:11,color:T.sub,marginTop:2}}>{bdDateStr(nextMatch.dateStr,nextMatch.etTime)} 2026 · {bdTime(nextMatch.etTime)} · {nextMatch.venue.split(",")[0]}</div>
                   </div>
                   <Countdown dateStr={nextMatch.dateStr} etTime={nextMatch.etTime} accent={c}/>
                 </div>
@@ -2288,7 +2297,7 @@ export default function App() {
                     <div key={dateStr}>
                       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                         <div style={{padding:"3px 10px",borderRadius:6,background:isToday?c:T.acBg,color:isToday?T.bg:c,fontFamily:"'Bebas Neue',cursive",fontSize:12,letterSpacing:1.5,flexShrink:0}}>
-                          {isToday?"🔴 আজ":""}{dateStr} 2026
+                          {isToday?"🔴 আজ":""}{fixes[0]?bdDateStr(fixes[0].dateStr,fixes[0].etTime):dateStr} 2026
                         </div>
                         {allPast && <span style={{fontSize:9,color:T.sub}}>সম্পন্ন</span>}
                         <div style={{flex:1,height:1,background:T.border}}/>
@@ -2515,7 +2524,7 @@ export default function App() {
                             <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:50,textAlign:"right",color:hasScore&&+r.a>+r.h?c:T.text}}>{fix.away}</span>
                             <span style={{fontSize:15}}>{FLAGS[fix.away]||"🏳"}</span>
                             <div style={{width:"100%",display:"flex",justifyContent:"space-between"}}>
-                              <span style={{fontSize:9,color:T.sub}}>{fix.dateStr} · {bdTime(fix.etTime)} BD</span>
+                              <span style={{fontSize:9,color:T.sub}}>{bdDateStr(fix.dateStr,fix.etTime)} · {bdTime(fix.etTime)} BD</span>
                               <span style={{fontSize:9,color:hasScore?c:matchStarted?"#ef4444":T.dim}}>{hasScore?(matchOver?"FT":"LIVE"):matchStarted?"চলছে":"আসছে"}</span>
                             </div>
                           </div>
@@ -3024,7 +3033,7 @@ export default function App() {
                         const home=fix.home===squadTeam;
                         return (
                           <div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:12,padding:"5px 0",borderBottom:`1px solid ${T.border}`,flexWrap:"wrap"}}>
-                            <span style={{color:T.sub,minWidth:44,fontSize:11}}>{fix.dateStr}</span>
+                            <span style={{color:T.sub,minWidth:44,fontSize:11}}>{bdDateStr(fix.dateStr,fix.etTime)}</span>
                             <span style={{fontWeight:home?700:400,color:home?c:T.sub}}>{fix.home}</span>
                             <span style={{color:T.dim,fontSize:10}}>vs</span>
                             <span style={{fontWeight:!home?700:400,color:!home?c:T.sub}}>{fix.away}</span>
