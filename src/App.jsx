@@ -2428,7 +2428,6 @@ export default function App() {
                     </div>
                     <div style={{fontSize:11,color:T.sub,marginTop:2}}>{bdDateStr(nextMatch.dateStr,nextMatch.etTime)} 2026 · {bdTime(nextMatch.etTime)} · {nextMatch.venue.split(",")[0]}</div>
                   </div>
-
                 </div>
               )}
 
@@ -2483,7 +2482,7 @@ export default function App() {
                     <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",background:isToday2?`linear-gradient(90deg,${c}22,transparent)`:dark?"#0a1628":"#0f2044"}}>
                       <div style={{background:isToday2?c:dark?"#1e3a5f":"#1e40af",color:"#fff",borderRadius:6,padding:"3px 8px",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                         <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:.5,lineHeight:1}}>{bdDate2.split(" ")[0].toUpperCase()} {bdDate2.split(" ")[1]}</span>
-                        <span style={{fontSize:9,opacity:.85,fontWeight:700}}>{isToday2?"🔴 আজ":dayName2}</span>
+                        <span style={{fontSize:9,opacity:.85,fontWeight:700}}>{isToday2?"TODAY":dayName2}</span>
                       </div>
                       <span style={{fontSize:10,color:T.sub}}>{fixes.length}টি ম্যাচ</span>
                       <div style={{flex:1,height:1,background:T.border+"66"}}/>
@@ -2497,7 +2496,7 @@ export default function App() {
                       const matchOver2 = matchUTC(fix.dateStr,fix.etTime)+105*60000 < Date.now();
                       const isLive2 = !matchOver2 && matchUTC(fix.dateStr,fix.etTime) < Date.now();
                       const {time:bdT2,label:bdL2} = etToBD(fix.etTime);
-                      const timeStr = bdL2+" "+bdT2;
+                      const timeStr2 = bdL2+" "+bdT2;
                       return (
                         <div key={fix.id} style={{
                           borderTop:`1px solid ${T.border}44`,
@@ -2507,31 +2506,31 @@ export default function App() {
                           <div style={{display:"flex",alignItems:"center",padding:"9px 10px",gap:0}}>
                             {/* HOME */}
                             <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:5,minWidth:0}}>
-                              <span style={{fontSize:11,fontWeight:700,color:hasScore2&&+r2.h>+r2.a?c:isFav2&&fix.home===favTeam?"#fbbf24":T.text,textAlign:"right",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fix.home}</span>
+                              <span style={{fontSize:11,fontWeight:700,color:hasScore2&&+r2.h>+r2.a?c:isFav2&&fix.home===favTeam?"#fbbf24":T.text,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fix.home}</span>
                               <span style={{fontSize:22,flexShrink:0,cursor:"pointer"}} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
                             </div>
-                            {/* CENTER: score or time */}
-                            <div style={{flexShrink:0,width:86,textAlign:"center",padding:"0 4px"}}>
+                            {/* CENTER */}
+                            <div style={{flexShrink:0,width:82,textAlign:"center",padding:"0 3px"}}>
                               {hasScore2 ? (
                                 <div style={{padding:"3px 0",borderRadius:6,background:isLive2?"rgba(239,68,68,.15)":"rgba(16,185,129,.12)",border:`1px solid ${isLive2?"#ef444466":c+"55"}`}}>
-                                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:19,color:isLive2?"#ef4444":c,lineHeight:1}}>{r2.h}–{r2.a}</div>
-                                  <div style={{fontSize:7,fontWeight:800,color:isLive2?"#ef4444":T.sub,letterSpacing:.5}}>{isLive2?"🔴 LIVE":matchOver2?"FT":"🔴"}</div>
+                                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:19,color:isLive2?"#ef4444":c,lineHeight:1}}>{r2.h}:{r2.a}</div>
+                                  <div style={{fontSize:7,fontWeight:800,color:isLive2?"#ef4444":T.sub}}>{isLive2?"LIVE":matchOver2?"FT":""}</div>
                                 </div>
                               ) : (
                                 <div style={{padding:"3px 0",borderRadius:6,background:isFav2?"rgba(251,191,36,.1)":T.acBg,border:`1px solid ${isFav2?"rgba(251,191,36,.25)":c+"22"}`}}>
-                                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:isFav2?"#fbbf24":c,lineHeight:1.2}}>{timeStr}</div>
+                                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:11,color:isFav2?"#fbbf24":c,lineHeight:1.3}}>{timeStr2}</div>
                                   <div style={{fontSize:7,color:T.dim}}>BD সময়</div>
                                 </div>
                               )}
-                              <div style={{display:"flex",justifyContent:"center",gap:4,marginTop:3}}>
-                                <button onClick={()=>shareMatch(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:10,opacity:.45,padding:0}}>📤</button>
-                                <button onClick={()=>requestNotification(fix,handleNotifToggle)} style={{background:"none",border:"none",cursor:"pointer",fontSize:10,opacity:notifScheduled[fix.id]?1:.4,padding:0,color:notifScheduled[fix.id]?c:"inherit"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
+                              <div style={{display:"flex",justifyContent:"center",gap:3,marginTop:3}}>
+                                <button onClick={()=>shareMatch(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:9,opacity:.45,padding:0}}>📤</button>
+                                <button onClick={()=>requestNotification(fix,handleNotifToggle)} style={{background:"none",border:"none",cursor:"pointer",fontSize:9,opacity:notifScheduled[fix.id]?1:.4,padding:0}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
                               </div>
                             </div>
                             {/* AWAY */}
                             <div style={{flex:1,display:"flex",alignItems:"center",gap:5,minWidth:0}}>
                               <span style={{fontSize:22,flexShrink:0,cursor:"pointer"}} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
-                              <span style={{fontSize:11,fontWeight:700,color:hasScore2&&+r2.a>+r2.h?c:isFav2&&fix.away===favTeam?"#fbbf24":T.text,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fix.away}</span>
+                              <span style={{fontSize:11,fontWeight:700,color:hasScore2&&+r2.a>+r2.h?c:isFav2&&fix.away===favTeam?"#fbbf24":T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fix.away}</span>
                             </div>
                           </div>
                         </div>
@@ -2540,7 +2539,6 @@ export default function App() {
                   </div>
                 );
               })}
-              </div>
             </div>
           )}
 
