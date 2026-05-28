@@ -157,12 +157,12 @@ const ALL_GROUP_FIXTURES=[
   {id:53,grp:"C",home:"Scotland",away:"Brazil",dateStr:"Jun 24",etTime:"18:00",venue:"Hard Rock Stadium, Miami Gardens"},
   {id:54,grp:"C",home:"Morocco",away:"Haiti",dateStr:"Jun 24",etTime:"18:00",venue:"Mercedes-Benz Stadium, Atlanta"},
   {id:5,grp:"D",home:"USA",away:"Paraguay",dateStr:"Jun 12",etTime:"21:00",venue:"SoFi Stadium, Inglewood"},
-  {id:6,grp:"D",home:"Australia",away:"Turkey",dateStr:"Jun 14",etTime:"00:00",venue:"BC Place, Vancouver"},
+  {id:6,grp:"D",home:"Australia",away:"Turkey",dateStr:"Jun 13",etTime:"21:00",venue:"BC Place, Vancouver"},
   {id:31,grp:"D",home:"USA",away:"Australia",dateStr:"Jun 19",etTime:"15:00",venue:"Lumen Field, Seattle"},
   {id:32,grp:"D",home:"Turkey",away:"Paraguay",dateStr:"Jun 19",etTime:"23:00",venue:"Levi's Stadium, Santa Clara"},
   {id:55,grp:"D",home:"Turkey",away:"USA",dateStr:"Jun 25",etTime:"22:00",venue:"SoFi Stadium, Inglewood"},
   {id:56,grp:"D",home:"Paraguay",away:"Australia",dateStr:"Jun 25",etTime:"22:00",venue:"Levi's Stadium, Santa Clara"},
-  {id:9,grp:"E",home:"Germany",away:"Curaçao",dateStr:"Jun 14",etTime:"13:00",venue:"NRG Stadium, Houston"},
+  {id:9,grp:"E",home:"Germany",away:"Curaçao",dateStr:"Jun 13",etTime:"13:00",venue:"NRG Stadium, Houston"},
   {id:10,grp:"E",home:"Ivory Coast",away:"Ecuador",dateStr:"Jun 14",etTime:"19:00",venue:"Lincoln Financial Field, Philadelphia"},
   {id:33,grp:"E",home:"Germany",away:"Ivory Coast",dateStr:"Jun 20",etTime:"16:00",venue:"BMO Field, Toronto"},
   {id:34,grp:"E",home:"Ecuador",away:"Curaçao",dateStr:"Jun 20",etTime:"20:00",venue:"Arrowhead Stadium, Kansas City"},
@@ -170,8 +170,8 @@ const ALL_GROUP_FIXTURES=[
   {id:58,grp:"E",home:"Ecuador",away:"Germany",dateStr:"Jun 25",etTime:"16:00",venue:"MetLife Stadium, East Rutherford"},
   {id:11,grp:"F",home:"Netherlands",away:"Japan",dateStr:"Jun 14",etTime:"16:00",venue:"AT&T Stadium, Arlington"},
   {id:12,grp:"F",home:"Sweden",away:"Tunisia",dateStr:"Jun 14",etTime:"22:00",venue:"Estadio BBVA, Monterrey"},
-  {id:35,grp:"F",home:"Netherlands",away:"Sweden",dateStr:"Jun 20",etTime:"13:00",venue:"NRG Stadium, Houston"},
-  {id:36,grp:"F",home:"Tunisia",away:"Japan",dateStr:"Jun 21",etTime:"00:00",venue:"Estadio BBVA, Monterrey"},
+  {id:35,grp:"F",home:"Netherlands",away:"Sweden",dateStr:"Jun 19",etTime:"13:00",venue:"NRG Stadium, Houston"},
+  {id:36,grp:"F",home:"Tunisia",away:"Japan",dateStr:"Jun 20",etTime:"00:00",venue:"Estadio BBVA, Monterrey"},
   {id:59,grp:"F",home:"Japan",away:"Sweden",dateStr:"Jun 25",etTime:"19:00",venue:"AT&T Stadium, Arlington"},
   {id:60,grp:"F",home:"Tunisia",away:"Netherlands",dateStr:"Jun 25",etTime:"19:00",venue:"Arrowhead Stadium, Kansas City"},
   {id:15,grp:"G",home:"Belgium",away:"Egypt",dateStr:"Jun 15",etTime:"15:00",venue:"Lumen Field, Seattle"},
@@ -180,7 +180,7 @@ const ALL_GROUP_FIXTURES=[
   {id:40,grp:"G",home:"New Zealand",away:"Egypt",dateStr:"Jun 21",etTime:"21:00",venue:"BC Place, Vancouver"},
   {id:63,grp:"G",home:"Egypt",away:"Iran",dateStr:"Jun 26",etTime:"23:00",venue:"Lumen Field, Seattle"},
   {id:64,grp:"G",home:"New Zealand",away:"Belgium",dateStr:"Jun 26",etTime:"23:00",venue:"BC Place, Vancouver"},
-  {id:17,grp:"H",home:"Spain",away:"Cape Verde",dateStr:"Jun 15",etTime:"12:00",venue:"Mercedes-Benz Stadium, Atlanta"},
+  {id:17,grp:"H",home:"Spain",away:"Cape Verde",dateStr:"Jun 14",etTime:"12:00",venue:"Mercedes-Benz Stadium, Atlanta"},
   {id:18,grp:"H",home:"Saudi Arabia",away:"Uruguay",dateStr:"Jun 15",etTime:"18:00",venue:"Hard Rock Stadium, Miami Gardens"},
   {id:41,grp:"H",home:"Spain",away:"Saudi Arabia",dateStr:"Jun 21",etTime:"12:00",venue:"Mercedes-Benz Stadium, Atlanta"},
   {id:42,grp:"H",home:"Uruguay",away:"Cape Verde",dateStr:"Jun 21",etTime:"18:00",venue:"Hard Rock Stadium, Miami Gardens"},
@@ -198,7 +198,7 @@ const ALL_GROUP_FIXTURES=[
   {id:46,grp:"J",home:"Jordan",away:"Algeria",dateStr:"Jun 22",etTime:"23:00",venue:"Levi's Stadium, Santa Clara"},
   {id:69,grp:"J",home:"Algeria",away:"Austria",dateStr:"Jun 27",etTime:"22:00",venue:"Arrowhead Stadium, Kansas City"},
   {id:70,grp:"J",home:"Jordan",away:"Argentina",dateStr:"Jun 27",etTime:"22:00",venue:"AT&T Stadium, Arlington"},
-  {id:13,grp:"K",home:"Portugal",away:"DR Congo",dateStr:"Jun 17",etTime:"13:00",venue:"NRG Stadium, Houston"},
+  {id:13,grp:"K",home:"Portugal",away:"DR Congo",dateStr:"Jun 16",etTime:"13:00",venue:"NRG Stadium, Houston"},
   {id:14,grp:"K",home:"Uzbekistan",away:"Colombia",dateStr:"Jun 17",etTime:"22:00",venue:"Estadio Azteca, Mexico City"},
   {id:37,grp:"K",home:"Portugal",away:"Uzbekistan",dateStr:"Jun 23",etTime:"13:00",venue:"NRG Stadium, Houston"},
   {id:38,grp:"K",home:"Colombia",away:"DR Congo",dateStr:"Jun 23",etTime:"22:00",venue:"Estadio Akron, Zapopan"},
@@ -2129,7 +2129,23 @@ export default function App() {
   const filteredFix = useMemo(()=>{
     let list = ALL_GROUP_FIXTURES;
     if(grpFilter!=="ALL") list=list.filter(f=>f.grp===grpFilter);
-    if(search.trim()) { const q=search.toLowerCase(); list=list.filter(f=>f.home.toLowerCase().includes(q)||f.away.toLowerCase().includes(q)); }
+    if(search.trim()) {
+      const q=search.toLowerCase().trim();
+      const mns={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+      const mnArr=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+      list=list.filter(f=>{
+        const teamMatch=f.home.toLowerCase().includes(q)||f.away.toLowerCase().includes(q);
+        // BD date for this fixture
+        const [eh,em]=(f.etTime||"0:0").split(":").map(Number);
+        const nd=(eh*60+(em||0)+600)>=1440;
+        let bdDs=f.dateStr.toLowerCase();
+        if(nd){try{const[mo,dy]=f.dateStr.split(" ");const d=new Date(2026,(mns[mo.toLowerCase()]||0)+1,Number(dy));bdDs=mnArr[d.getMonth()-1<0?11:d.getMonth()-1]+" "+d.getDate();}catch{}}
+        // actually simpler:
+        if(nd){try{const[mo,dy]=f.dateStr.split(" ");const mn2=mns[mo.toLowerCase()];const d=new Date(2026,mn2,Number(dy)+1);bdDs=mnArr[d.getMonth()]+" "+d.getDate();}catch{}}
+        const dateMatch=bdDs.includes(q)||f.dateStr.toLowerCase().includes(q)||q===String(bdDs.split(" ")[1])||q===String(f.dateStr.toLowerCase().split(" ")[1]);
+        return teamMatch||dateMatch;
+      });
+    }
     if(favTeam) list=[...list.filter(f=>f.home===favTeam||f.away===favTeam),...list.filter(f=>f.home!==favTeam&&f.away!==favTeam)];
     return list;
   },[grpFilter,search,favTeam]);
@@ -2435,7 +2451,7 @@ export default function App() {
               <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"flex-start"}}>
                 <div style={{position:"relative",flex:1,minWidth:180}}>
                   <input type="text" value={search} onChange={e=>{setSearch(e.target.value);setGrpFilter("ALL");}}
-                    placeholder="🔍 দলের নাম খুঁজুন... Brazil, Spain..."
+                    placeholder="🔍 দল বা তারিখ... Brazil, Jun 14..."
                     style={{width:"100%",padding:"9px 13px",background:T.inp,border:`1px solid ${T.inpB}`,borderRadius:9,color:T.text,fontSize:13,fontFamily:"'Outfit',sans-serif"}}/>
                   {suggestions.length>0&&(
                     <div style={{position:"absolute",top:"100%",left:0,right:0,background:dark?"#0d1f12":T.card,border:`1px solid ${c}44`,borderRadius:8,marginTop:3,zIndex:50,overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,.15)"}}>
@@ -2490,7 +2506,7 @@ export default function App() {
                     {/* Match rows */}
                     {fixes.map((fix,fi) => {
                       const isFav2 = favTeam&&(fix.home===favTeam||fix.away===favTeam);
-                      const hl2 = search&&(fix.home.toLowerCase().includes(search.toLowerCase())||fix.away.toLowerCase().includes(search.toLowerCase()));
+                      const hl2 = search&&(fix.home.toLowerCase().includes(search.toLowerCase())||fix.away.toLowerCase().includes(search.toLowerCase())||bdDateStr(fix.dateStr,fix.etTime).toLowerCase().includes(search.toLowerCase()));
                       const r2 = results[fix.id];
                       const hasScore2 = r2&&r2.h!==""&&r2.a!==""&&!isNaN(+r2.h)&&!isNaN(+r2.a);
                       const matchOver2 = matchUTC(fix.dateStr,fix.etTime)+105*60000 < Date.now();
