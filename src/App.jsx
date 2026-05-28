@@ -2309,27 +2309,19 @@ export default function App() {
         </div>
 
         {/* HEADER */}
-        <div style={{background:T.hdr,borderBottom:`1px solid ${T.border}`,padding:"12px 14px 0",position:"sticky",top:0,zIndex:100,backdropFilter:"blur(12px)"}}>
+        <div style={{background:T.hdr,borderBottom:`1px solid ${T.border}`,padding:"7px 12px 0",position:"sticky",top:0,zIndex:100,backdropFilter:"blur(12px)"}}>
           <div style={{maxWidth:1060,margin:"0 auto"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-              <div style={{width:40,height:40,background:`linear-gradient(135deg,${c},${dark?"#065f46":"#047857"})`,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>⚽</div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+              <div style={{width:32,height:32,background:`linear-gradient(135deg,${c},${dark?"#065f46":"#047857"})`,borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>⚽</div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,letterSpacing:3,color:c,lineHeight:1}}>FIFA WORLD CUP 2026</div>
-                <div style={{fontSize:10,color:T.sub,letterSpacing:.5}}>USA · CANADA · MEXICO · JUN 11 – JUL 19 · BD সময় GMT+6</div>
+                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:17,letterSpacing:2,color:c,lineHeight:1}}>FIFA WORLD CUP 2026</div>
+                <div style={{fontSize:9,color:T.sub,letterSpacing:.3}}>USA · CANADA · MEXICO · JUN 11–JUL 19 · GMT+6</div>
               </div>
-              <div className="hide-sm" style={{display:"flex",gap:14,alignItems:"center"}}>
-                {[["48","Teams"],["12","Groups"],["104","Matches"]].map(([n,l])=>(
-                  <div key={l} style={{textAlign:"center"}}>
-                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,color:c,lineHeight:1}}>{n}</div>
-                    <div style={{fontSize:9,color:T.sub,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
-                <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                  <div style={{padding:"5px 10px",background:T.acBg,border:`1px solid ${c}33`,borderRadius:8,textAlign:"center"}}>
-                    <div style={{fontSize:8,color:T.sub,letterSpacing:1,textTransform:"uppercase",marginBottom:1}}>🇧🇩 BD সময়</div>
-                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,color:c,letterSpacing:1,lineHeight:1}}>{bdClock}</div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,flexShrink:0}}>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <div style={{padding:"3px 8px",background:T.acBg,border:`1px solid ${c}33`,borderRadius:7,textAlign:"center"}}>
+                    <div style={{fontSize:7,color:T.sub,letterSpacing:.8,textTransform:"uppercase",marginBottom:1}}>🇧🇩 BD সময়</div>
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:c,letterSpacing:.5,lineHeight:1}}>{bdClock}</div>
                   </div>
                   {installPrompt && !pwaInstalled && (
                     <button onClick={handleInstallPWA} title="App হিসেবে Install করুন" style={{padding:"7px 11px",borderRadius:8,border:`1px solid ${c}55`,background:T.acBg,color:c,cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
@@ -2555,6 +2547,133 @@ export default function App() {
                   </div>
                 );
               })}
+
+              {/* ── KNOCKOUT ROUNDS IN FIXTURE TAB ── */}
+              {grpFilter==="ALL" && !search && (()=>{
+                // Compute standings for auto-populating KO teams
+                const pts={}, gd={}, gf={}, wins={}, played={};
+                ALL_GROUP_FIXTURES.forEach(f=>{
+                  [f.home,f.away].forEach(t=>{if(!pts[t]){pts[t]=0;gd[t]=0;gf[t]=0;wins[t]=0;played[t]=0;}});
+                  const r=results[f.id];
+                  if(r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a)){
+                    const h=+r.h,a=+r.a;
+                    played[f.home]=(played[f.home]||0)+1; played[f.away]=(played[f.away]||0)+1;
+                    gf[f.home]=(gf[f.home]||0)+h; gf[f.away]=(gf[f.away]||0)+a;
+                    gd[f.home]=(gd[f.home]||0)+(h-a); gd[f.away]=(gd[f.away]||0)+(a-h);
+                    if(h>a){pts[f.home]=(pts[f.home]||0)+3;wins[f.home]=(wins[f.home]||0)+1;}
+                    else if(a>h){pts[f.away]=(pts[f.away]||0)+3;wins[f.away]=(wins[f.away]||0)+1;}
+                    else{pts[f.home]=(pts[f.home]||0)+1;pts[f.away]=(pts[f.away]||0)+1;}
+                  }
+                });
+                // Get sorted teams per group
+                const grpTeams={};
+                Object.keys(GROUPS).forEach(g=>{
+                  const teams=[...GROUPS[g]].sort((a,b)=>(pts[b]||0)-(pts[a]||0)||(gd[b]||0)-(gd[a]||0)||(gf[b]||0)-(gf[a]||0));
+                  grpTeams[g]=teams;
+                });
+                // Resolve KO team name
+                const resolveTeam=(label)=>{
+                  if(!label) return label;
+                  const wm=label.match(/^Winner ([A-L])$/);
+                  if(wm) return grpTeams[wm[1]]?.[0]||label;
+                  const rm=label.match(/^Runner-up ([A-L])$/);
+                  if(rm) return grpTeams[rm[1]]?.[1]||label;
+                  // W R32-x, W R16-x etc — check results
+                  const wko=label.match(/^W (r32|r16|qf|sf)-(\d+)$/i);
+                  if(wko){
+                    const kid=wko[1].toLowerCase()+"-"+wko[2];
+                    const kr=results[kid];
+                    if(kr&&kr.h!==""&&kr.a!==""&&!isNaN(+kr.h)&&!isNaN(+kr.a)){
+                      const round=KNOCKOUT_ROUNDS.find(r=>r.matches.some(m=>m.id===kid));
+                      const match=round?.matches.find(m=>m.id===kid);
+                      if(match){
+                        const home=resolveTeam(match.home);
+                        const away=resolveTeam(match.away);
+                        return +kr.h>+kr.a?home:+kr.a>+kr.h?away:label;
+                      }
+                    }
+                    return label;
+                  }
+                  return label;
+                };
+
+                const koRoundEmoji={"Round of 32":"🔵","Round of 16":"🟡","Quarter-Finals":"🟠","Semi-Finals":"🔴","3rd Place":"🥉","Final":"🏆"};
+
+                return KNOCKOUT_ROUNDS.map(round=>(
+                  <div key={round.round} style={{marginTop:18,marginBottom:10}}>
+                    {/* Round header */}
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"7px 12px",background:dark?"#0a1628":"#0f2044",borderRadius:10,border:`1px solid ${c}33`}}>
+                      <span style={{fontSize:15}}>{koRoundEmoji[round.round]||"⚽"}</span>
+                      <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:c}}>{round.round}</span>
+                      <span style={{fontSize:10,color:T.sub}}>{round.dates}</span>
+                      <div style={{flex:1,height:1,background:T.border+"66"}}/>
+                    </div>
+                    {/* KO match rows */}
+                    {round.matches.map((m,mi)=>{
+                      const homeTeam=resolveTeam(m.home);
+                      const awayTeam=resolveTeam(m.away);
+                      const r2=results[m.id];
+                      const hasScore2=r2&&r2.h!==""&&r2.a!==""&&!isNaN(+r2.h)&&!isNaN(+r2.a);
+                      const now2=Date.now();
+                      const matchOver2=matchUTC(m.date,m.etTime)+105*60000<now2;
+                      const isLive2=!matchOver2&&matchUTC(m.date,m.etTime)<now2;
+                      const {time:bdT2,label:bdL2}=etToBD(m.etTime);
+                      const timeStr2=bdL2+" "+bdT2;
+                      const bdDate2=bdDateStr(m.date,m.etTime);
+                      const isPlaceholder=homeTeam.startsWith("W ")||homeTeam.startsWith("Winner ")||homeTeam.startsWith("Runner")||homeTeam.startsWith("L ")||homeTeam.startsWith("Best");
+                      const isFav2=favTeam&&(homeTeam===favTeam||awayTeam===favTeam);
+                      return (
+                        <div key={m.id} style={{
+                          marginBottom:4,borderRadius:10,overflow:"hidden",
+                          border:`1px solid ${isFav2?"rgba(251,191,36,.4)":T.border}`,
+                          background:isFav2?"rgba(251,191,36,.04)":mi%2===0?T.card:(dark?"rgba(255,255,255,.012)":"rgba(0,0,0,.012)"),
+                          borderLeft:isFav2?"3px solid #fbbf24":"3px solid transparent",
+                          opacity:isPlaceholder?.7:1,
+                        }}>
+                          <div style={{display:"flex",alignItems:"center",padding:"8px 10px",gap:0}}>
+                            {/* Date badge */}
+                            <div style={{flexShrink:0,width:60,marginRight:8}}>
+                              <div style={{background:dark?"#1e3a5f":"#1e40af",color:"#fff",borderRadius:6,padding:"3px 5px",textAlign:"center"}}>
+                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:11,lineHeight:1}}>{bdDate2}</div>
+                              </div>
+                            </div>
+                            {/* HOME */}
+                            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:4,minWidth:0}}>
+                              <span style={{fontSize:11,fontWeight:700,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore2&&+r2.h>+r2.a?c:isFav2&&homeTeam===favTeam?"#fbbf24":isPlaceholder?T.sub:T.text}}>{homeTeam}</span>
+                              <span style={{fontSize:20,flexShrink:0}}>{isPlaceholder?"❓":(FLAGS[homeTeam]||"🏳")}</span>
+                            </div>
+                            {/* CENTER */}
+                            <div style={{flexShrink:0,width:78,textAlign:"center",padding:"0 3px"}}>
+                              {hasScore2?(
+                                <div style={{padding:"3px 0",borderRadius:6,background:isLive2?"rgba(239,68,68,.15)":"rgba(16,185,129,.12)",border:`1px solid ${isLive2?"#ef444466":c+"55"}`}}>
+                                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:18,color:isLive2?"#ef4444":c,lineHeight:1}}>{r2.h}:{r2.a}</div>
+                                  <div style={{fontSize:7,fontWeight:800,color:isLive2?"#ef4444":T.sub}}>{isLive2?"LIVE":matchOver2?"FT":""}</div>
+                                </div>
+                              ):(
+                                <div style={{padding:"3px 0",borderRadius:6,background:isFav2?"rgba(251,191,36,.1)":T.acBg,border:`1px solid ${isFav2?"rgba(251,191,36,.25)":c+"22"}`}}>
+                                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,color:isFav2?"#fbbf24":c,lineHeight:1.3,whiteSpace:"nowrap"}}>{timeStr2}</div>
+                                  <div style={{fontSize:7,color:T.dim}}>BD সময়</div>
+                                </div>
+                              )}
+                              <div style={{display:"flex",justifyContent:"center",gap:3,marginTop:2}}>
+                                <button onClick={()=>requestNotification({...m,dateStr:m.date,home:homeTeam,away:awayTeam},handleNotifToggle)} style={{background:"none",border:"none",cursor:"pointer",fontSize:9,opacity:notifScheduled[m.id]?1:.4,padding:0}}>{notifScheduled[m.id]?"🔔":"🔕"}</button>
+                              </div>
+                            </div>
+                            {/* AWAY */}
+                            <div style={{flex:1,display:"flex",alignItems:"center",gap:4,minWidth:0}}>
+                              <span style={{fontSize:20,flexShrink:0}}>{isPlaceholder?"❓":(FLAGS[awayTeam]||"🏳")}</span>
+                              <span style={{fontSize:11,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore2&&+r2.a>+r2.h?c:isFav2&&awayTeam===favTeam?"#fbbf24":isPlaceholder?T.sub:T.text}}>{awayTeam}</span>
+                            </div>
+                          </div>
+                          {/* venue */}
+                          <div style={{paddingLeft:78,paddingRight:10,paddingBottom:5,fontSize:8,color:T.dim}}>📍 {m.venue}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ));
+              })()}
+
             </div>
           )}
 
