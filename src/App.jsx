@@ -12,8 +12,8 @@ function etToBD(etTime) {
   return { time:`${h12}:${String(bdM).padStart(2,"0")}`, label, nextDay };
 }
 function bdTime(etTime) {
-  const { time, label, nextDay } = etToBD(etTime);
-  return label + " " + time + (nextDay ? " (+1)" : "");
+  const { time, label } = etToBD(etTime);
+  return label + " " + time;
 }
 function bdDateStr(dateStr, etTime) {
   const { nextDay } = etToBD(etTime);
@@ -1649,29 +1649,57 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
       {/* All Fixtures */}
       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px 16px"}}>
         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:c,marginBottom:10}}>সম্পূর্ণ সূচি — BD সময়</div>
-        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
           {teamFixtures.map((f,i) => {
             const r = results[f.id];
-            const done = r && r.h !== undefined;
-            const isPast = matchUTC(f.dateStr, f.etTime) < nowMs;
+            const hasScore2 = r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);
+            const matchOver2 = matchUTC(f.dateStr,f.etTime)+105*60000 < nowMs;
+            const isLive2 = !matchOver2 && matchUTC(f.dateStr,f.etTime) < nowMs;
             const isNext = nextMatch && f.id === nextMatch.id;
             const isHome = f.home === team;
-            const bd = bdTime(f.etTime);
+            const {time:bdT2,label:bdL2} = etToBD(f.etTime);
+            const timeStr2 = bdL2+" "+bdT2;
+            const bdDate2 = bdDateStr(f.dateStr,f.etTime);
             return (
-              <div key={f.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:isNext?`${c}12`:T.bg||"rgba(0,0,0,.1)",border:`1px solid ${isNext?c:T.border}`,borderRadius:10,flexWrap:"wrap",transition:"all .2s"}}>
-                <div style={{minWidth:40,fontSize:10,color:T.dim}}>{f.dateStr}</div>
-                <div style={{flex:1,display:"flex",alignItems:"center",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
-                  <span style={{fontSize:20}}>{FLAGS[f.home]||"🏳"}</span>
-                  <span style={{fontWeight:isHome?700:400,color:isHome?c:T.text,fontSize:12}}>{f.home}</span>
-                  {done
-                    ? <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,color:c,minWidth:50,textAlign:"center"}}>{r.h} - {r.a}</span>
-                    : <span style={{fontSize:11,color:T.sub,minWidth:50,textAlign:"center"}}>{bd.time}<br/><span style={{fontSize:9}}>{bd.label}</span></span>
-                  }
-                  <span style={{fontWeight:!isHome?700:400,color:!isHome?c:T.text,fontSize:12}}>{f.away}</span>
-                  <span style={{fontSize:20}}>{FLAGS[f.away]||"🏳"}</span>
+              <div key={f.id} style={{
+                borderRadius:9,overflow:"hidden",
+                border:`1px solid ${isNext?c:hasScore2?c+"33":T.border}`,
+                background:isNext?`${c}08`:T.card,
+                borderLeft:isNext?`3px solid ${c}`:isHome?"3px solid transparent":"3px solid transparent",
+              }}>
+                <div style={{display:"flex",alignItems:"center",padding:"8px 10px",gap:0}}>
+                  {/* Date */}
+                  <div style={{flexShrink:0,width:54,marginRight:6}}>
+                    <div style={{background:isNext?c:dark?"#1e3a5f":"#1e40af",color:"#fff",borderRadius:5,padding:"2px 4px",textAlign:"center"}}>
+                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,lineHeight:1}}>{bdDate2}</div>
+                      {isNext&&<div style={{fontSize:7,fontWeight:700,opacity:.9}}>পরের</div>}
+                    </div>
+                  </div>
+                  {/* Home */}
+                  <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:4,minWidth:0}}>
+                    <span style={{fontSize:11,fontWeight:isHome?700:400,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore2&&+r.h>+r.a?c:isHome?c:T.text}}>{f.home}</span>
+                    <span style={{fontSize:20,flexShrink:0}}>{FLAGS[f.home]||"🏳"}</span>
+                  </div>
+                  {/* Center */}
+                  <div style={{flexShrink:0,width:72,textAlign:"center",padding:"0 3px"}}>
+                    {hasScore2?(
+                      <div style={{padding:"2px 0",borderRadius:5,background:isLive2?"rgba(239,68,68,.15)":"rgba(16,185,129,.12)",border:`1px solid ${isLive2?"#ef444466":c+"55"}`}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:17,color:isLive2?"#ef4444":c,lineHeight:1}}>{r.h}:{r.a}</div>
+                        <div style={{fontSize:7,fontWeight:800,color:isLive2?"#ef4444":T.sub}}>{matchOver2?"FT":"LIVE"}</div>
+                      </div>
+                    ):(
+                      <div style={{padding:"2px 0",borderRadius:5,background:T.acBg,border:`1px solid ${c}22`}}>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,color:c,lineHeight:1.3,whiteSpace:"nowrap"}}>{timeStr2}</div>
+                        <div style={{fontSize:7,color:T.dim}}>BD সময়</div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Away */}
+                  <div style={{flex:1,display:"flex",alignItems:"center",gap:4,minWidth:0}}>
+                    <span style={{fontSize:20,flexShrink:0}}>{FLAGS[f.away]||"🏳"}</span>
+                    <span style={{fontSize:11,fontWeight:!isHome?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore2&&+r.a>+r.h?c:!isHome?c:T.text}}>{f.away}</span>
+                  </div>
                 </div>
-                {isNext && <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:`${c}20`,color:c,border:`1px solid ${c}40`}}>পরের</span>}
-                {done && <span style={{fontSize:10,padding:"2px 7px",borderRadius:99,background:"rgba(16,185,129,.1)",color:"#10b981"}}>FT</span>}
               </div>
             );
           })}
@@ -2872,20 +2900,43 @@ export default function App() {
                         const matchOver = matchUTC(fix.dateStr, fix.etTime) + 105*60000 < Date.now();
                         const matchStarted = matchUTC(fix.dateStr, fix.etTime) < Date.now();
                         return (
-                          <div key={fix.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:T.card,border:`1px solid ${hasScore?c+"44":T.border}`,borderRadius:9,flexWrap:"wrap",boxShadow:T.sh}}>
-                            <span style={{fontSize:15}}>{FLAGS[fix.home]||"🏳"}</span>
-                            <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:50,color:hasScore&&+r.h>+r.a?c:T.text}}>{fix.home}</span>
-                            <div style={{padding:"4px 12px",background:hasScore?T.acBg:T.muted,border:`1px solid ${hasScore?c+"44":T.border}`,borderRadius:6,textAlign:"center",minWidth:70}}>
-                              {hasScore
-                                ? <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:18,color:c}}>{r.h} – {r.a}</span>
-                                : <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:matchStarted?"#ef4444":T.sub}}>{matchStarted?"LIVE":"vs"}</span>
-                              }
-                            </div>
-                            <span style={{fontSize:12,fontWeight:700,flex:1,minWidth:50,textAlign:"right",color:hasScore&&+r.a>+r.h?c:T.text}}>{fix.away}</span>
-                            <span style={{fontSize:15}}>{FLAGS[fix.away]||"🏳"}</span>
-                            <div style={{width:"100%",display:"flex",justifyContent:"space-between"}}>
-                              <span style={{fontSize:9,color:T.sub}}>{bdDateStr(fix.dateStr,fix.etTime)} · {bdTime(fix.etTime)} BD</span>
-                              <span style={{fontSize:9,color:hasScore?c:matchStarted?"#ef4444":T.dim}}>{hasScore?(matchOver?"FT":"LIVE"):matchStarted?"চলছে":"আসছে"}</span>
+                          <div key={fix.id} style={{
+                            borderRadius:9,overflow:"hidden",
+                            border:`1px solid ${hasScore?c+"44":T.border}`,
+                            background:T.card,boxShadow:T.sh,
+                            borderLeft:hasScore?`3px solid ${c}`:"3px solid transparent",
+                          }}>
+                            <div style={{display:"flex",alignItems:"center",padding:"8px 10px",gap:0}}>
+                              {/* Date */}
+                              <div style={{flexShrink:0,width:52,marginRight:6}}>
+                                <div style={{background:dark?"#1e3a5f":"#1e40af",color:"#fff",borderRadius:5,padding:"2px 4px",textAlign:"center"}}>
+                                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,lineHeight:1}}>{bdDateStr(fix.dateStr,fix.etTime)}</div>
+                                </div>
+                              </div>
+                              {/* Home */}
+                              <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:4,minWidth:0}}>
+                                <span style={{fontSize:11,fontWeight:700,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore&&+r.h>+r.a?c:T.text}}>{fix.home}</span>
+                                <span style={{fontSize:18,flexShrink:0}}>{FLAGS[fix.home]||"🏳"}</span>
+                              </div>
+                              {/* Center */}
+                              <div style={{flexShrink:0,width:72,textAlign:"center",padding:"0 3px"}}>
+                                {hasScore?(
+                                  <div style={{padding:"2px 0",borderRadius:5,background:matchStarted&&!matchOver?"rgba(239,68,68,.15)":"rgba(16,185,129,.12)",border:`1px solid ${matchStarted&&!matchOver?"#ef444466":c+"55"}`}}>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:17,color:matchStarted&&!matchOver?"#ef4444":c,lineHeight:1}}>{r.h}:{r.a}</div>
+                                    <div style={{fontSize:7,fontWeight:800,color:matchStarted&&!matchOver?"#ef4444":T.sub}}>{matchOver?"FT":"LIVE"}</div>
+                                  </div>
+                                ):(
+                                  <div style={{padding:"2px 0",borderRadius:5,background:T.acBg,border:`1px solid ${c}22`}}>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,color:c,lineHeight:1.3,whiteSpace:"nowrap"}}>{bdTime(fix.etTime)}</div>
+                                    <div style={{fontSize:7,color:T.dim}}>BD সময়</div>
+                                  </div>
+                                )}
+                              </div>
+                              {/* Away */}
+                              <div style={{flex:1,display:"flex",alignItems:"center",gap:4,minWidth:0}}>
+                                <span style={{fontSize:18,flexShrink:0}}>{FLAGS[fix.away]||"🏳"}</span>
+                                <span style={{fontSize:11,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore&&+r.a>+r.h?c:T.text}}>{fix.away}</span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -3464,14 +3515,42 @@ export default function App() {
                     <div style={{marginTop:6,padding:"14px 16px",background:T.acBg,border:`1px solid ${c}22`,borderRadius:12}}>
                       <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:15,letterSpacing:2,color:c,marginBottom:10}}>GROUP {grp} ম্যাচসূচি</div>
                       {fixes.map((fix,i)=>{
-                        const home=fix.home===squadTeam;
+                        const isHome=fix.home===squadTeam;
+                        const rs=results[fix.id];
+                        const hasSc=rs&&rs.h!==""&&rs.a!==""&&!isNaN(+rs.h)&&!isNaN(+rs.a);
+                        const isOvr=matchUTC(fix.dateStr,fix.etTime)+105*60000<Date.now();
+                        const isLv=!isOvr&&matchUTC(fix.dateStr,fix.etTime)<Date.now();
+                        const {time:bt,label:bl}=etToBD(fix.etTime);
                         return (
-                          <div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:12,padding:"5px 0",borderBottom:`1px solid ${T.border}`,flexWrap:"wrap"}}>
-                            <span style={{color:T.sub,minWidth:44,fontSize:11}}>{bdDateStr(fix.dateStr,fix.etTime)}</span>
-                            <span style={{fontWeight:home?700:400,color:home?c:T.sub}}>{fix.home}</span>
-                            <span style={{color:T.dim,fontSize:10}}>vs</span>
-                            <span style={{fontWeight:!home?700:400,color:!home?c:T.sub}}>{fix.away}</span>
-                            <span style={{marginLeft:"auto",fontFamily:"'Bebas Neue',cursive",fontSize:13,color:c}}>{bdTime(fix.etTime)}</span>
+                          <div key={i} style={{borderRadius:8,overflow:"hidden",border:`1px solid ${hasSc?c+"33":T.border}`,marginBottom:4,background:T.card}}>
+                            <div style={{display:"flex",alignItems:"center",padding:"7px 9px",gap:0}}>
+                              <div style={{flexShrink:0,width:50,marginRight:5}}>
+                                <div style={{background:dark?"#1e3a5f":"#1e40af",color:"#fff",borderRadius:4,padding:"2px 3px",textAlign:"center"}}>
+                                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:9,lineHeight:1}}>{bdDateStr(fix.dateStr,fix.etTime)}</div>
+                                </div>
+                              </div>
+                              <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:3,minWidth:0}}>
+                                <span style={{fontSize:10,fontWeight:isHome?700:400,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasSc&&+rs.h>+rs.a?c:isHome?c:T.text}}>{fix.home}</span>
+                                <span style={{fontSize:17,flexShrink:0}}>{FLAGS[fix.home]||"🏳"}</span>
+                              </div>
+                              <div style={{flexShrink:0,width:64,textAlign:"center",padding:"0 2px"}}>
+                                {hasSc?(
+                                  <div style={{padding:"1px 0",borderRadius:4,background:isLv?"rgba(239,68,68,.15)":"rgba(16,185,129,.12)",border:`1px solid ${isLv?"#ef444466":c+"55"}`}}>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:15,color:isLv?"#ef4444":c,lineHeight:1}}>{rs.h}:{rs.a}</div>
+                                    <div style={{fontSize:6,color:isLv?"#ef4444":T.sub,fontWeight:800}}>{isOvr?"FT":"LIVE"}</div>
+                                  </div>
+                                ):(
+                                  <div style={{padding:"1px 0",borderRadius:4,background:T.acBg,border:`1px solid ${c}22`}}>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:9,color:c,lineHeight:1.3,whiteSpace:"nowrap"}}>{bl+" "+bt}</div>
+                                    <div style={{fontSize:6,color:T.dim}}>BD সময়</div>
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{flex:1,display:"flex",alignItems:"center",gap:3,minWidth:0}}>
+                                <span style={{fontSize:17,flexShrink:0}}>{FLAGS[fix.away]||"🏳"}</span>
+                                <span style={{fontSize:10,fontWeight:!isHome?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasSc&&+rs.a>+rs.h?c:!isHome?c:T.text}}>{fix.away}</span>
+                              </div>
+                            </div>
                           </div>
                         );
                       })}
