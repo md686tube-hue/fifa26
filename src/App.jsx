@@ -2550,6 +2550,41 @@ export default function App() {
 
               {/* ── KNOCKOUT ROUNDS IN FIXTURE TAB ── */}
               {grpFilter==="ALL" && !search && (()=>{
+                // Check if group stage is complete (all 72 matches have results)
+                const totalGroupMatches = ALL_GROUP_FIXTURES.length;
+                const completedGroupMatches = ALL_GROUP_FIXTURES.filter(f=>{
+                  const r=results[f.id];
+                  return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);
+                }).length;
+                const groupStageDone = completedGroupMatches === totalGroupMatches;
+
+                // Also check if any KO match has a result (tournament started)
+                const anyKOResult = KNOCKOUT_ROUNDS.some(round=>
+                  round.matches.some(m=>{ const r=results[m.id]; return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a); })
+                );
+
+                // Show KO only if group stage done OR any KO match has result
+                if(!groupStageDone && !anyKOResult) {
+                  const remaining = totalGroupMatches - completedGroupMatches;
+                  return (
+                    <div style={{textAlign:"center",padding:"28px 16px",background:T.card,borderRadius:12,border:`1px solid ${T.border}`,marginTop:16}}>
+                      <div style={{fontSize:28,marginBottom:8}}>🏆</div>
+                      <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,letterSpacing:2,color:c,marginBottom:6}}>KNOCKOUT ROUNDS</div>
+                      <div style={{fontSize:12,color:T.sub,marginBottom:4}}>Group Stage শেষ হলে এখানে দেখাবে</div>
+                      <div style={{fontSize:11,color:T.dim}}>
+                        {completedGroupMatches > 0
+                          ? `${completedGroupMatches}/${totalGroupMatches} ম্যাচ সম্পন্ন · আর ${remaining}টি বাকি`
+                          : `মোট ${totalGroupMatches}টি Group Stage ম্যাচ বাকি`}
+                      </div>
+                      {completedGroupMatches > 0 && (
+                        <div style={{marginTop:10,background:T.acBg,borderRadius:8,height:6,overflow:"hidden"}}>
+                          <div style={{height:"100%",background:c,width:`${(completedGroupMatches/totalGroupMatches*100).toFixed(0)}%`,borderRadius:8,transition:"width .5s"}}/>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 // Compute standings for auto-populating KO teams
                 const pts={}, gd={}, gf={}, wins={}, played={};
                 ALL_GROUP_FIXTURES.forEach(f=>{
