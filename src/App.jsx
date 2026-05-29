@@ -2035,9 +2035,6 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [pwaInstalled, setPwaInstalled] = useState(false);
   const [notifScheduled, setNotifScheduled] = useState({});
-  const [predictions, setPredictions] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("wc26_predictions") || "{}"); } catch { return {}; }
-  });
   const [notifPermission, setNotifPermission] = useState(
     () => "Notification" in window ? Notification.permission : "unsupported"
   );
@@ -2403,7 +2400,6 @@ export default function App() {
     {k:"fixtures",l:"📅 Fixtures"},
     {k:"standings",l:"📊 Standings"},
     {k:"bracket",l:"🗂️ Bracket"},
-    {k:"predictor",l:"🔮 Predictor"},
     {k:"scorers",l:"⚽ Scorers"},
     {k:"stadiums",l:"🏟️ Stadiums"},
     {k:"squads",l:"👕 Squads"},
@@ -3462,186 +3458,6 @@ export default function App() {
           })()}
 
 
-          {/* ═══ BRACKET PREDICTOR ═══ */}
-          {tab==="predictor" && (()=>{
-            const savePred = (newPreds) => {
-              setPredictions(newPreds);
-              try { localStorage.setItem("wc26_predictions", JSON.stringify(newPreds)); } catch {}
-            };
-
-            // Get group qualified teams for predictor slots
-            const getGroupTeams = (grp) => {
-              const rows = calcStandings(grp);
-              const fixes = ALL_GROUP_FIXTURES.filter(f=>f.grp===grp);
-              const played = fixes.filter(f=>{const r=results[f.id];return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);}).length;
-              const w = played>0&&rows[0] ? rows[0].team : null;
-              const ru = played>0&&rows[1] ? rows[1].team : null;
-              return {w, ru, done: played===6};
-            };
-
-            // Build R32 slots from KNOCKOUT_ROUNDS
-            const r32 = KNOCKOUT_ROUNDS.find(r=>r.round==="Round of 32");
-            const r16 = KNOCKOUT_ROUNDS.find(r=>r.round==="Round of 16");
-            const qf  = KNOCKOUT_ROUNDS.find(r=>r.round==="Quarter-Finals");
-            const sf  = KNOCKOUT_ROUNDS.find(r=>r.round==="Semi-Finals");
-            const fin = KNOCKOUT_ROUNDS.find(r=>r.round==="Final");
-            const tp  = KNOCKOUT_ROUNDS.find(r=>r.round==="3rd Place");
-
-            // Resolve a slot label to actual team
-            const resolveSlot = (label) => {
-              if (!label) return null;
-              const wm = label.match(/^Winner ([A-L])$/);
-              if (wm) { const gt=getGroupTeams(wm[1]); return gt.w; }
-              const rm = label.match(/^Runner-up ([A-L])$/);
-              if (rm) { const gt=getGroupTeams(rm[1]); return gt.ru; }
-              const pw = label.match(/^W (r32|r16|qf|sf)-(\d+)$/i);
-              if (pw) return predictions[pw[1].toLowerCase()+"-"+pw[2]] || null;
-              return label;
-            };
-
-            const pick = (matchId, team) => {
-              if (!team) return;
-              const np = {...predictions, [matchId]: team};
-              savePred(np);
-            };
-
-            const clearAll = () => { savePred({}); };
-
-            // Count how many picks made
-            const totalPicks = Object.keys(predictions).length;
-            const totalMatches = (r32?.matches.length||0)+(r16?.matches.length||0)+(qf?.matches.length||0)+(sf?.matches.length||0)+2;
-
-            // Render a match row for predictor
-            const PredMatch = ({m, roundKey}) => {
-              const home = resolveSlot(m.home);
-              const away = resolveSlot(m.away);
-              const picked = predictions[m.id];
-              const homePicked = picked === home;
-              const awayPicked = picked === away;
-              const isPlaceholder = !home || !away;
-              const {time:bt,label:bl} = etToBD(m.etTime);
-              const bdD = bdDateStr(m.date, m.etTime);
-
-              return (
-                <div style={{
-                  marginBottom:6,borderRadius:10,overflow:"hidden",
-                  border:`1px solid ${picked?c+"66":T.border}`,
-                  background:picked?`${c}08`:T.card,
-                  opacity:isPlaceholder?0.6:1,
-                }}>
-                  <div style={{display:"flex",alignItems:"center",padding:"8px 10px",gap:0}}>
-                    {/* Date */}
-                    <div style={{flexShrink:0,width:52,marginRight:6}}>
-                      <div style={{background:dark?"#1e3a5f":"#1e40af",color:"#fff",borderRadius:5,padding:"2px 4px",textAlign:"center"}}>
-                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,lineHeight:1}}>{bdD}</div>
-                        <div style={{fontSize:7,opacity:.8}}>{bl} {bt}</div>
-                      </div>
-                    </div>
-                    {/* Home pick button */}
-                    <button onClick={()=>pick(m.id, home)} disabled={isPlaceholder} style={{
-                      flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:4,
-                      background:homePicked?`${c}22`:"none",border:homePicked?`1px solid ${c}`:"1px solid transparent",
-                      borderRadius:8,padding:"6px 8px",cursor:isPlaceholder?"default":"pointer",
-                      transition:"all .15s",
-                    }}>
-                      <span style={{fontSize:11,fontWeight:homePicked?700:400,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:homePicked?c:T.text}}>{home||m.home}</span>
-                      <span style={{fontSize:20,flexShrink:0}}>{home?FLAGS[home]||"🏳":"❓"}</span>
-                    </button>
-                    {/* VS / picked indicator */}
-                    <div style={{flexShrink:0,width:40,textAlign:"center"}}>
-                      {picked ? (
-                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,color:c,lineHeight:1}}>✓</div>
-                      ) : (
-                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:9,color:T.dim}}>VS</div>
-                      )}
-                    </div>
-                    {/* Away pick button */}
-                    <button onClick={()=>pick(m.id, away)} disabled={isPlaceholder} style={{
-                      flex:1,display:"flex",alignItems:"center",gap:4,
-                      background:awayPicked?`${c}22`:"none",border:awayPicked?`1px solid ${c}`:"1px solid transparent",
-                      borderRadius:8,padding:"6px 8px",cursor:isPlaceholder?"default":"pointer",
-                      transition:"all .15s",
-                    }}>
-                      <span style={{fontSize:20,flexShrink:0}}>{away?FLAGS[away]||"🏳":"❓"}</span>
-                      <span style={{fontSize:11,fontWeight:awayPicked?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:awayPicked?c:T.text}}>{away||m.away}</span>
-                    </button>
-                  </div>
-                  {isPlaceholder && (
-                    <div style={{textAlign:"center",fontSize:8,color:T.dim,paddingBottom:5}}>Group stage শেষ হলে দল নির্ধারিত হবে</div>
-                  )}
-                </div>
-              );
-            };
-
-            const rounds = [
-              {data:r32, label:"Round of 32", emoji:"🔵"},
-              {data:r16, label:"Round of 16", emoji:"🟡"},
-              {data:qf,  label:"Quarter-Finals", emoji:"🟠"},
-              {data:sf,  label:"Semi-Finals", emoji:"🔴"},
-              {data:tp,  label:"3rd Place", emoji:"🥉"},
-              {data:fin, label:"Final", emoji:"🏆"},
-            ];
-
-            return (
-              <div className="fi">
-                {/* Header */}
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-                  <div>
-                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:18,letterSpacing:2,color:c}}>🔮 BRACKET PREDICTOR</div>
-                    <div style={{fontSize:10,color:T.sub}}>কে জিতবে বলে মনে করো? সব ম্যাচে pick করো</div>
-                  </div>
-                  {totalPicks>0 && (
-                    <button onClick={clearAll} style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${T.border}`,background:T.card,color:T.sub,cursor:"pointer",fontSize:10}}>
-                      🗑️ Reset
-                    </button>
-                  )}
-                </div>
-
-                {/* Progress bar */}
-                <div style={{marginBottom:14}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                    <span style={{fontSize:10,color:T.sub}}>Progress</span>
-                    <span style={{fontSize:10,color:c,fontWeight:700}}>{totalPicks}/{totalMatches} picks</span>
-                  </div>
-                  <div style={{background:T.border,borderRadius:99,height:5,overflow:"hidden"}}>
-                    <div style={{height:"100%",background:c,width:`${Math.min(100,(totalPicks/totalMatches*100)).toFixed(0)}%`,borderRadius:99,transition:"width .4s"}}/>
-                  </div>
-                </div>
-
-                {/* My Champion */}
-                {predictions["final-1"] && (
-                  <div style={{padding:"12px 16px",background:`linear-gradient(135deg,${c}22,${c}08)`,border:`2px solid ${c}55`,borderRadius:12,marginBottom:14,textAlign:"center",animation:"fadeIn .3s ease"}}>
-                    <div style={{fontSize:11,color:T.sub,marginBottom:4}}>আমার predicted champion</div>
-                    <div style={{fontSize:32}}>{FLAGS[predictions["final-1"]]||"🏆"}</div>
-                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,color:c,letterSpacing:1}}>{predictions["final-1"]}</div>
-                    <div style={{fontSize:9,color:T.dim,marginTop:2}}>🏆 FIFA World Cup 2026</div>
-                  </div>
-                )}
-
-                {/* Round sections */}
-                {rounds.map(({data, label, emoji}) => {
-                  if (!data) return null;
-                  return (
-                    <div key={label} style={{marginBottom:16}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",background:dark?"#0a1628":"#0f2044",borderRadius:10,border:`1px solid ${c}33`,marginBottom:8}}>
-                        <span style={{fontSize:14}}>{emoji}</span>
-                        <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,letterSpacing:2,color:c}}>{label}</span>
-                        <span style={{fontSize:9,color:T.sub,marginLeft:"auto"}}>
-                          {data.matches.filter(m=>predictions[m.id]).length}/{data.matches.length} picks
-                        </span>
-                      </div>
-                      {data.matches.map(m => <PredMatch key={m.id} m={m} roundKey={label}/>)}
-                    </div>
-                  );
-                })}
-
-                <div style={{textAlign:"center",padding:"10px 0",fontSize:10,color:T.dim}}>
-                  Predictions device এ save থাকবে · Reset করলে মুছে যাবে
-                </div>
-              </div>
-            );
-          })()}
-
           {/* ═══ SCORERS ═══ */}
           {tab==="scorers" && (()=>{
             // Auto-fetch when tab opens
@@ -3953,7 +3769,6 @@ export default function App() {
               {k:"fixtures",icon:"📅",label:"Fixtures"},
               {k:"standings",icon:"📊",label:"Standings"},
               {k:"bracket",icon:"🗂️",label:"Bracket"},
-              {k:"predictor",icon:"🔮",label:"Predictor"},
               {k:"scorers",icon:"⚽",label:"Scorers"},
               {k:"stadiums",icon:"🏟️",label:"Stadiums"},
               {k:"squads",icon:"👕",label:"Squads"},
