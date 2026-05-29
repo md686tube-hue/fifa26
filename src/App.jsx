@@ -2231,15 +2231,25 @@ export default function App() {
     try { favTeam ? localStorage.setItem("wc26_fav",favTeam) : localStorage.removeItem("wc26_fav"); } catch {}
   }, [favTeam]);
 
-  // Visitor counter — countapi.xyz (free, no backend needed)
+  // Visitor counter — counterapi.dev (free, countapi.xyz এর replacement)
   useEffect(() => {
     async function trackVisit() {
       try {
-        const ns = (window.location.hostname || 'wc2026app').replace(/\./g,'_');
-        const res = await fetch(`https://api.countapi.xyz/hit/${ns}/wc26_visitors`);
+        // Try counterapi.dev
+        const key = "wc2026_visitors";
+        const res = await fetch(`https://api.counterapi.dev/v1/md686tube-hue/${key}/up`);
         if (res.ok) {
           const data = await res.json();
-          if (data && typeof data.value === 'number') setVisitorCount(data.value);
+          if (data && typeof data.count === 'number') { setVisitorCount(data.count); return; }
+        }
+      } catch {}
+      try {
+        // Fallback: api.countapi.xyz (may still work for some)
+        const ns = (window.location.hostname||'wc2026').replace(/\./g,'_');
+        const res2 = await fetch(`https://api.countapi.xyz/hit/${ns}/wc26`);
+        if (res2.ok) {
+          const d2 = await res2.json();
+          if (d2 && typeof d2.value==='number') setVisitorCount(d2.value);
         }
       } catch {}
     }
