@@ -1218,10 +1218,10 @@ const SQUADS={
   Argentina:{coach:"Lionel Scaloni",players:[
     {num:1,pos:"GK",name:"Emiliano Martínez",club:"Aston Villa"},
     {num:12,pos:"GK",name:"Gerónimo Rulli",club:"Marseille"},
-    {num:23,pos:"GK",name:"Franco Armani",club:"River Plate"},
+    {num:23,pos:"GK",name:"Juan Musso",club:"Atletico Madrid"},
     {num:2,pos:"DEF",name:"Gonzalo Montiel",club:"River Plate"},
     {num:3,pos:"DEF",name:"Nicolas Tagliafico",club:"Lyon"},
-    {num:4,pos:"DEF",name:"Germán Pezzella",club:"River Plate"},
+    {num:4,pos:"DEF",name:"Leonardo Balerdi",club:"Marseille"},
     {num:5,pos:"DEF",name:"Lisandro Martínez",club:"Man United"},
     {num:6,pos:"DEF",name:"Cristian Romero",club:"Tottenham"},
     {num:13,pos:"DEF",name:"Nicolás Otamendi",club:"Benfica"},
@@ -1232,12 +1232,16 @@ const SQUADS={
     {num:18,pos:"MID",name:"Leandro Paredes",club:"Boca Juniors"},
     {num:19,pos:"MID",name:"Giovani Lo Celso",club:"Real Betis"},
     {num:20,pos:"MID",name:"Alexis Mac Allister",club:"Liverpool"},
-    {num:7,pos:"FWD",name:"Alejandro Garnacho",club:"Chelsea"},
+    {num:15,pos:"DEF",name:"Facundo Medina",club:"Marseille"},
     {num:9,pos:"FWD",name:"Julian Alvarez",club:"Atletico Madrid"},
     {num:11,pos:"FWD",name:"Lautaro Martínez",club:"Inter Milan"},
+    {num:16,pos:"FWD",name:"Thiago Almada",club:"Atletico Madrid"},
+    {num:24,pos:"FWD",name:"Giuliano Simeone",club:"Atletico Madrid"},
+    {num:25,pos:"FWD",name:"Nico Paz",club:"Como"},
+    {num:26,pos:"FWD",name:"José Manuel López",club:"Palmeiras"},
     {num:15,pos:"FWD",name:"Nicolas González",club:"Atletico Madrid"},
-    {num:21,pos:"FWD",name:"Paulo Dybala",club:"Roma"},
-    {num:22,pos:"FWD",name:"Franco Mastantuono",club:"Real Madrid"},
+    {num:21,pos:"MID",name:"Exequiel Palacios",club:"Bayer Leverkusen"},
+    {num:22,pos:"MID",name:"Valentín Barco",club:"Strasbourg"},
   ]},
   Austria:{coach:"Ralf Rangnick",players:[
     {num:1,pos:"GK",name:"Alexander Schlager",club:"RB Salzburg"},
@@ -2019,6 +2023,7 @@ export default function App() {
   const [grpFilter, setGrpFilter] = useState("ALL");
   const [koRound, setKoRound] = useState(0);
   const [squadTeam, setSquadTeam] = useState(null);
+  const [squadSearch, setSquadSearch] = useState("");
   const [standGrp, setStandGrp] = useState("A");
   const [stadIdx, setStadIdx] = useState(null);
   const [results, setResults] = useState({});
@@ -3647,22 +3652,119 @@ export default function App() {
           {/* ═══ SQUADS ═══ */}
           {tab==="squads" && (
             <div className="fi">
-              <div style={{fontSize:12,color:T.sub,marginBottom:10}}>সব ৪৮ দলের স্কোয়াড। ফ্ল্যাগে ক্লিক করলে সেই দল প্রিয় দল হবে।</div>
-              <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:18}}>
-                {Object.keys(SQUADS).map(team=>(
-                  <button key={team} onClick={()=>setSquadTeam(squadTeam===team?null:team)}
-                    style={{display:"flex",alignItems:"center",gap:5,padding:"6px 10px",borderRadius:8,border:`1px solid ${squadTeam===team?c:favTeam===team?"rgba(251,191,36,.5)":T.border}`,background:squadTeam===team?T.acBg:favTeam===team?"rgba(251,191,36,.07)":T.card,color:squadTeam===team?c:favTeam===team?"#fbbf24":T.sub,cursor:"pointer",fontSize:12,fontWeight:600,transition:"all .2s",boxShadow:T.sh}}>
-                    <span style={{fontSize:15}}>{FLAGS[team]||"🏳"}</span> {team}
-                    {favTeam===team&&<span>⭐</span>}
-                  </button>
-                ))}
+
+              {/* ── Search bar ── */}
+              <div style={{position:"relative",marginBottom:14}}>
+                <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",fontSize:16,pointerEvents:"none"}}>🔍</span>
+                <input
+                  value={squadSearch}
+                  onChange={e=>{setSquadSearch(e.target.value);if(e.target.value)setSquadTeam(null);}}
+                  placeholder="দল বা খেলোয়াড় খুঁজুন… Brazil, Messi, Arsenal…"
+                  style={{width:"100%",padding:"10px 38px 10px 36px",borderRadius:10,border:`1px solid ${T.border}`,background:T.card,color:T.text,fontSize:13,outline:"none",boxSizing:"border-box",boxShadow:T.sh}}
+                />
+                {squadSearch
+                  ? <button onClick={()=>setSquadSearch("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:T.sub,lineHeight:1}}>✕</button>
+                  : <button onClick={()=>document.querySelector('[placeholder*="দল বা খেলোয়াড়"]')?.focus()} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:c,border:"none",cursor:"pointer",fontSize:10,color:"#fff",borderRadius:6,padding:"3px 8px",fontWeight:700}}>Search</button>
+                }
               </div>
 
-              {!squadTeam&&(
-                <div style={{textAlign:"center",padding:"50px 0",color:T.sub}}>
-                  <div style={{fontSize:42,marginBottom:10}}>👕</div>
-                  <div style={{fontSize:15,fontWeight:600,color:T.text}}>উপরে একটি দল বেছে নিন</div>
-                  <div style={{fontSize:12,marginTop:6}}>৪৮টি দলের পূর্ণ স্কোয়াড দেখুন</div>
+              {/* ── Player / Team search results ── */}
+              {squadSearch && (()=>{
+                const q = squadSearch.toLowerCase().trim();
+                const teamHits = Object.keys(SQUADS).filter(t=>t.toLowerCase().includes(q));
+                const playerHits = [];
+                Object.entries(SQUADS).forEach(([team,sq])=>{
+                  sq.players.forEach(p=>{
+                    if(p.name.toLowerCase().includes(q)||p.club.toLowerCase().includes(q))
+                      playerHits.push({team,p});
+                  });
+                });
+                const total = teamHits.length + playerHits.length;
+                if(!total) return (
+                  <div style={{textAlign:"center",padding:"36px 0",color:T.sub}}>
+                    <div style={{fontSize:32,marginBottom:8}}>🔍</div>
+                    <div style={{fontSize:13}}>"{squadSearch}" এর কোনো ফলাফল নেই</div>
+                  </div>
+                );
+                return (
+                  <div>
+                    <div style={{fontSize:11,color:T.sub,marginBottom:10}}>{total}টি ফলাফল</div>
+                    {teamHits.map(team=>(
+                      <button key={team} onClick={()=>{setSquadTeam(team);setSquadSearch("");}}
+                        style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"11px 13px",borderRadius:10,border:`1px solid ${c}44`,background:T.acBg,cursor:"pointer",marginBottom:7,textAlign:"left"}}>
+                        <span style={{fontSize:26}}>{FLAGS[team]||"🏳"}</span>
+                        <div>
+                          <div style={{fontSize:13,fontWeight:700,color:c}}>{team}</div>
+                          <div style={{fontSize:10,color:T.sub}}>কোচ: {SQUADS[team].coach} · {SQUADS[team].players.length}জন</div>
+                        </div>
+                        <span style={{marginLeft:"auto",fontSize:11,color:c}}>→</span>
+                      </button>
+                    ))}
+                    {playerHits.map(({team,p},i)=>(
+                      <div key={i} onClick={()=>{setSquadTeam(team);setSquadSearch("");}}
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:9,border:`1px solid ${T.border}`,background:T.card,marginBottom:5,cursor:"pointer",transition:"all .15s"}}>
+                        <div style={{width:36,height:36,background:`${posColors[p.pos]||c}18`,border:`2px solid ${posColors[p.pos]||c}40`,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:13,color:posColors[p.pos]||c,flexShrink:0}}>{p.num}</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:12,fontWeight:700,color:T.text}}>{p.name}</div>
+                          <div style={{fontSize:10,color:T.sub}}>{p.pos} · {p.club}</div>
+                        </div>
+                        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,flexShrink:0}}>
+                          <span style={{fontSize:18}}>{FLAGS[team]||"🏳"}</span>
+                          <span style={{fontSize:9,color:T.dim}}>{team}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* ── Group-based team grid (when no search) ── */}
+              {!squadSearch && (()=>{
+                const groups = Object.keys(GROUPS);
+                return (
+                  <div>
+                    {groups.map(grp=>{
+                      const teams = GROUPS[grp];
+                      return (
+                        <div key={grp} style={{marginBottom:14}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7}}>
+                            <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:11,letterSpacing:2,color:c,background:T.acBg,border:`1px solid ${c}33`,borderRadius:5,padding:"2px 7px"}}>GROUP {grp}</span>
+                            <div style={{flex:1,height:1,background:T.border+"66"}}/>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6}}>
+                            {teams.map(team=>{
+                              const active = squadTeam===team;
+                              const isFav2 = favTeam===team;
+                              return (
+                                <button key={team} onClick={()=>setSquadTeam(active?null:team)}
+                                  style={{display:"flex",alignItems:"center",gap:8,padding:"9px 11px",borderRadius:9,
+                                    border:`1px solid ${active?c:isFav2?"rgba(251,191,36,.4)":T.border}`,
+                                    background:active?T.acBg:isFav2?"rgba(251,191,36,.05)":T.card,
+                                    cursor:"pointer",textAlign:"left",transition:"all .15s",boxShadow:T.sh,
+                                    borderLeft:active?`3px solid ${c}`:isFav2?"3px solid #fbbf24":"3px solid transparent",
+                                  }}>
+                                  <span style={{fontSize:22,flexShrink:0}}>{FLAGS[team]||"🏳"}</span>
+                                  <div style={{flex:1,minWidth:0}}>
+                                    <div style={{fontSize:11,fontWeight:700,color:active?c:isFav2?"#fbbf24":T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{team}</div>
+                                    <div style={{fontSize:9,color:T.dim,marginTop:1}}>{SQUADS[team]?.players.length||0}জন</div>
+                                  </div>
+                                  {isFav2&&<span style={{fontSize:12}}>⭐</span>}
+                                  {active&&<span style={{fontSize:11,color:c}}>▲</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {!squadSearch&&!squadTeam&&(
+                <div style={{textAlign:"center",padding:"30px 0",color:T.sub}}>
+                  <div style={{fontSize:36,marginBottom:8}}>👕</div>
+                  <div style={{fontSize:13,color:T.text,fontWeight:600}}>একটি দল বেছে নিন</div>
                 </div>
               )}
 
