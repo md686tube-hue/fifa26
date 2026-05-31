@@ -1344,16 +1344,17 @@ const SQUADS={
     {num:22,pos:"FWD",name:"Juan Camilo Hernández",club:"Columbus Crew"},
   ]},
   "DR Congo":{coach:"Sébastien Desabre",players:[
-    {num:1,pos:"GK",name:"Matthieu Epolo",club:"Standard Liege"},
+    {num:1,pos:"GK",name:"Mike Epolo",club:"Standard Liege"},
     {num:12,pos:"GK",name:"Timothy Fayulu",club:"Noah"},
     {num:23,pos:"GK",name:"Lionel Mpasi",club:"Le Havre"},
     {num:2,pos:"DEF",name:"Aaron Wan-Bissaka",club:"West Ham"},
     {num:3,pos:"DEF",name:"Arthur Masuaku",club:"RC Lens"},
     {num:4,pos:"DEF",name:"Chancel Mbemba",club:"Lille"},
-    {num:5,pos:"DEF",name:"Gedeon Kalulu",club:"Aris Limassol"},
+    {num:5,pos:"DEF",name:"Gedeon Kalulu",club:"AEL Limassol"},
     {num:6,pos:"DEF",name:"Dylan Batubinsika",club:"Larisa"},
     {num:13,pos:"DEF",name:"Joris Kayembe",club:"Racing Genk"},
     {num:14,pos:"DEF",name:"Axel Tuanzebe",club:"Burnley"},
+    {num:16,pos:"DEF",name:"Rocky Bushiri",club:"Hibernian"},
     {num:15,pos:"DEF",name:"Steve Kapuadi",club:"Widzew Lodz"},
     {num:8,pos:"MID",name:"Samuel Moutoussamy",club:"Atromitos"},
     {num:10,pos:"MID",name:"Gael Kakuta",club:"Larisa"},
@@ -1362,6 +1363,7 @@ const SQUADS={
     {num:19,pos:"MID",name:"Edo Kayembe",club:"Watford"},
     {num:20,pos:"MID",name:"Ngal'ayel Mukau",club:"Lille"},
     {num:21,pos:"MID",name:"Charles Pickel",club:"Espanyol"},
+    {num:22,pos:"MID",name:"Théo Bongonda",club:"Spartak Moscow"},
     {num:7,pos:"FWD",name:"Yoane Wissa",club:"Newcastle"},
     {num:9,pos:"FWD",name:"Cedric Bakambu",club:"Real Betis"},
     {num:11,pos:"FWD",name:"Simon Banza",club:"Al Jazira"},
@@ -1390,25 +1392,25 @@ const SQUADS={
   England:{coach:"Thomas Tuchel",players:[
     {num:1,pos:"GK",name:"Jordan Pickford",club:"Everton"},
     {num:13,pos:"GK",name:"Dean Henderson",club:"Crystal Palace"},
-    {num:23,pos:"GK",name:"James Trafford",club:"Burnley"},
+    {num:23,pos:"GK",name:"James Trafford",club:"Man City"},
     {num:2,pos:"DEF",name:"Reece James",club:"Chelsea"},
     {num:3,pos:"DEF",name:"Tino Livramento",club:"Newcastle"},
-    {num:4,pos:"DEF",name:"Marc Guehi",club:"Crystal Palace"},
+    {num:4,pos:"DEF",name:"Marc Guehi",club:"Man City"},
     {num:5,pos:"DEF",name:"John Stones",club:"Man City"},
     {num:6,pos:"DEF",name:"Ezri Konsa",club:"Aston Villa"},
     {num:12,pos:"DEF",name:"Dan Burn",club:"Newcastle"},
-    {num:14,pos:"DEF",name:"Jarrell Quansah",club:"Liverpool"},
+    {num:14,pos:"DEF",name:"Jarrell Quansah",club:"Bayer Leverkusen"},
     {num:8,pos:"MID",name:"Jude Bellingham",club:"Real Madrid"},
     {num:10,pos:"MID",name:"Declan Rice",club:"Arsenal"},
     {num:17,pos:"MID",name:"Kobbie Mainoo",club:"Man United"},
     {num:18,pos:"MID",name:"Morgan Rogers",club:"Aston Villa"},
-    {num:19,pos:"MID",name:"Eberechi Eze",club:"Crystal Palace"},
+    {num:19,pos:"MID",name:"Eberechi Eze",club:"Arsenal"},
     {num:20,pos:"MID",name:"Elliot Anderson",club:"Nottingham Forest"},
     {num:7,pos:"FWD",name:"Bukayo Saka",club:"Arsenal"},
     {num:9,pos:"FWD",name:"Harry Kane",club:"Bayern Munich"},
     {num:11,pos:"FWD",name:"Marcus Rashford",club:"Barcelona"},
     {num:22,pos:"FWD",name:"Anthony Gordon",club:"Newcastle"},
-    {num:24,pos:"FWD",name:"Noni Madueke",club:"Chelsea"},
+    {num:24,pos:"FWD",name:"Noni Madueke",club:"Arsenal"},
     {num:25,pos:"FWD",name:"Ivan Toney",club:"Al Ahli"},
     {num:26,pos:"FWD",name:"Ollie Watkins",club:"Aston Villa"},
   ]},
@@ -2023,6 +2025,7 @@ export default function App() {
   const [grpFilter, setGrpFilter] = useState("ALL");
   const [koRound, setKoRound] = useState(0);
   const [squadTeam, setSquadTeam] = useState(null);
+  const [squadModal, setSquadModal] = useState(false);
   const [squadSearch, setSquadSearch] = useState("");
   const [standGrp, setStandGrp] = useState("A");
   const [stadIdx, setStadIdx] = useState(null);
@@ -2165,11 +2168,11 @@ export default function App() {
       if (!allMatchList.trim()) { setAutoFetching(false); return; }
 
       const systemPrompt = hasLiveMatch
-        ? `You are a LIVE FIFA World Cup 2026 score tracker. Search for CURRENT live scores RIGHT NOW and return ONLY valid JSON. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore, "status": "LIVE" or "FT"}, ...}}. For KO matches use the string ID as key (e.g. "r32-1"). No markdown.`
+        ? `You are a LIVE FIFA World Cup 2026 score tracker. Search for CURRENT live scores RIGHT NOW. Return ONLY valid JSON with NO markdown. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore, "status": "LIVE" or "HT" or "FT", "minute": currentMinute, "goals": [{"team":"home" or "away","scorer":"Name","minute":45},...],"cards": [{"team":"home" or "away","player":"Name","type":"yellow" or "red","minute":30}]}, ...}}.`
         : `You are a FIFA World Cup 2026 score tracker. Search for final match results and return ONLY valid JSON. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore}, ...}}. For KO matches use the string ID as key (e.g. "r32-1"). Use null for no result. No markdown.`;
 
       const userMsg = hasLiveMatch
-        ? `Search for LIVE/current scores of these FIFA World Cup 2026 matches RIGHT NOW:\n${allMatchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1, "status": "LIVE"}, "r32-1": {"h": 1, "a": 0, "status": "FT"}}}`
+        ? `Search for LIVE/current scores RIGHT NOW for these FIFA World Cup 2026 matches:\n${allMatchList}\n\nReturn ONLY JSON: {"results": {"1": {"h": 2, "a": 1, "status": "LIVE", "minute": 67, "goals": [{"team":"home","scorer":"Vinicius Jr","minute":23}], "cards": [{"team":"away","player":"Name","type":"yellow","minute":45}]}}}`
         : `Search for final scores of these FIFA World Cup 2026 matches:\n${allMatchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1}, "r32-1": {"h": 1, "a": 0}}}`;
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -2193,7 +2196,13 @@ export default function App() {
           const newKO = {};
           Object.entries(parsed.results).forEach(([id, val]) => {
             if (!val || val.h === null || val.a === null || isNaN(+val.h) || isNaN(+val.a)) return;
-            const entry = { h: String(val.h), a: String(val.a), status: val.status || "FT" };
+            const entry = {
+              h: String(val.h), a: String(val.a),
+              status: val.status || "FT",
+              minute: val.minute || null,
+              goals: Array.isArray(val.goals) ? val.goals : [],
+              cards: Array.isArray(val.cards) ? val.cards : [],
+            };
             // numeric IDs = group matches; string IDs (r32-*, r16-*, qf-*, sf-*, 3pl, fin) = KO matches
             if (!isNaN(+id)) newGroup[+id] = entry;
             else newKO[id] = entry;
@@ -2755,7 +2764,17 @@ export default function App() {
                               {hasScore2 ? (
                                 <div style={{padding:"3px 0",borderRadius:6,background:isLive2?"rgba(239,68,68,.15)":"rgba(16,185,129,.12)",border:`1px solid ${isLive2?"#ef444466":c+"55"}`}}>
                                   <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:19,color:isLive2?"#ef4444":c,lineHeight:1}}>{r2.h}:{r2.a}</div>
-                                  <div style={{fontSize:7,fontWeight:800,color:isLive2?"#ef4444":T.sub}}>{isLive2?"LIVE":matchOver2?"FT":""}</div>
+                                  <div style={{fontSize:7,fontWeight:800,color:isLive2?"#ef4444":T.sub,letterSpacing:.5}}>
+                                    {isLive2 ? (r2.minute ? `🔴 ${r2.minute}'` : "🔴 LIVE") : matchOver2 ? "FT" : ""}
+                                  </div>
+                                  {/* Goal scorers */}
+                                  {r2.goals && r2.goals.length > 0 && (
+                                    <div style={{fontSize:7,color:T.sub,marginTop:2,lineHeight:1.4,textAlign:"center"}}>
+                                      {r2.goals.map((g,gi)=>(
+                                        <div key={gi}>{g.team==="home"?"⚽":""}  {g.scorer||""} {g.minute?""+g.minute+"'":""} {g.team==="away"?"⚽":""}</div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <div style={{padding:"3px 0",borderRadius:6,background:isFav2?"rgba(251,191,36,.1)":T.acBg,border:`1px solid ${isFav2?"rgba(251,191,36,.25)":c+"22"}`}}>
@@ -3128,7 +3147,7 @@ export default function App() {
                                 {hasScore?(
                                   <div style={{padding:"2px 0",borderRadius:5,background:matchStarted&&!matchOver?"rgba(239,68,68,.15)":"rgba(16,185,129,.12)",border:`1px solid ${matchStarted&&!matchOver?"#ef444466":c+"55"}`}}>
                                     <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:17,color:matchStarted&&!matchOver?"#ef4444":c,lineHeight:1}}>{r.h}:{r.a}</div>
-                                    <div style={{fontSize:7,fontWeight:800,color:matchStarted&&!matchOver?"#ef4444":T.sub}}>{matchOver?"FT":"LIVE"}</div>
+                                    <div style={{fontSize:7,fontWeight:800,color:matchStarted&&!matchOver?"#ef4444":T.sub}}>{matchOver?"FT":r.minute?`${r.minute}'`:"LIVE"}</div>
                                   </div>
                                 ):(
                                   <div style={{padding:"2px 0",borderRadius:5,background:T.acBg,border:`1px solid ${c}22`}}>
@@ -3690,7 +3709,7 @@ export default function App() {
                   <div>
                     <div style={{fontSize:11,color:T.sub,marginBottom:10}}>{total}টি ফলাফল</div>
                     {teamHits.map(team=>(
-                      <button key={team} onClick={()=>{setSquadTeam(team);setSquadSearch("");}}
+                      <button key={team} onClick={()=>{setSquadTeam(team);setSquadSearch("");setSquadModal(true);}}
                         style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"11px 13px",borderRadius:10,border:`1px solid ${c}44`,background:T.acBg,cursor:"pointer",marginBottom:7,textAlign:"left"}}>
                         <span style={{fontSize:26}}>{FLAGS[team]||"🏳"}</span>
                         <div>
@@ -3736,7 +3755,7 @@ export default function App() {
                               const active = squadTeam===team;
                               const isFav2 = favTeam===team;
                               return (
-                                <button key={team} onClick={()=>setSquadTeam(active?null:team)}
+                                <button key={team} onClick={()=>{setSquadTeam(team);setSquadModal(true);}}
                                   style={{display:"flex",alignItems:"center",gap:8,padding:"9px 11px",borderRadius:9,
                                     border:`1px solid ${active?c:isFav2?"rgba(251,191,36,.4)":T.border}`,
                                     background:active?T.acBg:isFav2?"rgba(251,191,36,.05)":T.card,
@@ -3882,6 +3901,59 @@ export default function App() {
         </div>
 
       </div>
+
+        {/* ── SQUAD MODAL ── */}
+        {squadModal && squadTeam && SQUADS[squadTeam] && createPortal(
+          <div onClick={()=>setSquadModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:10000,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(3px)"}}>
+            <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:640,maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",background:dark?"#0f1a0f":"#fff",borderRadius:"20px 20px 0 0",boxShadow:"0 -8px 40px rgba(0,0,0,.5)"}}>
+              <div style={{padding:"14px 16px 10px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+                <span style={{fontSize:36}}>{FLAGS[squadTeam]||"🏳"}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,color:c,letterSpacing:1.5,lineHeight:1}}>{squadTeam}</div>
+                  <div style={{fontSize:10,color:T.sub,marginTop:1}}>কোচ: <b style={{color:T.text}}>{SQUADS[squadTeam].coach}</b> · Grp {getTeamGroup(squadTeam)} · {SQUADS[squadTeam].players.length}জন</div>
+                </div>
+                <button onClick={()=>toggleFav(squadTeam)} style={{padding:"5px 9px",borderRadius:7,border:`1px solid ${favTeam===squadTeam?"rgba(251,191,36,.5)":T.border}`,background:favTeam===squadTeam?"rgba(251,191,36,.1)":T.card,color:favTeam===squadTeam?"#fbbf24":T.sub,cursor:"pointer",fontSize:11,fontWeight:700,flexShrink:0}}>
+                  {favTeam===squadTeam?"⭐ প্রিয়":"☆ Fav"}
+                </button>
+                <button onClick={()=>setSquadModal(false)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${T.border}`,background:T.card,color:T.sub,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+              </div>
+              <div style={{overflowY:"auto",padding:"12px 14px",flex:1}}>
+                {(()=>{
+                  const sq = SQUADS[squadTeam];
+                  const posOrder = ["GK","DEF","MID","FWD"];
+                  const pclr = {GK:"#f59e0b",DEF:"#3b82f6",MID:"#10b981",FWD:"#ef4444"};
+                  return posOrder.map(pos => {
+                    const players = sq.players.filter(p=>p.pos===pos);
+                    if(!players.length) return null;
+                    const pc = pclr[pos];
+                    return (
+                      <div key={pos} style={{marginBottom:12}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7}}>
+                          <div style={{width:7,height:7,borderRadius:"50%",background:pc}}/>
+                          <span style={{fontSize:10,fontWeight:800,color:pc,letterSpacing:2}}>{pos}</span>
+                          <span style={{fontSize:9,color:T.dim}}>({players.length})</span>
+                          <div style={{flex:1,height:1,background:T.border+"55"}}/>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                          {players.map((p,i)=>(
+                            <div key={i} style={{display:"flex",alignItems:"center",gap:7,padding:"7px 9px",borderRadius:9,background:T.card,border:`1px solid ${T.border}`}}>
+                              <div style={{width:28,height:28,borderRadius:7,background:`${pc}18`,border:`2px solid ${pc}40`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',cursive",fontSize:12,color:pc,flexShrink:0}}>{p.num}</div>
+                              <div style={{minWidth:0}}>
+                                <div style={{fontSize:11,fontWeight:700,color:T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
+                                <div style={{fontSize:9,color:T.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.club}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
         {/* ── BOTTOM NAV via Portal — renders directly in document.body, immune to any ancestor overflow/opacity/transform/backdrop-filter ── */}
         {createPortal(
