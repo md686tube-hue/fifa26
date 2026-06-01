@@ -1063,17 +1063,23 @@ const SQUADS={
     {num:5,pos:"DEF",name:"Hassan Tambakti",club:"Al-Shabab"},
     {num:6,pos:"DEF",name:"Abdulelah Al-Malki",club:"Al-Hilal"},
     {num:13,pos:"DEF",name:"Yasir Al-Shahrani",club:"Al-Hilal"},
+    {num:14,pos:"DEF",name:"Ali Al-Hassan",club:"Al-Qadsiah"},
+    {num:15,pos:"DEF",name:"Sultan Al-Ghamdi",club:"Al-Nassr"},
+    {num:16,pos:"DEF",name:"Sami Al-Khaibari",club:"Al-Fayha"},
     {num:8,pos:"MID",name:"Sami Al-Najei",club:"Al-Qadsiah"},
     {num:10,pos:"MID",name:"Saleh Al-Shehri",club:"Al-Hilal"},
     {num:17,pos:"MID",name:"Abdullah Al-Hamddan",club:"Al-Hilal"},
     {num:18,pos:"MID",name:"Nasser Al-Dawsari",club:"Al-Hilal"},
     {num:19,pos:"MID",name:"Riyadh Sharahili",club:"Al-Ettifaq"},
+    {num:20,pos:"MID",name:"Abdulellah Al-Malki",club:"Al-Ahli"},
+    {num:21,pos:"MID",name:"Ali Al-Nemer",club:"Al-Hilal"},
     {num:7,pos:"FWD",name:"Firas Al-Buraikan",club:"Al-Fateh"},
     {num:9,pos:"FWD",name:"Mukhtar Ali",club:"Al-Ahli"},
     {num:11,pos:"FWD",name:"Sultan Al-Ghannam",club:"Al-Nassr"},
     {num:15,pos:"FWD",name:"Hattan Bahebri",club:"Al-Shabab"},
+    {num:22,pos:"FWD",name:"Mohammed Kanno",club:"Al-Hilal"},
   ]},
-  "Cabo Verde":{coach:"Pedro Brito",players:[
+  "Cape Verde":{coach:"Pedro Brito",players:[
     {num:1,pos:"GK",name:"Vozinha",club:"Chaves"},
     {num:12,pos:"GK",name:"Marcio Rosa",club:"Montana"},
     {num:23,pos:"GK",name:"CJ dos Santos",club:"San Diego"},
@@ -1138,13 +1144,22 @@ const SQUADS={
     {num:4,pos:"DEF",name:"Rebin Sulaka",club:"Ankaragücü"},
     {num:5,pos:"DEF",name:"Saad Natiq",club:"Al-Zawraa"},
     {num:6,pos:"DEF",name:"Hossam Kadhim",club:"Al-Quwa Al-Jawiya"},
+    {num:13,pos:"DEF",name:"Hussein Ali",club:"Al-Zawraa"},
+    {num:14,pos:"DEF",name:"Mohammed Qasim",club:"Al-Shorta"},
+    {num:15,pos:"DEF",name:"Mustafa Nadhum",club:"Al-Diwaniyah"},
     {num:8,pos:"MID",name:"Amjed Attwan",club:"Al-Quwa Al-Jawiya"},
     {num:10,pos:"MID",name:"Bashar Resan",club:"Al-Zawraa"},
+    {num:16,pos:"MID",name:"Ali Faez",club:"Al-Quwa Al-Jawiya"},
     {num:17,pos:"MID",name:"Ibrahim Bayesh",club:"Al-Zawraa"},
     {num:18,pos:"MID",name:"Osama Rashid",club:"Omonia Nicosia"},
+    {num:19,pos:"MID",name:"Yaser Kasim",club:"Al-Shorta"},
+    {num:20,pos:"MID",name:"Saad Abdul Amir",club:"Al-Naft"},
+    {num:21,pos:"MID",name:"Dhurgham Ismail",club:"Al-Zawraa"},
     {num:7,pos:"FWD",name:"Mohanad Ali",club:"Al-Shorta"},
     {num:9,pos:"FWD",name:"Aymen Hussein",club:"Al-Quwa Al-Jawiya"},
     {num:11,pos:"FWD",name:"Alaa Abbas",club:"Al-Zawraa"},
+    {num:22,pos:"FWD",name:"Hussein Falah",club:"Al-Diwaniyah"},
+    {num:24,pos:"FWD",name:"Ahmed Yaseen",club:"Air Force Club"},
   ]},
   Norway:{coach:"Ståle Solbakken",players:[
     {num:1,pos:"GK",name:"Ørjan Nyland",club:"Atletico Madrid"},
@@ -1280,14 +1295,22 @@ const SQUADS={
     {num:4,pos:"DEF",name:"Yazan Al Arab",club:"Seoul E-Land"},
     {num:5,pos:"DEF",name:"Abdallah Nasib",club:"Al-Zawraa"},
     {num:6,pos:"DEF",name:"Saleem Obaid",club:"Al-Hussein"},
+    {num:13,pos:"DEF",name:"Bashar Bani Yaseen",club:"Al-Wahdat"},
+    {num:14,pos:"DEF",name:"Ahmad Al Sarairah",club:"Al-Faisaly"},
+    {num:15,pos:"DEF",name:"Zaid Al-Hijjawi",club:"Al-Hussein"},
     {num:8,pos:"MID",name:"Rajaei Ayed",club:"Al-Hussein"},
     {num:10,pos:"MID",name:"Amer Jamous",club:"Al-Zawraa"},
+    {num:16,pos:"MID",name:"Amro Hamdan",club:"Al-Wahdat"},
     {num:17,pos:"MID",name:"Mohammad Al Dawoud",club:"Al-Wehdat"},
     {num:18,pos:"MID",name:"Nizar Al Rashdan",club:"Qatar SC"},
+    {num:19,pos:"MID",name:"Haitham Eshidat",club:"Al-Ramtha"},
+    {num:20,pos:"MID",name:"Baha'a Abdelrahman",club:"Al-Faisaly"},
+    {num:21,pos:"MID",name:"Zaid Al-Samara",club:"Al-Wehdat"},
     {num:7,pos:"FWD",name:"Musa Al-Taamari",club:"Rennes"},
     {num:9,pos:"FWD",name:"Mousa Tamari",club:"Lorient"},
     {num:11,pos:"FWD",name:"Yazan Al-Naimat",club:"Al-Arabi"},
     {num:15,pos:"FWD",name:"Ibrahim Sabra",club:"Lokomotiva Zagreb"},
+    {num:22,pos:"FWD",name:"Khaled Al-Za'bi",club:"Al-Qadsia"},
   ]},
   // ── GROUP K ──
   Portugal:{coach:"Roberto Martínez",players:[
@@ -1379,14 +1402,21 @@ const SQUADS={
     {num:5,pos:"DEF",name:"Avazbek Ulmasaliev",club:"AGMK"},
     {num:6,pos:"DEF",name:"Jakhongir Urozov",club:"Dinamo Samarqand"},
     {num:13,pos:"DEF",name:"Otabek Shukurov",club:"Baniyas"},
+    {num:14,pos:"DEF",name:"Sherzod Karimov",club:"Pakhtakor"},
+    {num:15,pos:"DEF",name:"Dostonbek Khamdamov",club:"Neftchi"},
+    {num:16,pos:"DEF",name:"Bobur Abdixoliqov",club:"Lokomotiv Tashkent"},
     {num:8,pos:"MID",name:"Nodirbek Abdurazzokov",club:"AGMK"},
     {num:10,pos:"MID",name:"Odiljon Khamrobekov",club:"Tractor"},
     {num:17,pos:"MID",name:"Jamshid Iskanderov",club:"Neftchi"},
     {num:18,pos:"MID",name:"Kuvondik Ruziev",club:"Neftchi"},
+    {num:19,pos:"MID",name:"Otabek Bekmurodov",club:"Pakhtakor"},
+    {num:20,pos:"MID",name:"Husan Norchaev",club:"Lokomotiv Tashkent"},
+    {num:21,pos:"MID",name:"Sanjar Tursunov",club:"AGMK"},
     {num:9,pos:"FWD",name:"Eldor Shomurodov",club:"Istanbul Basaksehir"},
     {num:7,pos:"FWD",name:"Abbosek Fayzullaev",club:"Istanbul Basaksehir"},
     {num:11,pos:"FWD",name:"Jaloliddin Masharipov",club:"Esteghlal"},
     {num:15,pos:"FWD",name:"Oston Urunov",club:"Persepolis"},
+    {num:22,pos:"FWD",name:"Umid Sadullayev",club:"Pakhtakor"},
   ]},
   // ── GROUP L ──
   England:{coach:"Thomas Tuchel",players:[
@@ -1452,16 +1482,21 @@ const SQUADS={
     {num:6,pos:"DEF",name:"Gideon Mensah",club:"Lyon"},
     {num:13,pos:"DEF",name:"Dennis Odoi",club:"Club Brugge"},
     {num:14,pos:"DEF",name:"Alidu Seidu",club:"Rennes"},
+    {num:15,pos:"DEF",name:"Joseph Aidoo",club:"Celta Vigo"},
+    {num:21,pos:"DEF",name:"Kingsley Schindler",club:"Sandhausen"},
     {num:8,pos:"MID",name:"Thomas Partey",club:"Arsenal"},
     {num:10,pos:"MID",name:"Kudus Mohammed",club:"West Ham"},
     {num:17,pos:"MID",name:"Salis Abdul Samed",club:"Lens"},
     {num:18,pos:"MID",name:"Elisha Owusu",club:"Nantes"},
+    {num:19,pos:"MID",name:"Iddrisu Baba",club:"Mallorca"},
+    {num:22,pos:"MID",name:"André Ayew",club:"Le Havre"},
+    {num:24,pos:"MID",name:"Emmanuel Lomotey",club:"Desp. La Coruña"},
     {num:7,pos:"FWD",name:"Inaki Williams",club:"Athletic Bilbao"},
     {num:9,pos:"FWD",name:"Antoine Semenyo",club:"Bournemouth"},
     {num:11,pos:"FWD",name:"Jordan Ayew",club:"Leicester City"},
-    {num:15,pos:"FWD",name:"Osman Bukari",club:"Red Star Belgrade"},
     {num:16,pos:"FWD",name:"Kamaldeen Sulemana",club:"Southampton"},
     {num:20,pos:"FWD",name:"Ransford Yeboah",club:"Hamburger SV"},
+    {num:25,pos:"FWD",name:"Osman Bukari",club:"Red Star Belgrade"},
   ]},
   Panama:{coach:"Thomas Christiansen",players:[
     {num:1,pos:"GK",name:"Orlando Mosquera",club:"Independiente Medellín"},
@@ -1473,16 +1508,22 @@ const SQUADS={
     {num:5,pos:"DEF",name:"Andres Andrade",club:"Sassuolo"},
     {num:6,pos:"DEF",name:"Cesar Blackman",club:"Malaga"},
     {num:13,pos:"DEF",name:"Jose Cordoba",club:"Columbus Crew"},
+    {num:14,pos:"DEF",name:"Edgardo Fariña",club:"Tauro FC"},
+    {num:15,pos:"DEF",name:"Ricardo Avila",club:"CD Plaza Amador"},
     {num:8,pos:"MID",name:"Anibal Godoy",club:"Nashville SC"},
     {num:10,pos:"MID",name:"Adalberto Carrasquilla",club:"Watford"},
     {num:16,pos:"MID",name:"Carlos Harvey",club:"Portland Timbers"},
     {num:17,pos:"MID",name:"Cesar Yanis",club:"Fatih Karagumruk"},
     {num:18,pos:"MID",name:"Yoel Barcenas",club:"Tigre"},
+    {num:19,pos:"MID",name:"Alberto Quintero",club:"Municipal"},
+    {num:20,pos:"MID",name:"Rolando Blackburn",club:"Chivas"},
+    {num:21,pos:"MID",name:"Josiel Núñez",club:"CD Plaza Amador"},
     {num:7,pos:"FWD",name:"Ismael Diaz",club:"Getafe"},
     {num:9,pos:"FWD",name:"Cecilio Waterman",club:"San Jose Earthquakes"},
     {num:11,pos:"FWD",name:"Jose Fajardo",club:"Portland Timbers"},
-    {num:15,pos:"FWD",name:"Tomas Rodriguez",club:"Eintracht Frankfurt"},
-    {num:20,pos:"FWD",name:"Freddy Gondola",club:"FK Bodø/Glimt"},
+    {num:22,pos:"FWD",name:"Tomas Rodriguez",club:"Eintracht Frankfurt"},
+    {num:24,pos:"FWD",name:"Freddy Gondola",club:"FK Bodø/Glimt"},
+    {num:25,pos:"FWD",name:"Gabriel Torres",club:"Olimpia"},
   ]},
 };
 
@@ -2251,6 +2292,15 @@ export default function App() {
   }, [fetchResults]);
 
   useEffect(() => {
+    if (squadModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [squadModal]);
+
+  useEffect(() => {
     try { favTeam ? localStorage.setItem("wc26_fav",favTeam) : localStorage.removeItem("wc26_fav"); } catch {}
   }, [favTeam]);
 
@@ -2515,10 +2565,11 @@ export default function App() {
           .sq-grid{grid-template-columns:1fr!important;}
           .tab-txt{font-size:10px!important;padding:8px 8px!important;}
           .ko-grid{grid-template-columns:1fr!important;}
-          table{font-size:11px!important;}
-          th,td{padding:6px 4px!important;}
+          table{font-size:10px!important;}
+          th,td{padding:5px 3px!important;}
           .main-content{padding-bottom:90px!important;}
           .top-tabs{display:none!important;}
+          .standings-table th, .standings-table td{padding:5px 3px!important;font-size:10px!important;}
         }
         @media(min-width:601px){
           .bottom-nav{display:none!important;}
@@ -2815,8 +2866,13 @@ export default function App() {
                   round.matches.some(m=>{ const r=results[m.id]; return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a); })
                 );
 
-                // Show KO only if group stage done OR any KO match has result
-                if(!groupStageDone && !anyKOResult) {
+                // Show KO if group stage done, or any KO result, or if current date >= Jun 28 2026
+                const now = Date.now();
+                const jun28UTC = Date.UTC(2026, 5, 28, 0, 0, 0); // Jun 28 2026
+                const datePassedGroupStage = now >= jun28UTC;
+
+                // Show KO only if group stage done OR any KO match has result OR date passed
+                if(!groupStageDone && !anyKOResult && !datePassedGroupStage) {
                   const remaining = totalGroupMatches - completedGroupMatches;
                   return (
                     <div style={{textAlign:"center",padding:"28px 16px",background:T.card,borderRadius:12,border:`1px solid ${T.border}`,marginTop:16}}>
@@ -3018,11 +3074,11 @@ export default function App() {
                       <button onClick={fetchResults} style={{padding:"3px 8px",borderRadius:5,border:`1px solid ${c}33`,background:"transparent",color:c,cursor:"pointer",fontSize:10,fontWeight:700}}>🔄</button>
                     </div>
                     <div style={{overflowX:"auto",marginBottom:12}}>
-                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:400}}>
+                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,minWidth:280}}>
                         <thead>
                           <tr style={{borderBottom:`1px solid ${T.border}`}}>
-                            {["#","দল","MP","W","D","L","GF","GA","GD","PTS"].map(h=>(
-                              <th key={h} style={{padding:"7px 8px",textAlign:h==="দল"?"left":"center",fontSize:10,color:T.sub,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>{h}</th>
+                            {["#","দল","MP","W","D","L","GD","PTS"].map(h=>(
+                              <th key={h} style={{padding:"5px 4px",textAlign:h==="দল"?"left":"center",fontSize:9,color:T.sub,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -3040,24 +3096,25 @@ export default function App() {
                             const canStillQ = !allMatchesDone && maxPts>=3;
                             return (
                             <tr key={s.team} style={{borderBottom:`1px solid ${T.border}`,background:isDefinitelyQ?T.acBg:T.card,transition:"background .3s"}}>
-                              <td style={{padding:"9px 8px",textAlign:"center"}}>
-                                <div style={{width:22,height:22,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:12,background:isDefinitelyQ&&i===0?"rgba(251,191,36,.2)":isDefinitelyQ&&i===1?T.acBg:"transparent",color:isDefinitelyQ&&i===0?"#fbbf24":isDefinitelyQ&&i===1?c:T.sub,border:isDefinitelyQ?`1px solid ${i===0?"rgba(251,191,36,.4)":c+"44"}`:"none"}}>{i+1}</div>
+                              <td style={{padding:"7px 4px",textAlign:"center"}}>
+                                <div style={{width:18,height:18,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:10,background:isDefinitelyQ&&i===0?"rgba(251,191,36,.2)":isDefinitelyQ&&i===1?T.acBg:"transparent",color:isDefinitelyQ&&i===0?"#fbbf24":isDefinitelyQ&&i===1?c:T.sub,border:isDefinitelyQ?`1px solid ${i===0?"rgba(251,191,36,.4)":c+"44"}`:"none"}}>{i+1}</div>
                               </td>
-                              <td style={{padding:"9px 8px"}}>
-                                <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
-                                  <span style={{fontSize:17}}>{FLAGS[s.team]||"🏳"}</span>
-                                  <span style={{fontWeight:600,fontSize:13,color:T.text}}>{s.team}</span>
-                                  {isDefinitelyQ && i===0 && <span className="pill q-badge-yellow">🏆 1ম</span>}
-                                  {isDefinitelyQ && i===1 && <span className="pill q-badge-green">✓ Qualified</span>}
-                                  {isPossiblyQ && <span className="pill q-badge-yellow">~Q</span>}
-                                  {isDefinitelyElim && <span className="pill q-badge-red">✗ বিদায়</span>}
+                              <td style={{padding:"7px 4px"}}>
+                                <div style={{display:"flex",alignItems:"center",gap:5}}>
+                                  <span style={{fontSize:14}}>{FLAGS[s.team]||"🏳"}</span>
+                                  <div>
+                                    <span style={{fontWeight:600,fontSize:11,color:T.text}}>{s.team}</span>
+                                    {isDefinitelyQ && i===0 && <span className="pill q-badge-yellow" style={{marginLeft:4,fontSize:8}}>🏆</span>}
+                                    {isDefinitelyQ && i===1 && <span className="pill q-badge-green" style={{marginLeft:4,fontSize:8}}>✓</span>}
+                                    {isDefinitelyElim && <span className="pill q-badge-red" style={{marginLeft:4,fontSize:8}}>✗</span>}
+                                  </div>
                                 </div>
                               </td>
-                              {[s.mp,s.w,s.d,s.l,s.gf,s.ga,s.gd>0?"+"+s.gd:s.gd].map((v,vi)=>(
-                                <td key={vi} style={{padding:"9px 8px",textAlign:"center",color:vi===6?(s.gd>0?c:s.gd<0?"#ef4444":T.sub):T.text,fontWeight:vi===6?700:400}}>{v}</td>
+                              {[s.mp,s.w,s.d,s.l,s.gd>0?"+"+s.gd:s.gd].map((v,vi)=>(
+                                <td key={vi} style={{padding:"7px 4px",textAlign:"center",color:vi===4?(s.gd>0?c:s.gd<0?"#ef4444":T.sub):T.text,fontWeight:vi===4?700:400,fontSize:11}}>{v}</td>
                               ))}
-                              <td style={{padding:"9px 8px",textAlign:"center"}}>
-                                <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,color:isDefinitelyQ?c:T.text}}>{s.pts}</span>
+                              <td style={{padding:"7px 4px",textAlign:"center"}}>
+                                <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:17,color:isDefinitelyQ?c:T.text}}>{s.pts}</span>
                               </td>
                             </tr>
                             );
@@ -3904,8 +3961,8 @@ export default function App() {
 
         {/* ── SQUAD MODAL ── */}
         {squadModal && squadTeam && SQUADS[squadTeam] && createPortal(
-          <div onClick={()=>setSquadModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:10000,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(3px)"}}>
-            <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:640,maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",background:dark?"#0f1a0f":"#fff",borderRadius:"20px 20px 0 0",boxShadow:"0 -8px 40px rgba(0,0,0,.5)"}}>
+          <div onClick={()=>setSquadModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:10000,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(3px)"}} onMouseDown={()=>{ document.body.style.overflow=""; }}>
+            <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:640,maxHeight:"85vh",overflow:"hidden",display:"flex",flexDirection:"column",background:dark?"#0f1a0f":"#fff",borderRadius:"20px 20px 0 0",boxShadow:"0 -8px 40px rgba(0,0,0,.5)"}}>
               <div style={{padding:"14px 16px 10px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
                 <span style={{fontSize:36}}>{FLAGS[squadTeam]||"🏳"}</span>
                 <div style={{flex:1,minWidth:0}}>
@@ -3915,7 +3972,7 @@ export default function App() {
                 <button onClick={()=>toggleFav(squadTeam)} style={{padding:"5px 9px",borderRadius:7,border:`1px solid ${favTeam===squadTeam?"rgba(251,191,36,.5)":T.border}`,background:favTeam===squadTeam?"rgba(251,191,36,.1)":T.card,color:favTeam===squadTeam?"#fbbf24":T.sub,cursor:"pointer",fontSize:11,fontWeight:700,flexShrink:0}}>
                   {favTeam===squadTeam?"⭐ প্রিয়":"☆ Fav"}
                 </button>
-                <button onClick={()=>setSquadModal(false)} style={{width:30,height:30,borderRadius:8,border:`1px solid ${T.border}`,background:T.card,color:T.sub,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+                <button onClick={()=>{setSquadModal(false);document.body.style.overflow="";}} style={{width:30,height:30,borderRadius:8,border:`1px solid ${T.border}`,background:T.card,color:T.sub,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
               </div>
               <div style={{overflowY:"auto",padding:"12px 14px",flex:1}}>
                 {(()=>{
