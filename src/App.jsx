@@ -1796,7 +1796,7 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-6",
           max_tokens: 600,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
           system: `Search for the CURRENT live or latest score of this FIFA World Cup 2026 match and return ONLY valid JSON. No markdown. Format: {"h": homeScore, "a": awayScore, "status": "LIVE" or "FT" or "HT", "minute": currentMinute or null, "timeline": [{"minute": 23, "team": "TeamName", "player": "Player Name", "type": "goal" or "owngoal" or "penalty"}, ...]}. Include all goals in timeline array. If no goals yet, use empty array.`,
@@ -2292,18 +2292,18 @@ export default function App() {
       if (!allMatchList.trim()) { setAutoFetching(false); return; }
 
       const systemPrompt = hasLiveMatch
-        ? `You are a LIVE FIFA World Cup 2026 score tracker. Search for CURRENT live scores RIGHT NOW. Return ONLY valid JSON with NO markdown. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore, "status": "LIVE" or "HT" or "FT", "minute": currentMinute, "goals": [{"team":"home" or "away","scorer":"Name","minute":45},...],"cards": [{"team":"home" or "away","player":"Name","type":"yellow" or "red","minute":30}]}, ...}}.`
-        : `You are a FIFA World Cup 2026 score tracker. Search for final match results and return ONLY valid JSON. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore}, ...}}. For KO matches use the string ID as key (e.g. "r32-1"). Use null for no result. No markdown.`;
+        ? `You are a LIVE FIFA World Cup 2026 score tracker. Search for CURRENT live scores RIGHT NOW. Return ONLY valid JSON with NO markdown. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore, "status": "LIVE" or "HT" or "FT", "minute": currentMinute, "goals": [{"team":"home" or "away","scorer":"Name","minute":45},...],"cards": [{"team":"home" or "away","player":"Name","type":"yellow" or "red","minute":30}]}, ...}}. ALWAYS include goals array even for FT matches.`
+        : `You are a FIFA World Cup 2026 score tracker. Search for final match results and return ONLY valid JSON. Format: {"results": {"matchId": {"h": homeScore, "a": awayScore, "status": "FT", "goals": [{"team":"home" or "away","scorer":"Name","minute":45}]}, ...}}. For KO matches use the string ID as key (e.g. "r32-1"). Use null for no result. No markdown. Always include goals array.`;
 
       const userMsg = hasLiveMatch
         ? `Search for LIVE/current scores RIGHT NOW for these FIFA World Cup 2026 matches:\n${allMatchList}\n\nReturn ONLY JSON: {"results": {"1": {"h": 2, "a": 1, "status": "LIVE", "minute": 67, "goals": [{"team":"home","scorer":"Vinicius Jr","minute":23}], "cards": [{"team":"away","player":"Name","type":"yellow","minute":45}]}}}`
-        : `Search for final scores of these FIFA World Cup 2026 matches:\n${allMatchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1}, "r32-1": {"h": 1, "a": 0}}}`;
+        : `Search for final scores AND goal scorers of these FIFA World Cup 2026 matches:\n${allMatchList}\n\nReturn ONLY JSON like: {"results": {"1": {"h": 2, "a": 1, "status": "FT", "goals": [{"team":"home","scorer":"Ronaldo","minute":45}]}, "r32-1": {"h": 1, "a": 0, "status": "FT", "goals": []}}}`;
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-6",
           max_tokens: 1500,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
           system: systemPrompt,
@@ -2488,11 +2488,11 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-6",
           max_tokens: 1000,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
-          system: `You are a FIFA World Cup 2026 stats tracker. Search for the current top scorers and return ONLY valid JSON. No markdown, no explanation. Return format: {"scorers": [{"rank": 1, "name": "Player Name", "team": "Country", "goals": 3, "assists": 1, "matches": 3}, ...], "updated": "date string"}. Include top 20 scorers minimum. If the tournament hasn't started or no goals yet, return {"scorers": [], "updated": "not started"}`,
-          messages: [{ role: "user", content: "Search for FIFA World Cup 2026 top goal scorers list right now. Return JSON only." }]
+          system: `You are a FIFA World Cup 2026 stats tracker. Search the web for current top scorers of FIFA World Cup 2026 and return ONLY valid JSON with NO markdown, no explanation, no backticks. Return format exactly: {"scorers": [{"rank": 1, "name": "Player Name", "team": "Country", "goals": 3, "assists": 1, "matches": 3}, ...], "updated": "date string"}. Include top 20 scorers. If no goals yet, return {"scorers": [], "updated": "not started"}`,
+          messages: [{ role: "user", content: "Search for FIFA World Cup 2026 top goal scorers list right now in June/July 2026. Return JSON only, no markdown." }]
         })
       });
       const data = await response.json();
@@ -2570,24 +2570,25 @@ export default function App() {
     return list;
   },[grpFilter,search,favTeam]);
 
-  // Ticker: শুধু আজকের ম্যাচ
+  // Ticker: আজকের BD date এর ম্যাচ (ET time → BD date convert করে compare)
   const tickerItems = useMemo(() => {
     const now = Date.now();
-    const bd = new Date(now + 6*3600000);
+    const bdNow = new Date(now + 6*3600000);
     const mn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const today = mn[bd.getUTCMonth()] + " " + bd.getUTCDate();
+    const todayBD = mn[bdNow.getUTCMonth()] + " " + bdNow.getUTCDate();
     const items = [];
-    ALL_GROUP_FIXTURES.forEach(f => {
-      if (f.dateStr !== today) return;
+    // BD date অনুযায়ী আজকের ম্যাচ ফিল্টার
+    const todayFixtures = ALL_GROUP_FIXTURES.filter(f => bdDateStr(f.dateStr, f.etTime) === todayBD);
+    todayFixtures.forEach(f => {
       const r = results[f.id];
       const hasScore = r && r.h !== "" && r.a !== "" && !isNaN(+r.h) && !isNaN(+r.a);
-      const over = matchUTC(f.dateStr, f.etTime) + 105*60000 < now;
-      const isLive = matchUTC(f.dateStr, f.etTime) < now && !over;
+      const matchMs = matchUTC(f.dateStr, f.etTime);
+      const over = matchMs + 110*60000 < now;
+      const isLive = matchMs <= now && !over;
       if (hasScore) {
-        const statusLabel = isLive ? (r.minute ? `🔴 ${r.minute}` + "'" : "🔴 LIVE") : "FT";
+        const statusLabel = over ? "FT" : isLive ? (r.minute ? `🔴 ${r.minute}'` : "🔴 LIVE") : "⏳";
         items.push(`${FLAGS[f.home]||"🏳"} ${f.home} ${r.h}–${r.a} ${f.away} ${FLAGS[f.away]||"🏳"} · ${statusLabel}`);
       } else {
-        const matchMs = matchUTC(f.dateStr, f.etTime);
         const diffMs = matchMs - now;
         let countdown = "";
         if (diffMs > 0) {
@@ -2599,6 +2600,16 @@ export default function App() {
         items.push(`⏳ ${FLAGS[f.home]||"🏳"} ${f.home} vs ${f.away} ${FLAGS[f.away]||"🏳"} · ${bdTime(f.etTime)} BD${countdown ? " · " + countdown : ""}`);
       }
     });
+    // আজ কোনো ম্যাচ না থাকলে পরের ২৪ঘণ্টার ম্যাচ দেখাও
+    if (items.length === 0) {
+      const next24 = ALL_GROUP_FIXTURES.filter(f => {
+        const ms = matchUTC(f.dateStr, f.etTime);
+        return ms > now && ms < now + 24*3600000;
+      });
+      next24.slice(0,6).forEach(f => {
+        items.push(`🔜 ${FLAGS[f.home]||"🏳"} ${f.home} vs ${f.away} ${FLAGS[f.away]||"🏳"} · ${bdDateStr(f.dateStr,f.etTime)} · ${bdTime(f.etTime)} BD`);
+      });
+    }
     return items.length > 0 ? items : ["⚽ FIFA World Cup 2026 · USA · CANADA · MEXICO · Jun 11 – Jul 19", "🔴 সব সময় বাংলাদেশ সময় (GMT+6) · Auto-update চালু"];
   }, [results]);
 
@@ -2811,47 +2822,98 @@ export default function App() {
             <div className="fi">
               {/* ── LIVE TRACKER (fixtures tab এ সবার আগে) ── */}
               {(()=>{
+                const nowMs = Date.now();
+                // শুধু actual kickoff হয়েছে এমন ম্যাচ — 0 থেকে 115 মিনিটের মধ্যে
                 const liveNow = ALL_GROUP_FIXTURES.filter(f=>{
                   const utc = matchUTC(f.dateStr,f.etTime);
-                  const el = Date.now()-utc;
-                  return el>-5*60*1000 && el<115*60*1000;
+                  const el = nowMs - utc;
+                  return el >= 0 && el < 115*60*1000;
                 });
                 if(!liveNow.length) return null;
                 return (
-                  <div style={{marginBottom:16,borderRadius:14,overflow:"hidden",border:"2px solid #ef4444",boxShadow:"0 0 20px rgba(239,68,68,.2)",animation:"fadeIn .3s ease"}}>
-                    <div style={{background:"rgba(239,68,68,.15)",padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{width:8,height:8,borderRadius:"50%",background:"#ef4444",display:"inline-block",animation:"pulse 1s infinite"}}/>
-                      <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:"#ef4444"}}>🔴 LIVE TRACKER</span>
-                      <span style={{fontSize:11,color:T.sub,marginLeft:"auto"}}>{liveNow.length}টি ম্যাচ চলছে</span>
+                  <div style={{marginBottom:16,borderRadius:14,overflow:"hidden",border:"2px solid #ef4444",boxShadow:"0 0 20px rgba(239,68,68,.25)",animation:"fadeIn .3s ease"}}>
+                    {/* Header */}
+                    <div style={{background:"linear-gradient(90deg,rgba(239,68,68,.2),rgba(239,68,68,.08))",padding:"8px 14px",display:"flex",alignItems:"center",gap:8,borderBottom:"1px solid rgba(239,68,68,.3)"}}>
+                      <span style={{width:9,height:9,borderRadius:"50%",background:"#ef4444",display:"inline-block",animation:"pulse 1s infinite",boxShadow:"0 0 8px #ef444488"}}/>
+                      <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:15,letterSpacing:2,color:"#ef4444"}}>🔴 LIVE TRACKER</span>
+                      <span style={{fontSize:10,color:"#ef4444",fontWeight:700,marginLeft:4}}>{liveNow.length}টি ম্যাচ চলছে</span>
+                      <span style={{fontSize:10,color:T.sub,marginLeft:"auto"}}>Auto-update ৩০ সেকেন্ড</span>
                     </div>
-                    <div style={{background:T.card,padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
+                    {/* Match cards */}
+                    <div style={{background:T.card,padding:"10px 14px",display:"flex",flexDirection:"column",gap:10}}>
                       {liveNow.map(f=>{
                         const r=results[f.id];
                         const hasScore=r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);
                         const utc=matchUTC(f.dateStr,f.etTime);
-                        const el=Date.now()-utc;
-                        const minElapsed=Math.floor(el/60000);
-                        const isActuallyLive=el>0&&el<105*60*1000;
+                        const elMs=nowMs-utc;
+                        const minElapsed=Math.floor(elMs/60000);
+                        const isHT = r?.status==="HT";
+                        const minuteLabel = isHT ? "HT" : (r?.minute ? `${r.minute}'` : `${minElapsed}'`);
+                        // goals sorted by minute
+                        const goals = Array.isArray(r?.goals) ? [...r.goals].sort((a,b)=>(a.minute||0)-(b.minute||0)) : [];
+                        const homeGoals = goals.filter(g=>g.team==="home");
+                        const awayGoals = goals.filter(g=>g.team==="away");
                         return (
-                          <div key={f.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"rgba(239,68,68,.04)",border:"1px solid rgba(239,68,68,.25)",borderRadius:10}}>
-                            <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end",minWidth:0}}>
-                              <span style={{fontWeight:700,fontSize:13,color:T.text,textAlign:"right",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>{f.home}</span>
-                              <span style={{fontSize:24,flexShrink:0}}>{FLAGS[f.home]||"🏳"}</span>
-                            </div>
-                            <div style={{textAlign:"center",minWidth:80,flexShrink:0}}>
-                              {hasScore ? (
-                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:24,color:"#ef4444",lineHeight:1}}>{r.h}–{r.a}</div>
-                              ) : (
-                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,color:"#ef4444",lineHeight:1}}>VS</div>
-                              )}
-                              <div style={{fontSize:9,color:"#ef4444",fontWeight:700}}>
-                                {isActuallyLive ? (r?.minute ? `🔴 ${r.minute}'` : `🔴 ~${minElapsed}'`) : "⏳ শীঘ্রই"}
+                          <div key={f.id} style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(239,68,68,.35)",background:"rgba(239,68,68,.03)"}}>
+                            {/* Score row */}
+                            <div style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px"}}>
+                              {/* Home team */}
+                              <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end",minWidth:0}}>
+                                <div style={{textAlign:"right",minWidth:0}}>
+                                  <div style={{fontWeight:800,fontSize:14,color:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{f.home}</div>
+                                  {homeGoals.length>0&&<div style={{fontSize:9,color:"#ef4444",marginTop:2,textAlign:"right"}}>{homeGoals.map(g=>`⚽${g.minute}'`).join(" ")}</div>}
+                                </div>
+                                <span style={{fontSize:28,flexShrink:0}}>{FLAGS[f.home]||"🏳"}</span>
+                              </div>
+                              {/* Score box */}
+                              <div style={{textAlign:"center",minWidth:88,flexShrink:0,padding:"6px 10px",background:isHT?"rgba(251,191,36,.12)":"rgba(239,68,68,.1)",borderRadius:10,border:isHT?"1px solid rgba(251,191,36,.4)":"1px solid rgba(239,68,68,.35)"}}>
+                                {hasScore ? (
+                                  <>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:30,color:isHT?"#fbbf24":"#ef4444",lineHeight:1,letterSpacing:2}}>{r.h} – {r.a}</div>
+                                    <div style={{fontSize:10,fontWeight:800,color:isHT?"#fbbf24":"#ef4444",letterSpacing:1,marginTop:2}}>
+                                      {isHT ? "⏸ HT" : `🔴 ${minuteLabel}`}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:22,color:"#ef4444",lineHeight:1}}>LIVE</div>
+                                    <div style={{fontSize:10,color:"#ef4444",fontWeight:700}}>🔴 {minuteLabel}</div>
+                                  </>
+                                )}
+                              </div>
+                              {/* Away team */}
+                              <div style={{flex:1,display:"flex",alignItems:"center",gap:6,minWidth:0}}>
+                                <span style={{fontSize:28,flexShrink:0}}>{FLAGS[f.away]||"🏳"}</span>
+                                <div style={{minWidth:0}}>
+                                  <div style={{fontWeight:800,fontSize:14,color:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{f.away}</div>
+                                  {awayGoals.length>0&&<div style={{fontSize:9,color:"#ef4444",marginTop:2}}>{awayGoals.map(g=>`⚽${g.minute}'`).join(" ")}</div>}
+                                </div>
                               </div>
                             </div>
-                            <div style={{flex:1,display:"flex",alignItems:"center",gap:6,minWidth:0}}>
-                              <span style={{fontSize:24,flexShrink:0}}>{FLAGS[f.away]||"🏳"}</span>
-                              <span style={{fontWeight:700,fontSize:13,color:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>{f.away}</span>
-                            </div>
+                            {/* Goal timeline */}
+                            {goals.length > 0 && (
+                              <div style={{padding:"6px 14px 10px",borderTop:"1px solid rgba(239,68,68,.15)",display:"flex",flexDirection:"column",gap:4}}>
+                                <div style={{fontSize:9,color:"#ef4444",fontWeight:700,letterSpacing:1,marginBottom:2}}>GOAL TIMELINE</div>
+                                {goals.map((g,gi)=>(
+                                  <div key={gi} style={{display:"flex",alignItems:"center",gap:6,fontSize:11}}>
+                                    <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:"#ef4444",minWidth:28,textAlign:"right"}}>{g.minute||"?"}'</span>
+                                    <span>⚽</span>
+                                    <span style={{fontWeight:700,color:T.text,flex:1}}>{g.scorer||g.player||"?"}</span>
+                                    <span style={{fontSize:10,color:T.sub}}>{g.team==="home"?f.home:f.away}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {/* Cards if any */}
+                            {Array.isArray(r?.cards)&&r.cards.length>0&&(
+                              <div style={{padding:"4px 14px 8px",borderTop:"1px solid rgba(239,68,68,.1)",display:"flex",flexWrap:"wrap",gap:5}}>
+                                {r.cards.map((cd,ci)=>(
+                                  <span key={ci} style={{fontSize:10,color:T.sub,background:cd.type==="red"?"rgba(239,68,68,.1)":"rgba(251,191,36,.1)",border:`1px solid ${cd.type==="red"?"rgba(239,68,68,.3)":"rgba(251,191,36,.3)"}`,borderRadius:5,padding:"2px 7px"}}>
+                                    {cd.type==="red"?"🟥":"🟨"} {cd.player} {cd.minute}'
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -3081,7 +3143,7 @@ export default function App() {
 
                 // Also check if any KO match has a result (tournament started)
                 const anyKOResult = KNOCKOUT_ROUNDS.some(round=>
-                  round.matches.some(m=>{ const r=results[m.id]; return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a); })
+                  round.matches.some(m=>{ const r=koResults[m.id]; return r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a); })
                 );
 
                 // Show KO if group stage done, or any KO result, or if current date >= Jun 28 2026
@@ -3139,11 +3201,11 @@ export default function App() {
                   if(wm) return grpTeams[wm[1]]?.[0]||label;
                   const rm=label.match(/^Runner-up ([A-L])$/);
                   if(rm) return grpTeams[rm[1]]?.[1]||label;
-                  // W R32-x, W R16-x etc — check results
+                  // W R32-x, W R16-x etc — check koResults
                   const wko=label.match(/^W (r32|r16|qf|sf)-(\d+)$/i);
                   if(wko){
                     const kid=wko[1].toLowerCase()+"-"+wko[2];
-                    const kr=results[kid];
+                    const kr=koResults[kid];
                     if(kr&&kr.h!==""&&kr.a!==""&&!isNaN(+kr.h)&&!isNaN(+kr.a)){
                       const round=KNOCKOUT_ROUNDS.find(r=>r.matches.some(m=>m.id===kid));
                       const match=round?.matches.find(m=>m.id===kid);
@@ -3173,7 +3235,7 @@ export default function App() {
                     {round.matches.map((m,mi)=>{
                       const homeTeam=resolveTeam(m.home);
                       const awayTeam=resolveTeam(m.away);
-                      const r2=results[m.id];
+                      const r2=koResults[m.id];
                       const hasScore2=r2&&r2.h!==""&&r2.a!==""&&!isNaN(+r2.h)&&!isNaN(+r2.a);
                       const now2=Date.now();
                       const matchOver2=matchUTC(m.date,m.etTime)+105*60000<now2;
