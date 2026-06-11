@@ -2163,6 +2163,13 @@ export default function App() {
   const [scorers, setScorers] = useState([]);
   const [scorersLoading, setScorersLoading] = useState(false);
   const [scorersFetched, setScorersFetched] = useState(false);
+  // Feature: Match Predictions
+  const [predictions, setPredictions] = useState(() => { try { return JSON.parse(localStorage.getItem("wc26_predictions")||"{}"); } catch { return {}; } });
+  const [predModal, setPredModal] = useState(null);
+  const [predHome, setPredHome] = useState("");
+  const [predAway, setPredAway] = useState("");
+  // Feature: Share Card modal
+  const [shareCardFix, setShareCardFix] = useState(null);
   // Feature: Visitor Counter
   const [visitorCount, setVisitorCount] = useState(null);
   // Feature: PWA + Notifications
@@ -2409,6 +2416,36 @@ export default function App() {
 
   function setResult(id, h, a) { setResults(p => ({...p,[id]:{h,a}})); }
   function toggleFav(team) { setFavTeam(p => p===team ? null : team); }
+
+  function savePrediction(fixId, h, a) {
+    setPredictions(prev => {
+      const next = {...prev, [fixId]: {h, a, ts: Date.now()}};
+      try { localStorage.setItem("wc26_predictions", JSON.stringify(next)); } catch {}
+      return next;
+    });
+    setPredModal(null); setPredHome(""); setPredAway("");
+  }
+
+  function getPredResult(fixId) {
+    const pred = predictions[fixId];
+    const actual = results[fixId];
+    if (!pred || !actual || actual.h==="" || actual.a==="") return null;
+    const ph=+pred.h, pa=+pred.a, ah=+actual.h, aa=+actual.a;
+    if (ph===ah && pa===aa) return "exact";
+    const predWinner = ph>pa?"home":ph<pa?"away":"draw";
+    const actualWinner = ah>aa?"home":ah<aa?"away":"draw";
+    if (predWinner===actualWinner) return "result";
+    return "wrong";
+  }
+
+  const predStats = useMemo(() => {
+    let exact=0, result=0, wrong=0, total=0;
+    Object.keys(predictions).forEach(id => {
+      const r = getPredResult(+id);
+      if (r) { total++; if(r==="exact") exact++; else if(r==="result") result++; else wrong++; }
+    });
+    return {exact, result, wrong, total};
+  }, [predictions, results]);
 
   function toggleDark() {
     setDarkAnimating(true);
@@ -2845,33 +2882,35 @@ export default function App() {
                       const hasScore=r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);
                       const matchOver=matchUTC(fix.dateStr,fix.etTime)+105*60000<Date.now();
                       return (
-                        <div key={fix.id} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:fav?"rgba(251,191,36,.06)":T.acBg,border:`1.5px solid ${fav?"rgba(251,191,36,.35)":c+"33"}`,borderRadius:12,animation:`slideUp .3s ease ${idx*0.07}s both`,position:"relative",overflow:"hidden"}}>
+                        <div key={fix.id} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 12px",background:fav?"rgba(251,191,36,.06)":T.acBg,border:`1.5px solid ${fav?"rgba(251,191,36,.35)":c+"33"}`,borderRadius:12,animation:`slideUp .3s ease ${idx*0.07}s both`,position:"relative",overflow:"hidden"}}>
                           {fav && <div style={{position:"absolute",top:0,left:0,width:"100%",height:2,background:"linear-gradient(90deg,#fbbf24,transparent)"}}/>}
-                          <div style={{display:"flex",alignItems:"center",gap:8,flex:1,justifyContent:"flex-end"}}>
-                            <span style={{fontWeight:700,fontSize:13,color:fav&&fix.home===favTeam?"#fbbf24":T.text,textAlign:"right",lineHeight:1.2,wordBreak:"break-word"}}>{fix.home}</span>
-                            <span style={{fontSize:28,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
+                          <div style={{display:"flex",alignItems:"center",gap:6,flex:"0 1 38%",justifyContent:"flex-end"}}>
+                            <span style={{fontWeight:700,fontSize:fix.home.length>10?11:13,color:fav&&fix.home===favTeam?"#fbbf24":T.text,textAlign:"right",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>{fix.home}</span>
+                            <span style={{fontSize:26,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
                           </div>
-                          <div style={{textAlign:"center",minWidth:100,flexShrink:0}}>
+                          <div style={{textAlign:"center",minWidth:90,flexShrink:0}}>
                             {hasScore ? (
-                              <div style={{padding:"6px 14px",background:"rgba(16,185,129,.15)",border:`1.5px solid ${c}55`,borderRadius:10}}>
-                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:26,color:c,lineHeight:1}}>{r.h} – {r.a}</div>
+                              <div style={{padding:"5px 10px",background:"rgba(16,185,129,.15)",border:`1.5px solid ${c}55`,borderRadius:10}}>
+                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:24,color:c,lineHeight:1}}>{r.h} – {r.a}</div>
                                 <div style={{fontSize:9,color:matchOver?T.sub:"#ef4444",fontWeight:800,letterSpacing:1}}>{r.status==="LIVE"?"🔴 LIVE":r.status==="FT"?"FULL TIME":matchOver?"FULL TIME":"🔴 LIVE"}</div>
                               </div>
                             ) : (
                               <div>
                                 <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,color:fav?"#fbbf24":c,lineHeight:1.2}}>{bdTime(fix.etTime)}</div>
-                                <div style={{fontSize:9,color:T.sub,marginBottom:4}}>BD সময় · Grp {fix.grp}</div>
+                                <div style={{fontSize:9,color:T.sub,marginBottom:2}}>BD সময় · Grp {fix.grp}</div>
                               </div>
                             )}
                           </div>
-                          <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-                            <span style={{fontSize:28,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
-                            <span style={{fontWeight:700,fontSize:13,color:fav&&fix.away===favTeam?"#fbbf24":T.text,lineHeight:1.2,wordBreak:"break-word"}}>{fix.away}</span>
+                          <div style={{display:"flex",alignItems:"center",gap:6,flex:"0 1 38%"}}>
+                            <span style={{fontSize:26,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
+                            <span style={{fontWeight:700,fontSize:fix.away.length>10?11:13,color:fav&&fix.away===favTeam?"#fbbf24":T.text,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>{fix.away}</span>
                           </div>
                           <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-                            <button onClick={()=>shareMatch(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}}>📤</button>
+                            <button onClick={()=>setShareCardFix(fix)} title="শেয়ার কার্ড" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.65}}>🖼️</button>
                             <button onClick={()=>requestNotification(fix,handleNotifToggle)} title={notifScheduled[fix.id]?"রিমাইন্ডার বাতিল":"১০ মিনিট আগে reminder"} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:notifScheduled[fix.id]?1:.5,transition:"all .2s"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
-                            <button onClick={()=>fetchH2H(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}} title="H2H">⚔️</button>                          </div>
+                            <button onClick={()=>fetchH2H(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}} title="H2H">⚔️</button>
+                            {!results[fix.id]?.h && <button onClick={()=>{setPredModal(fix);setPredHome(predictions[fix.id]?.h||"");setPredAway(predictions[fix.id]?.a||"");}} title="Predict" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:predictions[fix.id]?1:.5}}>🎯</button>}
+                          </div>
                         </div>
                       );
                     })}
@@ -2926,7 +2965,18 @@ export default function App() {
               </div>
               <div style={{fontSize:11,color:T.sub,marginBottom:10}}>{filteredFix.length}টি ম্যাচ{search&&<span style={{color:c}}> · "{search}"</span>}</div>
 
-              {/* ── FIXTURE TABLE ── */}
+              {/* Prediction Stats Bar */}
+              {predStats.total > 0 && (
+                <div style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:T.card,border:`1px solid #a78bfa33`,borderRadius:10,marginBottom:12,flexWrap:"wrap"}}>
+                  <span style={{fontSize:12,color:"#a78bfa",fontWeight:700}}>🎯 আমার Predictions</span>
+                  <span style={{fontSize:11,color:T.sub}}>{predStats.total}টি</span>
+                  <div style={{display:"flex",gap:6,marginLeft:"auto",flexWrap:"wrap"}}>
+                    {predStats.exact>0&&<span style={{fontSize:11,fontWeight:700,color:"#10b981",background:"rgba(16,185,129,.1)",padding:"2px 8px",borderRadius:999}}>✅ {predStats.exact} সঠিক</span>}
+                    {predStats.result>0&&<span style={{fontSize:11,fontWeight:700,color:"#f59e0b",background:"rgba(245,158,11,.1)",padding:"2px 8px",borderRadius:999}}>🟡 {predStats.result} ফলাফল</span>}
+                    {predStats.wrong>0&&<span style={{fontSize:11,fontWeight:700,color:"#ef4444",background:"rgba(239,68,68,.1)",padding:"2px 8px",borderRadius:999}}>❌ {predStats.wrong} ভুল</span>}
+                  </div>
+                </div>
+              )}
               {fixturesByDate.map(([dateStr, fixes]) => {
                 const now2 = Date.now();
                 const mn2 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -2959,6 +3009,9 @@ export default function App() {
                       const isLive2 = !matchOver2 && matchUTC(fix.dateStr,fix.etTime) < Date.now();
                       const {time:bdT2,label:bdL2} = etToBD(fix.etTime);
                       const timeStr2 = bdL2+" "+bdT2;
+                      const myPred = predictions[fix.id];
+                      const predRes = getPredResult(fix.id);
+                      const predColor = predRes==="exact"?"#10b981":predRes==="result"?"#f59e0b":predRes==="wrong"?"#ef4444":null;
                       return (
                         <div key={fix.id} style={{
                           borderTop:`1px solid ${T.border}44`,
@@ -2987,16 +3040,20 @@ export default function App() {
                                       ))}
                                     </div>
                                   )}
+                                  {/* Prediction result badge */}
+                                  {predRes && <div style={{fontSize:7,fontWeight:800,color:predColor,marginTop:2}}>{predRes==="exact"?"✅ সঠিক!":predRes==="result"?"🟡 ফলাফল ঠিক":predRes==="wrong"?"❌ ভুল":""} {myPred&&`(${myPred.h}–${myPred.a})`}</div>}
                                 </div>
                               ) : (
                                 <div style={{padding:"3px 0",borderRadius:6,background:isFav2?"rgba(251,191,36,.1)":T.acBg,border:`1px solid ${isFav2?"rgba(251,191,36,.25)":c+"22"}`}}>
                                   <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:11,color:isFav2?"#fbbf24":c,lineHeight:1.3}}>{timeStr2}</div>
                                   <div style={{fontSize:7,color:T.dim}}>BD সময়</div>
+                                  {myPred && <div style={{fontSize:7,color:"#a78bfa",fontWeight:700,marginTop:1}}>🎯 {myPred.h}–{myPred.a}</div>}
                                 </div>
                               )}
                               <div style={{display:"flex",justifyContent:"center",gap:3,marginTop:3}}>
-                                <button onClick={()=>shareMatch(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:9,opacity:.45,padding:0}}>📤</button>
+                                <button onClick={()=>setShareCardFix(fix)} title="Card" style={{background:"none",border:"none",cursor:"pointer",fontSize:9,opacity:.45,padding:0}}>🖼️</button>
                                 <button onClick={()=>requestNotification(fix,handleNotifToggle)} style={{background:"none",border:"none",cursor:"pointer",fontSize:9,opacity:notifScheduled[fix.id]?1:.4,padding:0}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
+                                {!hasScore2 && <button onClick={()=>{setPredModal(fix);setPredHome(predictions[fix.id]?.h||"");setPredAway(predictions[fix.id]?.a||"");}} style={{background:"none",border:"none",cursor:"pointer",fontSize:9,opacity:predictions[fix.id]?1:.4,padding:0}}>🎯</button>}
                               </div>
                             </div>
                             {/* AWAY */}
@@ -4117,6 +4174,101 @@ export default function App() {
         </div>
 
       </div>
+
+        {/* ── PREDICTION MODAL ── */}
+        {predModal && createPortal(
+          <div onClick={()=>setPredModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)",padding:"0 16px"}}>
+            <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:360,background:dark?"#0f1a0f":"#fff",borderRadius:20,padding:"22px 20px",boxShadow:"0 -8px 40px rgba(0,0,0,.5)",border:`1px solid ${c}33`}}>
+              <div style={{textAlign:"center",marginBottom:16}}>
+                <div style={{fontSize:28,marginBottom:4}}>🎯</div>
+                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:18,letterSpacing:2,color:c}}>আপনার Prediction</div>
+                <div style={{fontSize:12,color:T.sub,marginTop:4}}>{predModal.home} vs {predModal.away}</div>
+                <div style={{fontSize:11,color:T.dim}}>{bdTime(predModal.etTime)} · {bdDateStr(predModal.dateStr,predModal.etTime)}</div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+                <div style={{flex:1,textAlign:"center"}}>
+                  <div style={{fontSize:20,marginBottom:4}}>{FLAGS[predModal.home]||"🏳"}</div>
+                  <div style={{fontSize:11,fontWeight:700,color:T.text,marginBottom:8}}>{predModal.home}</div>
+                  <input type="number" min="0" max="20" value={predHome} onChange={e=>setPredHome(e.target.value)}
+                    style={{width:60,height:50,textAlign:"center",fontSize:24,fontFamily:"'Bebas Neue',cursive",fontWeight:700,color:c,background:T.acBg,border:`2px solid ${c}55`,borderRadius:12,outline:"none",color:c}}/>
+                </div>
+                <div style={{fontSize:16,color:T.sub,fontWeight:700,paddingTop:20}}>–</div>
+                <div style={{flex:1,textAlign:"center"}}>
+                  <div style={{fontSize:20,marginBottom:4}}>{FLAGS[predModal.away]||"🏳"}</div>
+                  <div style={{fontSize:11,fontWeight:700,color:T.text,marginBottom:8}}>{predModal.away}</div>
+                  <input type="number" min="0" max="20" value={predAway} onChange={e=>setPredAway(e.target.value)}
+                    style={{width:60,height:50,textAlign:"center",fontSize:24,fontFamily:"'Bebas Neue',cursive",fontWeight:700,color:c,background:T.acBg,border:`2px solid ${c}55`,borderRadius:12,outline:"none",color:c}}/>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setPredModal(null)} style={{flex:1,padding:"11px 0",borderRadius:10,border:`1px solid ${T.border}`,background:T.card,color:T.sub,cursor:"pointer",fontSize:13,fontWeight:600}}>বাতিল</button>
+                <button onClick={()=>{ if(predHome===""||predAway==="") return; savePrediction(predModal.id,predHome,predAway); }}
+                  style={{flex:2,padding:"11px 0",borderRadius:10,border:"none",background:c,color:"#fff",cursor:"pointer",fontSize:14,fontWeight:700,letterSpacing:.5,boxShadow:`0 4px 14px ${c}44`}}>
+                  ✅ সেভ করুন
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* ── SHARE CARD MODAL ── */}
+        {shareCardFix && createPortal(
+          <div onClick={()=>setShareCardFix(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:10002,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(6px)",padding:"0 16px"}}>
+            <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:360}}>
+              {/* The card itself */}
+              <div id="share-card" style={{background:`linear-gradient(135deg,#064e3b,#065f46 60%,#000e05)`,borderRadius:20,padding:"24px 20px",border:`1px solid ${c}44`,boxShadow:"0 20px 60px rgba(0,0,0,.6)",textAlign:"center"}}>
+                <div style={{fontSize:10,color:"rgba(255,255,255,.5)",letterSpacing:3,fontWeight:700,marginBottom:14}}>FIFA WORLD CUP 2026</div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:14,marginBottom:14}}>
+                  <div style={{textAlign:"center"}}>
+                    <div style={{fontSize:40}}>{FLAGS[shareCardFix.home]||"🏳"}</div>
+                    <div style={{fontSize:13,fontWeight:800,color:"#fff",marginTop:5,lineHeight:1.2}}>{shareCardFix.home}</div>
+                  </div>
+                  <div style={{textAlign:"center"}}>
+                    {results[shareCardFix.id]?.h!=="" && results[shareCardFix.id]?.h!==undefined ? (
+                      <div>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:36,color:c,lineHeight:1}}>{results[shareCardFix.id].h} – {results[shareCardFix.id].a}</div>
+                        <div style={{fontSize:9,color:"rgba(255,255,255,.6)",marginTop:2}}>FULL TIME</div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,color:c}}>{bdTime(shareCardFix.etTime)}</div>
+                        <div style={{fontSize:9,color:"rgba(255,255,255,.5)"}}>BD সময়</div>
+                      </div>
+                    )}
+                    <div style={{fontSize:9,color:"rgba(255,255,255,.4)",marginTop:4}}>Grp {shareCardFix.grp} · {bdDateStr(shareCardFix.dateStr,shareCardFix.etTime)} 2026</div>
+                  </div>
+                  <div style={{textAlign:"center"}}>
+                    <div style={{fontSize:40}}>{FLAGS[shareCardFix.away]||"🏳"}</div>
+                    <div style={{fontSize:13,fontWeight:800,color:"#fff",marginTop:5,lineHeight:1.2}}>{shareCardFix.away}</div>
+                  </div>
+                </div>
+                {predictions[shareCardFix.id] && (
+                  <div style={{background:"rgba(255,255,255,.08)",borderRadius:10,padding:"8px 12px",marginBottom:10}}>
+                    <div style={{fontSize:9,color:"rgba(255,255,255,.5)",marginBottom:4}}>আমার Prediction</div>
+                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:18,color:"#a78bfa"}}>{predictions[shareCardFix.id].h} – {predictions[shareCardFix.id].a}</div>
+                  </div>
+                )}
+                <div style={{fontSize:9,color:"rgba(255,255,255,.3)",marginTop:8}}>#FIFAWorldCup2026 #Bangladesh</div>
+              </div>
+              <div style={{display:"flex",gap:8,marginTop:12}}>
+                <button onClick={()=>setShareCardFix(null)} style={{flex:1,padding:"11px 0",borderRadius:10,border:`1px solid rgba(255,255,255,.15)`,background:"rgba(255,255,255,.08)",color:"rgba(255,255,255,.7)",cursor:"pointer",fontSize:13}}>বন্ধ</button>
+                <button onClick={()=>{
+                  const fix=shareCardFix;
+                  const r=results[fix.id];
+                  const hasScore=r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);
+                  const myP=predictions[fix.id];
+                  const text=`⚽ FIFA World Cup 2026\n${FLAGS[fix.home]||""} ${fix.home} vs ${fix.away} ${FLAGS[fix.away]||""}\n📅 ${bdDateStr(fix.dateStr,fix.etTime)} 2026 | ${bdTime(fix.etTime)} BD সময়\n${hasScore?`📊 স্কোর: ${r.h}–${r.a}`:""}\n${myP?`🎯 আমার Prediction: ${myP.h}–${myP.a}`:""}\n📍 ${fix.venue.split(",")[0]}\n#FIFAWorldCup2026`;
+                  if(navigator.share)navigator.share({title:"FIFA WC 2026",text});
+                  else navigator.clipboard.writeText(text).then(()=>alert("ক্লিপবোর্ডে কপি হয়েছে!"));
+                }} style={{flex:2,padding:"11px 0",borderRadius:10,border:"none",background:c,color:"#fff",cursor:"pointer",fontSize:14,fontWeight:700}}>
+                  📤 শেয়ার করুন
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
         {/* ── SQUAD MODAL ── */}
         {squadModal && squadTeam && SQUADS[squadTeam] && createPortal(
