@@ -302,7 +302,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Santiago Gimenez",club:"AC Milan"},
     {num:19,pos:"FWD",name:"Julian Quiñones",club:"Al Qadsiah"},
     {num:20,pos:"FWD",name:"Cesar Huerta",club:"Anderlecht"},
-    {num:21,pos:"FWD",name:"German Berterame",club:"Inter Miami"},,
+    {num:21,pos:"FWD",name:"German Berterame",club:"Inter Miami"},
     {num:22,pos:"MID",name:"Erick Gutierrez",club:"PSV Eindhoven"},
     {num:24,pos:"DEF",name:"Jorge Mere",club:"Cologne"},
     {num:25,pos:"FWD",name:"Rogelio Funes Mori",club:"Chivas"},
@@ -328,7 +328,7 @@ const SQUADS={
     {num:13,pos:"FWD",name:"Evidence Makgopa",club:"Orlando Pirates"},
     {num:19,pos:"FWD",name:"Iqraam Rayners",club:"Mamelodi Sundowns"},
     {num:20,pos:"FWD",name:"Relebohile Mofokeng",club:"Orlando Pirates"},
-    {num:21,pos:"FWD",name:"Elias Mokwana",club:"Mamelodi Sundowns"},,
+    {num:21,pos:"FWD",name:"Elias Mokwana",club:"Mamelodi Sundowns"},
     {num:22,pos:"FWD",name:"Teboho Mokoena",club:"Mamelodi Sundowns"},
     {num:24,pos:"DEF",name:"Thapelo Morena",club:"Mamelodi Sundowns"},
     {num:25,pos:"FWD",name:"Victor Letsoalo",club:"Kaizer Chiefs"},
@@ -358,7 +358,7 @@ const SQUADS={
     {num:20,pos:"MID",name:"Yang Hyun-jun",club:"Celtic"},
     {num:9,pos:"FWD",name:"Cho Gue-sung",club:"Midtjylland"},
     {num:22,pos:"FWD",name:"Oh Hyeon-kyu",club:"Besiktas"},
-    {num:23,pos:"FWD",name:"Um Ji-sung",club:"Swansea City"},,
+    {num:23,pos:"FWD",name:"Um Ji-sung",club:"Swansea City"},
     {num:24,pos:"FWD",name:"Oh Hyeon-kyu",club:"Besiktas"},
     {num:25,pos:"FWD",name:"Um Ji-sung",club:"Swansea City"}]},
   "Czech Republic":{coach:"Miroslav Koubek",players:[
@@ -440,7 +440,7 @@ const SQUADS={
     {num:15,pos:"FWD",name:"Liam Millar",club:"Mainz"},
     {num:20,pos:"FWD",name:"Tani Oluwaseyi",club:"Villarreal"},
     {num:21,pos:"FWD",name:"Jacen Russell-Rowe",club:"Columbus Crew"},
-    {num:22,pos:"FWD",name:"Raheem Edwards",club:"LAFC"},,
+    {num:22,pos:"FWD",name:"Raheem Edwards",club:"LAFC"},
     {num:23,pos:"FWD",name:"Tani Oluwaseyi",club:"Villarreal"},
     {num:24,pos:"FWD",name:"Jacen Russell-Rowe",club:"Columbus Crew"},
     {num:25,pos:"FWD",name:"Raheem Edwards",club:"LAFC"},
@@ -469,7 +469,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Mohammed Muntari",club:"Al Gharafa"},
     {num:20,pos:"FWD",name:"Hassan Al-Haydos",club:"Al Sadd"},
     {num:21,pos:"FWD",name:"Edmilson Junior",club:"Al Duhail"},
-    {num:22,pos:"FWD",name:"Tahsin Mohammed",club:"Al Duhail"},,
+    {num:22,pos:"FWD",name:"Tahsin Mohammed",club:"Al Duhail"},
     {num:25,pos:"MID",name:"Sultan Al-Braik",club:"Al Gharafa"},
     {num:26,pos:"FWD",name:"Yusuf Abdurisag",club:"Al Shahania"}]},
   Switzerland:{coach:"Murat Yakin",players:[
@@ -497,7 +497,7 @@ const SQUADS={
     {num:9,pos:"FWD",name:"Zeki Amdouni",club:"Burnley"},
     {num:23,pos:"FWD",name:"Dan Ndoye",club:"Nottingham Forest"},
     {num:24,pos:"FWD",name:"Noah Okafor",club:"Leeds"},
-    {num:25,pos:"FWD",name:"Cedric Itten",club:"Fortuna Düsseldorf"},,
+    {num:25,pos:"FWD",name:"Cedric Itten",club:"Fortuna Düsseldorf"},
     {num:26,pos:"FWD",name:"Kwadwo Duah",club:"Lugano"}]},
   // ── GROUP C ──
   Brazil:{coach:"Carlo Ancelotti",players:[
@@ -553,7 +553,7 @@ const SQUADS={
     {num:21,pos:"FWD",name:"Josue Casimir",club:"Auxerre"},
     {num:22,pos:"FWD",name:"Ruben Providence",club:"Almere"},
     {num:24,pos:"FWD",name:"Lenny Joseph",club:"Ferencváros"},
-    {num:25,pos:"FWD",name:"Don Deedson Louicius",club:"FC Dallas"},,
+    {num:25,pos:"FWD",name:"Don Deedson Louicius",club:"FC Dallas"},
     {num:26,pos:"FWD",name:"Do Amado",club:"Clermont Foot"}]},
   Morocco:{coach:"Mohamed Ouahbi",players:[
     {num:1,pos:"GK",name:"Yassine Bounou",club:"Al Hilal"},
@@ -576,12 +576,11 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Soufiane Rahimi",club:"Al Ain"},
     {num:19,pos:"FWD",name:"Abde Ezzalzouli",club:"Osasuna"},
     {num:20,pos:"FWD",name:"Brahim Díaz",club:"Real Madrid"},
-    {num:21,pos:"FWD",name:"Chemsdine Talbi",club:"Club Brugge"},,
+    {num:21,pos:"FWD",name:"Chemsdine Talbi",club:"Club Brugge"},
     {num:15,pos:"MID",name:"Sofiane Boufal",club:"Angers"},
     {num:22,pos:"MID",name:"Zakaria Aboukhlal",club:"Toulouse"},
-    {num:24,pos:"FWD",name:"Ayoub El Kaabi",club:"Olympiacos"},
-    {num:90,pos:"MID",name:"Zakaria Aboukhlal",club:"Toulouse"},
-    {num:91,pos:"FWD",name:"Soufiane Rahimi",club:"Al Ain"}]},
+    {num:24,pos:"FWD",name:"Soufiane El Bouazzati",club:"Wydad AC"},
+    {num:26,pos:"FWD",name:"Youssef En-Nesyri",club:"Fenerbahce"}]},
   Scotland:{coach:"Steve Clarke",players:[
     {num:1,pos:"GK",name:"Angus Gunn",club:"Nottingham Forest"},
     {num:12,pos:"GK",name:"Craig Gordon",club:"Heart of Midlothian"},
@@ -632,12 +631,12 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Martin Boyle",club:"Hibernian"},
     {num:19,pos:"FWD",name:"Craig Goodwin",club:"Adelaide United"},
     {num:20,pos:"FWD",name:"Nicholas D'Agostino",club:"Viking"},
-    {num:21,pos:"FWD",name:"Mohamed Toure",club:"Randers"},,
+    {num:21,pos:"FWD",name:"Mohamed Toure",club:"Randers"},
     {num:15,pos:"DEF",name:"Thomas Deng",club:"ADO Den Haag"},
     {num:22,pos:"MID",name:"Denis Genreau",club:"Toulouse"},
-    {num:90,pos:"MID",name:"Denis Genreau",club:"Toulouse"},
     {num:24,pos:"FWD",name:"Mathew Leckie",club:"Melbourne City"},
-    {num:25,pos:"MID",name:"Cameron Devlin",club:"Heart of Midlothian"}]},
+    {num:25,pos:"FWD",name:"Lachlan Wales",club:"Wellington Phoenix"},
+    {num:26,pos:"MID",name:"Keanu Baccus",club:"St Mirren"}]},
   Turkey:{coach:"Vincenzo Montella",players:[
     {num:1,pos:"GK",name:"Altay Bayindir",club:"Man United"},
     {num:12,pos:"GK",name:"Ersin Destanoglu",club:"Besiktas"},
@@ -660,11 +659,11 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Baris Alper Yilmaz",club:"Galatasaray"},
     {num:15,pos:"FWD",name:"Can Uzun",club:"Eintracht Frankfurt"},
     {num:16,pos:"FWD",name:"Kerem Akturkoglu",club:"Fenerbahce"},
-    {num:21,pos:"FWD",name:"Yunus Akgun",club:"Galatasaray"},,
+    {num:21,pos:"FWD",name:"Yunus Akgun",club:"Galatasaray"},
     {num:22,pos:"DEF",name:"Umut Meras",club:"Le Havre"},
-    {num:24,pos:"MID",name:"Arda Turan",club:"Galatasaray"},
-    {num:90,pos:"FWD",name:"Serdar Dursun",club:"Fatih Karagumruk"},
-    {num:91,pos:"DEF",name:"Mert Cetin",club:"Hellas Verona"}]},
+    {num:24,pos:"MID",name:"Kerem Demirbay",club:"Galatasaray"},
+    {num:25,pos:"FWD",name:"Serdar Dursun",club:"Fatih Karagumruk"},
+    {num:26,pos:"DEF",name:"Mert Cetin",club:"Hellas Verona"}]},
   USA:{coach:"Mauricio Pochettino",players:[
     {num:1,pos:"GK",name:"Matt Turner",club:"Nottingham Forest"},
     {num:12,pos:"GK",name:"Chris Brady",club:"Bournemouth"},
@@ -687,7 +686,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Folarin Balogun",club:"Monaco"},
     {num:22,pos:"FWD",name:"Brenden Aaronson",club:"Union Berlin"},
     {num:23,pos:"FWD",name:"Tim Weah",club:"Juventus"},
-    {num:24,pos:"FWD",name:"Haji Wright",club:"Coventry City"},,
+    {num:24,pos:"FWD",name:"Haji Wright",club:"Coventry City"},
     {num:16,pos:"MID",name:"Johnny Cardoso",club:"Betis"},
     {num:21,pos:"DEF",name:"Caleb Wiley",club:"Stuttgart"},
     {num:25,pos:"FWD",name:"Patrick Agyemang",club:"Brighton"},
@@ -714,7 +713,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Julio Enciso",club:"Strasbourg"},
     {num:20,pos:"FWD",name:"Angel Romero",club:"Boca Juniors"},
     {num:21,pos:"FWD",name:"Enso González",club:"Wolverhampton"},
-    {num:22,pos:"FWD",name:"Adam Bareiro",club:"Boca Juniors"},,
+    {num:22,pos:"FWD",name:"Adam Bareiro",club:"Boca Juniors"},
     {num:15,pos:"DEF",name:"Santiago Arzamendia",club:"Atletico Tucuman"},
     {num:24,pos:"MID",name:"Jhon Piris",club:"Nacional"},
     {num:25,pos:"FWD",name:"Fernando Cardozo",club:"Olimpia"},
@@ -744,7 +743,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Maximilian Beier",club:"Borussia Dortmund"},
     {num:16,pos:"FWD",name:"Deniz Undav",club:"Stuttgart"},
     {num:21,pos:"FWD",name:"Jamie Leweling",club:"Stuttgart"},
-    {num:24,pos:"FWD",name:"Nick Woltemeade",club:"Stuttgart"},,
+    {num:24,pos:"FWD",name:"Nick Woltemeade",club:"Stuttgart"},
     {num:25,pos:"FWD",name:"Tom Bischof",club:"TSG Hoffenheim"},
     {num:26,pos:"DEF",name:"Robin Gosens",club:"Union Berlin"}]},
   "Ivory Coast":{coach:"Emerse Faé",players:[
@@ -797,7 +796,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Kevin Rodriguez",club:"Eibar"},
     {num:15,pos:"FWD",name:"Djorkaeff Reasco",club:"Necaxa"},
     {num:20,pos:"FWD",name:"Jordan Rezabala",club:"El Nacional"},
-    {num:21,pos:"FWD",name:"Adonis Preciado",club:"Monterrey"},,
+    {num:21,pos:"FWD",name:"Adonis Preciado",club:"Monterrey"},
     {num:22,pos:"FWD",name:"Adonis Preciado",club:"Monterrey"},
     {num:24,pos:"DEF",name:"Patricio Venegas",club:"Liga de Quito"},
     {num:25,pos:"FWD",name:"Luca Orellana",club:"Flamengo"},
@@ -853,7 +852,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Cody Gakpo",club:"Liverpool"},
     {num:15,pos:"FWD",name:"Noa Lang",club:"PSV"},
     {num:16,pos:"FWD",name:"Crysencio Summerville",club:"Leeds"},
-    {num:21,pos:"FWD",name:"Donyell Malen",club:"Aston Villa"},,
+    {num:21,pos:"FWD",name:"Donyell Malen",club:"Aston Villa"},
     {num:22,pos:"MID",name:"Wout Weghorst",club:"Hoffenheim"},
     {num:24,pos:"DEF",name:"Devyne Rensch",club:"Bologna"},
     {num:90,pos:"FWD",name:"Donyell Malen",club:"Aston Villa"},
@@ -883,7 +882,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Daizen Maeda",club:"Celtic"},
     {num:24,pos:"FWD",name:"Koki Ogawa",club:"NEC Nijmegen"},
     {num:25,pos:"FWD",name:"Kento Shiogai",club:"Wolfsburg"},
-    {num:26,pos:"FWD",name:"Keisuke Goto",club:"Sint-Truiden"},,
+    {num:26,pos:"FWD",name:"Keisuke Goto",club:"Sint-Truiden"},
     {num:90,pos:"FWD",name:"Koki Ogawa",club:"NEC Nijmegen"}]},
   Sweden:{coach:"Graham Potter",players:[
     {num:1,pos:"GK",name:"Viktor Johansson",club:"Stoke City"},
@@ -937,7 +936,7 @@ const SQUADS={
     {num:20,pos:"FWD",name:"Elias Achouri",club:"FC Copenhagen"},
     {num:21,pos:"FWD",name:"Sebastian Tounekti",club:"Celtic"},
     {num:22,pos:"FWD",name:"Khalil Ayari",club:"PSG"},
-    {num:24,pos:"FWD",name:"Rayan Elloumi",club:"Vancouver Whitecaps"},,
+    {num:24,pos:"FWD",name:"Rayan Elloumi",club:"Vancouver Whitecaps"},
     {num:25,pos:"MID",name:"Firas Chaouat",club:"Club Africain"},
     {num:26,pos:"DEF",name:"Nader Ghandri",club:"Nantes"}]},
   // ── GROUP G ──
@@ -992,7 +991,7 @@ const SQUADS={
     {num:7,pos:"FWD",name:"Ahmed Sayed Zizo",club:"Al Ahly"},
     {num:20,pos:"FWD",name:"Mohanad Lasheen",club:"Pyramids FC"},
     {num:21,pos:"FWD",name:"Hamza Abdelkarim",club:"Barcelona"},
-    {num:22,pos:"FWD",name:"Aqtay Abdallah",club:"Enppi"},,
+    {num:22,pos:"FWD",name:"Aqtay Abdallah",club:"Enppi"},
     {num:24,pos:"MID",name:"Nasser Maher",club:"Al Ahly"},
     {num:25,pos:"DEF",name:"Ahmed Abou Gabal",club:"Zamalek"},
     {num:26,pos:"MID",name:"Mahmoud Hamada",club:"Pyramids FC"}]},
@@ -1016,7 +1015,7 @@ const SQUADS={
     {num:9,pos:"FWD",name:"Mehdi Taremi",club:"Olympiacos"},
     {num:7,pos:"FWD",name:"Ali Alipour",club:"Persepolis"},
     {num:11,pos:"FWD",name:"Amirhossein Hosseinzadeh",club:"Tractor"},
-    {num:15,pos:"FWD",name:"Dennis Dargahi",club:"Standard Liege"},,
+    {num:15,pos:"FWD",name:"Dennis Dargahi",club:"Standard Liege"},
     {num:16,pos:"DEF",name:"Morteza Pouraliganji",club:"Al-Wakrah"},
     {num:21,pos:"MID",name:"Ahmad Noorollahi",club:"Persepolis"},
     {num:22,pos:"MID",name:"Omid Ebrahimi",club:"Tractor"},
@@ -1075,7 +1074,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Lamine Yamal",club:"Barcelona"},
     {num:21,pos:"FWD",name:"Mikel Oyarzabal",club:"Real Sociedad"},
     {num:22,pos:"FWD",name:"Ferran Torres",club:"Barcelona"},
-    {num:24,pos:"FWD",name:"Yeremy Pino",club:"Villarreal"},,
+    {num:24,pos:"FWD",name:"Yeremy Pino",club:"Villarreal"},
     {num:15,pos:"DEF",name:"Robin Le Normand",club:"Atletico Madrid"},
     {num:25,pos:"FWD",name:"Yeremy Pino",club:"Villarreal"},
     {num:26,pos:"MID",name:"Pedri",club:"Barcelona"}]},
@@ -1101,7 +1100,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Maximiliano Gómez",club:"Valencia"},
     {num:15,pos:"FWD",name:"Brian Rodríguez",club:"América"},
     {num:20,pos:"FWD",name:"Agustín Canobbio",club:"Porto"},
-    {num:21,pos:"FWD",name:"Facundo Torres",club:"Orlando City"},,
+    {num:21,pos:"FWD",name:"Facundo Torres",club:"Orlando City"},
     {num:22,pos:"MID",name:"Manuel Ugarte",club:"Man United"},
     {num:24,pos:"DEF",name:"Joaquín Piquerez",club:"Palmeiras"},
     {num:25,pos:"FWD",name:"Maximiliano Gómez",club:"Valencia"},
@@ -1130,7 +1129,7 @@ const SQUADS={
     {num:9,pos:"FWD",name:"Mukhtar Ali",club:"Al-Ahli"},
     {num:11,pos:"FWD",name:"Sultan Al-Ghannam",club:"Al-Nassr"},
     {num:15,pos:"FWD",name:"Hattan Bahebri",club:"Al-Shabab"},
-    {num:22,pos:"FWD",name:"Mohammed Kanno",club:"Al-Hilal"},,
+    {num:22,pos:"FWD",name:"Mohammed Kanno",club:"Al-Hilal"},
     {num:25,pos:"FWD",name:"Hattan Bahebri",club:"Al-Shabab"},
     {num:26,pos:"MID",name:"Mohammed Al-Burayk",club:"Al-Hilal"}]},
   "Cape Verde":{coach:"Pedro Brito",players:[
@@ -1214,7 +1213,7 @@ const SQUADS={
     {num:9,pos:"FWD",name:"Aymen Hussein",club:"Al-Quwa Al-Jawiya"},
     {num:11,pos:"FWD",name:"Alaa Abbas",club:"Al-Zawraa"},
     {num:22,pos:"FWD",name:"Hussein Falah",club:"Al-Diwaniyah"},
-    {num:24,pos:"FWD",name:"Ahmed Yaseen",club:"Air Force Club"},,
+    {num:24,pos:"FWD",name:"Ahmed Yaseen",club:"Air Force Club"},
     {num:25,pos:"MID",name:"Ali Hisni",club:"Al-Zawraa"},
     {num:26,pos:"DEF",name:"Hayder Ali",club:"Al-Naft"}]},
   Norway:{coach:"Ståle Solbakken",players:[
@@ -1238,7 +1237,7 @@ const SQUADS={
     {num:9,pos:"FWD",name:"Alexander Sørloth",club:"Atletico Madrid"},
     {num:11,pos:"FWD",name:"Jørgen Strand Larsen",club:"Wolves"},
     {num:15,pos:"FWD",name:"Antonio Nusa",club:"RB Leipzig"},
-    {num:21,pos:"FWD",name:"Andreas Schjelderup",club:"Benfica"},,
+    {num:21,pos:"FWD",name:"Andreas Schjelderup",club:"Benfica"},
     {num:14,pos:"DEF",name:"Stian Gregersen",club:"Galatasaray"},
     {num:22,pos:"FWD",name:"Ola Solbakken",club:"Lazio"},
     {num:24,pos:"MID",name:"Mathias Normann",club:"Trabzonspor"},
@@ -1266,7 +1265,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Ismaila Sarr",club:"Crystal Palace"},
     {num:15,pos:"FWD",name:"Iliman Ndiaye",club:"Everton"},
     {num:21,pos:"FWD",name:"Bamba Dieng",club:"Lorient"},
-    {num:22,pos:"FWD",name:"Assane Diao",club:"Como"},,
+    {num:22,pos:"FWD",name:"Assane Diao",club:"Como"},
     {num:24,pos:"DEF",name:"Formose Mendy",club:"Almeria"},
     {num:25,pos:"MID",name:"Moustapha Name",club:"FC Metz"},
     {num:26,pos:"FWD",name:"Nicolas Jackson",club:"Bayern Munich"},
@@ -1291,7 +1290,7 @@ const SQUADS={
     {num:9,pos:"FWD",name:"Islam Slimani",club:"CFR Cluj"},
     {num:7,pos:"FWD",name:"Andy Delort",club:"RC Lens"},
     {num:11,pos:"FWD",name:"Yassine Benzia",club:"Al-Fayha"},
-    {num:21,pos:"FWD",name:"Zakaria Aboukhlal",club:"Toulouse"},,
+    {num:21,pos:"FWD",name:"Zakaria Aboukhlal",club:"Toulouse"},
     {num:14,pos:"DEF",name:"Djamel Benlamri",club:"Al-Ittihad"},
     {num:15,pos:"DEF",name:"Hicham Boudaoui",club:"Nantes"},
     {num:22,pos:"FWD",name:"Riyad Mahrez",club:"Al-Ahli"},
@@ -1435,7 +1434,7 @@ const SQUADS={
     {num:9,pos:"FWD",name:"Jhon Durán",club:"Aston Villa"},
     {num:11,pos:"FWD",name:"Luis Sinisterra",club:"Bournemouth"},
     {num:21,pos:"FWD",name:"Jhon Córdoba",club:"Krasnodar"},
-    {num:22,pos:"FWD",name:"Juan Camilo Hernández",club:"Columbus Crew"},,
+    {num:22,pos:"FWD",name:"Juan Camilo Hernández",club:"Columbus Crew"},
     {num:24,pos:"DEF",name:"Carlos Cuesta",club:"Genk"},
     {num:25,pos:"FWD",name:"Cucho Hernandez",club:"Columbus Crew"},
     {num:26,pos:"MID",name:"Jorge Carrascal",club:"Dinamo Moscow"}]},
@@ -1463,7 +1462,7 @@ const SQUADS={
     {num:7,pos:"FWD",name:"Yoane Wissa",club:"Newcastle"},
     {num:9,pos:"FWD",name:"Cedric Bakambu",club:"Real Betis"},
     {num:11,pos:"FWD",name:"Simon Banza",club:"Al Jazira"},
-    {num:22,pos:"FWD",name:"Fiston Mayele",club:"Pyramids FC"},,
+    {num:22,pos:"FWD",name:"Fiston Mayele",club:"Pyramids FC"},
     {num:25,pos:"FWD",name:"Cédric Bakambu",club:"Real Betis"},
     {num:26,pos:"MID",name:"Theo Bongonda",club:"Spartak Moscow"}]},
   Uzbekistan:{coach:"Fabio Cannavaro",players:[
@@ -1490,7 +1489,7 @@ const SQUADS={
     {num:7,pos:"FWD",name:"Abbosek Fayzullaev",club:"Istanbul Basaksehir"},
     {num:11,pos:"FWD",name:"Jaloliddin Masharipov",club:"Esteghlal"},
     {num:15,pos:"FWD",name:"Oston Urunov",club:"Persepolis"},
-    {num:22,pos:"FWD",name:"Umid Sadullayev",club:"Pakhtakor"},,
+    {num:22,pos:"FWD",name:"Umid Sadullayev",club:"Pakhtakor"},
     {num:25,pos:"FWD",name:"Oston Urunov",club:"Persepolis"},
     {num:26,pos:"MID",name:"Doniyor Ganiev",club:"Navbahor"}]},
   // ── GROUP L ──
@@ -1517,7 +1516,7 @@ const SQUADS={
     {num:22,pos:"FWD",name:"Anthony Gordon",club:"Newcastle"},
     {num:24,pos:"FWD",name:"Noni Madueke",club:"Arsenal"},
     {num:25,pos:"FWD",name:"Ivan Toney",club:"Al Ahli"},
-    {num:26,pos:"FWD",name:"Ollie Watkins",club:"Aston Villa"},,
+    {num:26,pos:"FWD",name:"Ollie Watkins",club:"Aston Villa"},
     {num:15,pos:"DEF",name:"Levi Colwill",club:"Chelsea"},
     {num:16,pos:"MID",name:"Adam Wharton",club:"Crystal Palace"},
     {num:21,pos:"FWD",name:"Cole Palmer",club:"Chelsea"}]},
@@ -1546,7 +1545,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Ante Budimir",club:"Osasuna"},
     {num:16,pos:"FWD",name:"Igor Matanović",club:"Freiburg"},
     {num:24,pos:"FWD",name:"Marco Pašalić",club:"Orlando City"},
-    {num:25,pos:"FWD",name:"Petar Musa",club:"FC Dallas"},,
+    {num:25,pos:"FWD",name:"Petar Musa",club:"FC Dallas"},
     {num:26,pos:"FWD",name:"Petar Musa",club:"FC Dallas"}]},
   Ghana:{coach:"Carlos Queiroz",players:[
     {num:1,pos:"GK",name:"Lawrence Ati Zigi",club:"St. Gallen"},
@@ -1573,7 +1572,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Jordan Ayew",club:"Leicester City"},
     {num:16,pos:"FWD",name:"Kamaldeen Sulemana",club:"Southampton"},
     {num:20,pos:"FWD",name:"Ransford Yeboah",club:"Hamburger SV"},
-    {num:25,pos:"FWD",name:"Osman Bukari",club:"Red Star Belgrade"},,
+    {num:25,pos:"FWD",name:"Osman Bukari",club:"Red Star Belgrade"},
     {num:26,pos:"FWD",name:"Osman Bukari",club:"Red Star Belgrade"}]},
   Panama:{coach:"Thomas Christiansen",players:[
     {num:1,pos:"GK",name:"Orlando Mosquera",club:"Independiente Medellín"},
@@ -1600,7 +1599,7 @@ const SQUADS={
     {num:11,pos:"FWD",name:"Jose Fajardo",club:"Portland Timbers"},
     {num:22,pos:"FWD",name:"Tomas Rodriguez",club:"Eintracht Frankfurt"},
     {num:24,pos:"FWD",name:"Freddy Gondola",club:"FK Bodø/Glimt"},
-    {num:25,pos:"FWD",name:"Gabriel Torres",club:"Olimpia"},,
+    {num:25,pos:"FWD",name:"Gabriel Torres",club:"Olimpia"},
     {num:26,pos:"FWD",name:"Gabriel Torres",club:"Olimpia"}]},
 };
 
@@ -2184,7 +2183,7 @@ export default function App() {
       const h12 = h % 12 === 0 ? 12 : h % 12;
       const ap = h < 12 ? "AM" : "PM";
       const label = h>=4&&h<6?"ভোর":h>=6&&h<12?"সকাল":h>=12&&h<15?"দুপুর":h>=15&&h<18?"বিকেল":h>=18&&h<20?"সন্ধ্যা":"রাত";
-      setBdClock(`${label} ${h12}:${String(m).padStart(2,"0")} ${ap}`);
+      setBdClock(`${label} ${h12}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")} ${ap}`);
     }
     tick();
     const id = setInterval(tick, 1000);
@@ -2476,7 +2475,22 @@ export default function App() {
     setScorersLoading(false);
   }, [scorersLoading]);
 
-  // standings calc
+  // Top Scorers — results change হলে auto re-fetch (নতুন goal)
+  const scorersResultsRef = useRef(null);
+  useEffect(() => {
+    if (tab !== "scorers") return;
+    const resultsKey = JSON.stringify(results);
+    if (scorersResultsRef.current === null) {
+      scorersResultsRef.current = resultsKey;
+      if (!scorersFetched && !scorersLoading) fetchScorers();
+      return;
+    }
+    if (scorersResultsRef.current !== resultsKey) {
+      scorersResultsRef.current = resultsKey;
+      // নতুন result এলে re-fetch
+      fetchScorers();
+    }
+  }, [results, tab, fetchScorers, scorersFetched, scorersLoading]);
   function calcStandings(g) {
     const teams = GROUPS[g];
     const s = Object.fromEntries(teams.map(t=>[t,{mp:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}]));
@@ -2580,12 +2594,17 @@ export default function App() {
     {k:"myteam",l:"⭐ আমার দল"},
   ];
 
-  // today's matches helper
+  // today's matches helper — BD সময়ের date দিয়ে compare
   const todayMatches = useMemo(()=>{
-    const now=Date.now(); const bd=new Date(now+6*3600000);
+    const now=Date.now();
+    const bd=new Date(now+6*3600000);
     const mn=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const today=mn[bd.getUTCMonth()]+" "+bd.getUTCDate();
-    return ALL_GROUP_FIXTURES.filter(f=>f.dateStr===today);
+    const todayBD=mn[bd.getUTCMonth()]+" "+bd.getUTCDate();
+    return ALL_GROUP_FIXTURES.filter(f=>{
+      // প্রতিটি fixture এর BD date বের করি
+      const fixBDDate = bdDateStr(f.dateStr, f.etTime);
+      return fixBDDate === todayBD;
+    });
   },[]);
 
   // Group fixtures by date for the fixture tab
@@ -2753,6 +2772,57 @@ export default function App() {
           {/* ═══ FIXTURES ═══ */}
           {tab==="fixtures" && (
             <div className="fi">
+              {/* ── LIVE TRACKER (fixtures tab এ সবার আগে) ── */}
+              {(()=>{
+                const liveNow = ALL_GROUP_FIXTURES.filter(f=>{
+                  const utc = matchUTC(f.dateStr,f.etTime);
+                  const el = Date.now()-utc;
+                  return el>-5*60*1000 && el<115*60*1000;
+                });
+                if(!liveNow.length) return null;
+                return (
+                  <div style={{marginBottom:16,borderRadius:14,overflow:"hidden",border:"2px solid #ef4444",boxShadow:"0 0 20px rgba(239,68,68,.2)",animation:"fadeIn .3s ease"}}>
+                    <div style={{background:"rgba(239,68,68,.15)",padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{width:8,height:8,borderRadius:"50%",background:"#ef4444",display:"inline-block",animation:"pulse 1s infinite"}}/>
+                      <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,letterSpacing:2,color:"#ef4444"}}>🔴 LIVE TRACKER</span>
+                      <span style={{fontSize:11,color:T.sub,marginLeft:"auto"}}>{liveNow.length}টি ম্যাচ চলছে</span>
+                    </div>
+                    <div style={{background:T.card,padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
+                      {liveNow.map(f=>{
+                        const r=results[f.id];
+                        const hasScore=r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);
+                        const utc=matchUTC(f.dateStr,f.etTime);
+                        const el=Date.now()-utc;
+                        const minElapsed=Math.floor(el/60000);
+                        const isActuallyLive=el>0&&el<105*60*1000;
+                        return (
+                          <div key={f.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"rgba(239,68,68,.04)",border:"1px solid rgba(239,68,68,.25)",borderRadius:10}}>
+                            <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end",minWidth:0}}>
+                              <span style={{fontWeight:700,fontSize:13,color:T.text,textAlign:"right",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>{f.home}</span>
+                              <span style={{fontSize:24,flexShrink:0}}>{FLAGS[f.home]||"🏳"}</span>
+                            </div>
+                            <div style={{textAlign:"center",minWidth:80,flexShrink:0}}>
+                              {hasScore ? (
+                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:24,color:"#ef4444",lineHeight:1}}>{r.h}–{r.a}</div>
+                              ) : (
+                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:16,color:"#ef4444",lineHeight:1}}>VS</div>
+                              )}
+                              <div style={{fontSize:9,color:"#ef4444",fontWeight:700}}>
+                                {isActuallyLive ? (r?.minute ? `🔴 ${r.minute}'` : `🔴 ~${minElapsed}'`) : "⏳ শীঘ্রই"}
+                              </div>
+                            </div>
+                            <div style={{flex:1,display:"flex",alignItems:"center",gap:6,minWidth:0}}>
+                              <span style={{fontSize:24,flexShrink:0}}>{FLAGS[f.away]||"🏳"}</span>
+                              <span style={{fontWeight:700,fontSize:13,color:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>{f.away}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Today / Next - HERO BANNER */}
               {todayMatches.length>0 ? (
                 <div style={{marginBottom:24,borderRadius:18,overflow:"hidden",border:`1px solid ${c}33`,boxShadow:`0 0 40px ${c}18`}}>
@@ -2778,8 +2848,8 @@ export default function App() {
                         <div key={fix.id} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:fav?"rgba(251,191,36,.06)":T.acBg,border:`1.5px solid ${fav?"rgba(251,191,36,.35)":c+"33"}`,borderRadius:12,animation:`slideUp .3s ease ${idx*0.07}s both`,position:"relative",overflow:"hidden"}}>
                           {fav && <div style={{position:"absolute",top:0,left:0,width:"100%",height:2,background:"linear-gradient(90deg,#fbbf24,transparent)"}}/>}
                           <div style={{display:"flex",alignItems:"center",gap:8,flex:1,justifyContent:"flex-end"}}>
-                            <span style={{fontWeight:700,fontSize:14,color:fav&&fix.home===favTeam?"#fbbf24":T.text,textAlign:"right"}}>{fix.home}</span>
-                            <span style={{fontSize:28,cursor:"pointer"}} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
+                            <span style={{fontWeight:700,fontSize:13,color:fav&&fix.home===favTeam?"#fbbf24":T.text,textAlign:"right",lineHeight:1.2,wordBreak:"break-word"}}>{fix.home}</span>
+                            <span style={{fontSize:28,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
                           </div>
                           <div style={{textAlign:"center",minWidth:100,flexShrink:0}}>
                             {hasScore ? (
@@ -2795,8 +2865,8 @@ export default function App() {
                             )}
                           </div>
                           <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-                            <span style={{fontSize:28,cursor:"pointer"}} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
-                            <span style={{fontWeight:700,fontSize:14,color:fav&&fix.away===favTeam?"#fbbf24":T.text}}>{fix.away}</span>
+                            <span style={{fontSize:28,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
+                            <span style={{fontWeight:700,fontSize:13,color:fav&&fix.away===favTeam?"#fbbf24":T.text,lineHeight:1.2,wordBreak:"break-word"}}>{fix.away}</span>
                           </div>
                           <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
                             <button onClick={()=>shareMatch(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}}>📤</button>
@@ -3651,8 +3721,6 @@ export default function App() {
 
           {/* ═══ SCORERS ═══ */}
           {tab==="scorers" && (()=>{
-            // Auto-fetch when tab opens
-            if (!scorersFetched && !scorersLoading) fetchScorers();
             const posColors2 = {FWD:"#ef4444", MID:"#10b981", DEF:"#3b82f6", GK:"#f59e0b"};
             const medalColor = (r) => r===1?"#fbbf24":r===2?"#9ca3af":r===3?"#b45309":"";
             return (
