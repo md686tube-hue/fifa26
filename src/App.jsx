@@ -1991,7 +1991,7 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
                   </div>
                   {/* Home */}
                   <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:4,minWidth:0}}>
-                    <span style={{fontSize:11,fontWeight:isHome?700:400,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore2&&+r.h>+r.a?c:isHome?c:T.text}}>{f.home}</span>
+                    <span style={{fontSize:11,fontWeight:isHome?700:400,textAlign:"right",wordBreak:"break-word",lineHeight:1.2,color:hasScore2&&+r.h>+r.a?c:isHome?c:T.text}}>{f.home}</span>
                     <span style={{fontSize:20,flexShrink:0}}>{FLAGS[f.home]||"🏳"}</span>
                   </div>
                   {/* Center */}
@@ -2011,7 +2011,7 @@ function MyTeamTab({T, c, dark, favTeam, setFavTeam, results}) {
                   {/* Away */}
                   <div style={{flex:1,display:"flex",alignItems:"center",gap:4,minWidth:0}}>
                     <span style={{fontSize:20,flexShrink:0}}>{FLAGS[f.away]||"🏳"}</span>
-                    <span style={{fontSize:11,fontWeight:!isHome?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore2&&+r.a>+r.h?c:!isHome?c:T.text}}>{f.away}</span>
+                    <span style={{fontSize:11,fontWeight:!isHome?700:400,wordBreak:"break-word",lineHeight:1.2,color:hasScore2&&+r.a>+r.h?c:!isHome?c:T.text}}>{f.away}</span>
                   </div>
                 </div>
               </div>
@@ -2184,7 +2184,7 @@ export default function App() {
       const h12 = h % 12 === 0 ? 12 : h % 12;
       const ap = h < 12 ? "AM" : "PM";
       const label = h>=4&&h<6?"ভোর":h>=6&&h<12?"সকাল":h>=12&&h<15?"দুপুর":h>=15&&h<18?"বিকেল":h>=18&&h<20?"সন্ধ্যা":"রাত";
-      setBdClock(`${label} ${h12}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")} ${ap}`);
+      setBdClock(`${label} ${h12}:${String(m).padStart(2,"0")} ${ap}`);
     }
     tick();
     const id = setInterval(tick, 1000);
@@ -2519,19 +2519,33 @@ export default function App() {
     return list;
   },[grpFilter,search,favTeam]);
 
-  // Ticker: recent results + upcoming matches
+  // Ticker: শুধু আজকের ম্যাচ
   const tickerItems = useMemo(() => {
     const now = Date.now();
+    const bd = new Date(now + 6*3600000);
+    const mn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const today = mn[bd.getUTCMonth()] + " " + bd.getUTCDate();
     const items = [];
     ALL_GROUP_FIXTURES.forEach(f => {
+      if (f.dateStr !== today) return;
       const r = results[f.id];
       const hasScore = r && r.h !== "" && r.a !== "" && !isNaN(+r.h) && !isNaN(+r.a);
-      const started = matchUTC(f.dateStr, f.etTime) < now;
       const over = matchUTC(f.dateStr, f.etTime) + 105*60000 < now;
+      const isLive = matchUTC(f.dateStr, f.etTime) < now && !over;
       if (hasScore) {
-        items.push(`${FLAGS[f.home]||"🏳"} ${f.home} ${r.h}–${r.a} ${f.away} ${FLAGS[f.away]||"🏳"} ${over?"FT":"🔴LIVE"}`);
-      } else if (!started) {
-        items.push(`⏰ ${FLAGS[f.home]||"🏳"} ${f.home} vs ${f.away} ${FLAGS[f.away]||"🏳"} · ${bdTime(f.etTime)} · ${f.dateStr}`);
+        const statusLabel = isLive ? (r.minute ? `🔴 ${r.minute}` + "'" : "🔴 LIVE") : "FT";
+        items.push(`${FLAGS[f.home]||"🏳"} ${f.home} ${r.h}–${r.a} ${f.away} ${FLAGS[f.away]||"🏳"} · ${statusLabel}`);
+      } else {
+        const matchMs = matchUTC(f.dateStr, f.etTime);
+        const diffMs = matchMs - now;
+        let countdown = "";
+        if (diffMs > 0) {
+          const totalMin = Math.floor(diffMs / 60000);
+          const hrs = Math.floor(totalMin / 60);
+          const mins = totalMin % 60;
+          countdown = hrs > 0 ? `${hrs}ঘ ${mins}মি বাকি` : `${mins}মি বাকি`;
+        }
+        items.push(`⏳ ${FLAGS[f.home]||"🏳"} ${f.home} vs ${f.away} ${FLAGS[f.away]||"🏳"} · ${bdTime(f.etTime)} BD${countdown ? " · " + countdown : ""}`);
       }
     });
     return items.length > 0 ? items : ["⚽ FIFA World Cup 2026 · USA · CANADA · MEXICO · Jun 11 – Jul 19", "🔴 সব সময় বাংলাদেশ সময় (GMT+6) · Auto-update চালু"];
@@ -2884,7 +2898,7 @@ export default function App() {
                           <div style={{display:"flex",alignItems:"center",padding:"9px 10px",gap:0}}>
                             {/* HOME */}
                             <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:5,minWidth:0}}>
-                              <span style={{fontSize:11,fontWeight:700,color:hasScore2&&+r2.h>+r2.a?c:isFav2&&fix.home===favTeam?"#fbbf24":T.text,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fix.home}</span>
+                              <span style={{fontSize:11,fontWeight:700,color:hasScore2&&+r2.h>+r2.a?c:isFav2&&fix.home===favTeam?"#fbbf24":T.text,textAlign:"right",wordBreak:"break-word",lineHeight:1.2}}>{fix.home}</span>
                               <span style={{fontSize:22,flexShrink:0,cursor:"pointer"}} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
                             </div>
                             {/* CENTER */}
@@ -2918,7 +2932,7 @@ export default function App() {
                             {/* AWAY */}
                             <div style={{flex:1,display:"flex",alignItems:"center",gap:5,minWidth:0}}>
                               <span style={{fontSize:22,flexShrink:0,cursor:"pointer"}} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
-                              <span style={{fontSize:11,fontWeight:700,color:hasScore2&&+r2.a>+r2.h?c:isFav2&&fix.away===favTeam?"#fbbf24":T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fix.away}</span>
+                              <span style={{fontSize:11,fontWeight:700,color:hasScore2&&+r2.a>+r2.h?c:isFav2&&fix.away===favTeam?"#fbbf24":T.text,wordBreak:"break-word",lineHeight:1.2}}>{fix.away}</span>
                             </div>
                           </div>
                         </div>
@@ -3059,7 +3073,7 @@ export default function App() {
                             </div>
                             {/* HOME */}
                             <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:4,minWidth:0}}>
-                              <span style={{fontSize:11,fontWeight:700,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore2&&+r2.h>+r2.a?c:isFav2&&homeTeam===favTeam?"#fbbf24":isPlaceholder?T.sub:T.text}}>{homeTeam}</span>
+                              <span style={{fontSize:11,fontWeight:700,textAlign:"right",wordBreak:"break-word",lineHeight:1.2,color:hasScore2&&+r2.h>+r2.a?c:isFav2&&homeTeam===favTeam?"#fbbf24":isPlaceholder?T.sub:T.text}}>{homeTeam}</span>
                               <span style={{fontSize:20,flexShrink:0}}>{isPlaceholder?"❓":(FLAGS[homeTeam]||"🏳")}</span>
                             </div>
                             {/* CENTER */}
@@ -3082,7 +3096,7 @@ export default function App() {
                             {/* AWAY */}
                             <div style={{flex:1,display:"flex",alignItems:"center",gap:4,minWidth:0}}>
                               <span style={{fontSize:20,flexShrink:0}}>{isPlaceholder?"❓":(FLAGS[awayTeam]||"🏳")}</span>
-                              <span style={{fontSize:11,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore2&&+r2.a>+r2.h?c:isFav2&&awayTeam===favTeam?"#fbbf24":isPlaceholder?T.sub:T.text}}>{awayTeam}</span>
+                              <span style={{fontSize:11,fontWeight:700,wordBreak:"break-word",lineHeight:1.2,color:hasScore2&&+r2.a>+r2.h?c:isFav2&&awayTeam===favTeam?"#fbbf24":isPlaceholder?T.sub:T.text}}>{awayTeam}</span>
                             </div>
                           </div>
                           {/* venue */}
@@ -3273,7 +3287,7 @@ export default function App() {
                               </div>
                               {/* Home */}
                               <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:4,minWidth:0}}>
-                                <span style={{fontSize:11,fontWeight:700,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore&&+r.h>+r.a?c:T.text}}>{fix.home}</span>
+                                <span style={{fontSize:11,fontWeight:700,textAlign:"right",wordBreak:"break-word",lineHeight:1.2,color:hasScore&&+r.h>+r.a?c:T.text}}>{fix.home}</span>
                                 <span style={{fontSize:18,flexShrink:0}}>{FLAGS[fix.home]||"🏳"}</span>
                               </div>
                               {/* Center */}
@@ -3293,7 +3307,7 @@ export default function App() {
                               {/* Away */}
                               <div style={{flex:1,display:"flex",alignItems:"center",gap:4,minWidth:0}}>
                                 <span style={{fontSize:18,flexShrink:0}}>{FLAGS[fix.away]||"🏳"}</span>
-                                <span style={{fontSize:11,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasScore&&+r.a>+r.h?c:T.text}}>{fix.away}</span>
+                                <span style={{fontSize:11,fontWeight:700,wordBreak:"break-word",lineHeight:1.2,color:hasScore&&+r.a>+r.h?c:T.text}}>{fix.away}</span>
                               </div>
                             </div>
                           </div>
@@ -3986,7 +4000,7 @@ export default function App() {
                                 </div>
                               </div>
                               <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:3,minWidth:0}}>
-                                <span style={{fontSize:10,fontWeight:isHome?700:400,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasSc&&+rs.h>+rs.a?c:isHome?c:T.text}}>{fix.home}</span>
+                                <span style={{fontSize:10,fontWeight:isHome?700:400,textAlign:"right",wordBreak:"break-word",lineHeight:1.2,color:hasSc&&+rs.h>+rs.a?c:isHome?c:T.text}}>{fix.home}</span>
                                 <span style={{fontSize:17,flexShrink:0}}>{FLAGS[fix.home]||"🏳"}</span>
                               </div>
                               <div style={{flexShrink:0,width:64,textAlign:"center",padding:"0 2px"}}>
@@ -4004,7 +4018,7 @@ export default function App() {
                               </div>
                               <div style={{flex:1,display:"flex",alignItems:"center",gap:3,minWidth:0}}>
                                 <span style={{fontSize:17,flexShrink:0}}>{FLAGS[fix.away]||"🏳"}</span>
-                                <span style={{fontSize:10,fontWeight:!isHome?700:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:hasSc&&+rs.a>+rs.h?c:!isHome?c:T.text}}>{fix.away}</span>
+                                <span style={{fontSize:10,fontWeight:!isHome?700:400,wordBreak:"break-word",lineHeight:1.2,color:hasSc&&+rs.a>+rs.h?c:!isHome?c:T.text}}>{fix.away}</span>
                               </div>
                             </div>
                           </div>
