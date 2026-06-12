@@ -2209,7 +2209,9 @@ export default function App() {
   // Feature: PWA + Notifications
   const [installPrompt, setInstallPrompt] = useState(null);
   const [pwaInstalled, setPwaInstalled] = useState(false);
-  const [notifScheduled, setNotifScheduled] = useState({});
+  const [notifScheduled, setNotifScheduled] = useState(() => {
+    try { const o = getScheduledNotifs(); const r={}; Object.keys(o).forEach(k=>r[k]=true); return r; } catch { return {}; }
+  });
   const [notifPermission, setNotifPermission] = useState(
     () => "Notification" in window ? Notification.permission : "unsupported"
   );
@@ -2255,6 +2257,27 @@ export default function App() {
       if ("Notification" in window) setNotifPermission(Notification.permission);
     }, 3000);
     return () => clearInterval(id);
+  }, []);
+
+  // ── পেজ reload হলে আগের setTimeout হারিয়ে যায় — তাই localStorage এ
+  //    সেট করা reminder গুলো নতুন করে re-schedule (re-arm) করা হয় ──
+  useEffect(() => {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    const scheduled = getScheduledNotifs();
+    Object.keys(scheduled).forEach(fixId => {
+      let fix = ALL_GROUP_FIXTURES.find(f => String(f.id) === String(fixId));
+      if (!fix) {
+        const m = KNOCKOUT_ROUNDS.flatMap(r => r.matches).find(mm => String(mm.id) === String(fixId));
+        if (m) fix = { ...m, dateStr: m.date };
+      }
+      if (!fix) { removeScheduledNotif(fixId); return; }
+      const tid = scheduleNotif(fix, 10);
+      if (tid === null) removeScheduledNotif(fixId);
+      else saveScheduledNotif(fixId, tid);
+    });
+    const updated = getScheduledNotifs();
+    const map={}; Object.keys(updated).forEach(k=>map[k]=true);
+    setNotifScheduled(map);
   }, []);
 
   const handleNotifToggle = useCallback((fixId, scheduled) => {
@@ -3075,56 +3098,56 @@ export default function App() {
 
               {/* Today / Next - HERO BANNER */}
               {todayMatches.length>0 ? (
-                <div style={{marginBottom:24,borderRadius:18,overflow:"hidden",border:`1px solid ${c}33`,boxShadow:`0 0 40px ${c}18`}}>
+                <div style={{marginBottom:16,borderRadius:16,overflow:"hidden",border:`1px solid ${c}33`,boxShadow:`0 0 30px ${c}15`}}>
                   {/* Banner Header */}
-                  <div style={{background:`linear-gradient(135deg,${dark?"#064e3b":"#047857"},${dark?"#065f46 60%,#000e05":"#059669 60%,#f0fdf4"})`,padding:"16px 20px",display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{background:`linear-gradient(135deg,${dark?"#064e3b":"#047857"},${dark?"#065f46 60%,#000e05":"#059669 60%,#f0fdf4"})`,padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{width:9,height:9,borderRadius:"50%",background:"#ef4444",display:"inline-block",animation:"pulse 1s infinite",boxShadow:"0 0 8px #ef444488"}}/>
-                      <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,letterSpacing:3,color:"#fff"}}>{isShowingNextDay?"আগামী ম্যাচ":"আজকের ম্যাচ"}</span>
+                      <span style={{width:8,height:8,borderRadius:"50%",background:"#ef4444",display:"inline-block",animation:"pulse 1s infinite",boxShadow:"0 0 8px #ef444488"}}/>
+                      <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:17,letterSpacing:3,color:"#fff"}}>আজকের ম্যাচ</span>
                     </div>
-                    <span style={{marginLeft:4,padding:"2px 10px",background:"rgba(255,255,255,.15)",borderRadius:999,fontSize:11,fontWeight:700,color:"#fff",backdropFilter:"blur(4px)"}}>{todayMatches.length}টি ম্যাচ</span>
-                    <div style={{marginLeft:"auto",fontSize:11,color:"rgba(255,255,255,.7)",fontWeight:500}}>
+                    <span style={{marginLeft:4,padding:"2px 9px",background:"rgba(255,255,255,.15)",borderRadius:999,fontSize:10,fontWeight:700,color:"#fff",backdropFilter:"blur(4px)"}}>{todayMatches.length}টি ম্যাচ</span>
+                    <div style={{marginLeft:"auto",fontSize:10,color:"rgba(255,255,255,.7)",fontWeight:500}}>
                       {isShowingNextDay
                         ? `${bdDateStr(todayMatches[0].dateStr, todayMatches[0].etTime)} — BD সময়`
                         : `${new Date(Date.now()+6*3600000).toLocaleDateString("bn-BD",{weekday:"long",month:"long",day:"numeric"})} — BD সময়`}
                     </div>
                   </div>
                   {/* Match rows */}
-                  <div style={{background:T.card,padding:"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
+                  <div style={{background:T.card,padding:"8px 10px",display:"flex",flexDirection:"column",gap:6}}>
                     {todayMatches.map((fix,idx)=>{
                       const fav=favTeam&&(fix.home===favTeam||fix.away===favTeam);
                       const r=results[fix.id];
                       const hasScore=r&&r.h!==""&&r.a!==""&&!isNaN(+r.h)&&!isNaN(+r.a);
                       const matchOver=matchUTC(fix.dateStr,fix.etTime)+105*60000<Date.now();
                       return (
-                        <div key={fix.id} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 12px",background:fav?"rgba(251,191,36,.06)":T.acBg,border:`1.5px solid ${fav?"rgba(251,191,36,.35)":c+"33"}`,borderRadius:12,animation:`slideUp .3s ease ${idx*0.07}s both`,position:"relative",overflow:"hidden"}}>
+                        <div key={fix.id} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 10px",background:fav?"rgba(251,191,36,.06)":T.acBg,border:`1.5px solid ${fav?"rgba(251,191,36,.35)":c+"33"}`,borderRadius:10,animation:`slideUp .3s ease ${idx*0.07}s both`,position:"relative",overflow:"hidden"}}>
                           {fav && <div style={{position:"absolute",top:0,left:0,width:"100%",height:2,background:"linear-gradient(90deg,#fbbf24,transparent)"}}/>}
-                          <div style={{display:"flex",alignItems:"center",gap:6,flex:"0 1 38%",justifyContent:"flex-end"}}>
-                            <span style={{fontWeight:700,fontSize:fix.home.length>10?11:13,color:fav&&fix.home===favTeam?"#fbbf24":T.text,textAlign:"right",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>{fix.home}</span>
-                            <span style={{fontSize:26,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
+                          <div style={{display:"flex",alignItems:"center",gap:6,flex:"1 1 0",minWidth:0,justifyContent:"flex-end"}}>
+                            <span style={{fontWeight:700,fontSize:12,color:fav&&fix.home===favTeam?"#fbbf24":T.text,textAlign:"right",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{fix.home}</span>
+                            <span style={{fontSize:22,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.home)}>{FLAGS[fix.home]||"🏳"}</span>
                           </div>
-                          <div style={{textAlign:"center",minWidth:90,flexShrink:0}}>
+                          <div style={{textAlign:"center",minWidth:78,flexShrink:0}}>
                             {hasScore ? (
-                              <div style={{padding:"5px 10px",background:"rgba(16,185,129,.15)",border:`1.5px solid ${c}55`,borderRadius:10}}>
-                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:24,color:c,lineHeight:1}}>{r.h} – {r.a}</div>
-                                <div style={{fontSize:9,color:matchOver?T.sub:"#ef4444",fontWeight:800,letterSpacing:1}}>{r.status==="LIVE"?"🔴 LIVE":r.status==="FT"?"FULL TIME":matchOver?"FULL TIME":"🔴 LIVE"}</div>
+                              <div style={{padding:"3px 9px",background:"rgba(16,185,129,.15)",border:`1.5px solid ${c}55`,borderRadius:8}}>
+                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:19,color:c,lineHeight:1}}>{r.h} – {r.a}</div>
+                                <div style={{fontSize:8,color:matchOver?T.sub:"#ef4444",fontWeight:800,letterSpacing:1}}>{r.status==="LIVE"?"🔴 LIVE":r.status==="FT"?"FULL TIME":matchOver?"FULL TIME":"🔴 LIVE"}</div>
                               </div>
                             ) : (
                               <div>
-                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:13,color:fav?"#fbbf24":c,lineHeight:1.2}}>{bdTime(fix.etTime)}</div>
-                                <div style={{fontSize:9,color:T.sub,marginBottom:2}}>BD সময় · Grp {fix.grp}</div>
+                                <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:12,color:fav?"#fbbf24":c,lineHeight:1.2}}>{bdTime(fix.etTime)}</div>
+                                <div style={{fontSize:8,color:T.sub,marginBottom:1}}>BD সময় · Grp {fix.grp}</div>
                               </div>
                             )}
                           </div>
-                          <div style={{display:"flex",alignItems:"center",gap:6,flex:"0 1 38%"}}>
-                            <span style={{fontSize:26,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
-                            <span style={{fontWeight:700,fontSize:fix.away.length>10?11:13,color:fav&&fix.away===favTeam?"#fbbf24":T.text,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>{fix.away}</span>
+                          <div style={{display:"flex",alignItems:"center",gap:6,flex:"1 1 0",minWidth:0}}>
+                            <span style={{fontSize:22,cursor:"pointer",flexShrink:0}} onClick={()=>toggleFav(fix.away)}>{FLAGS[fix.away]||"🏳"}</span>
+                            <span style={{fontWeight:700,fontSize:12,color:fav&&fix.away===favTeam?"#fbbf24":T.text,lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{fix.away}</span>
                           </div>
-                          <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-                            <button onClick={()=>setShareCardFix(fix)} title="শেয়ার কার্ড" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.65}}>🖼️</button>
-                            <button onClick={()=>requestNotification(fix,handleNotifToggle)} title={notifScheduled[fix.id]?"রিমাইন্ডার বাতিল":"১০ মিনিট আগে reminder"} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:notifScheduled[fix.id]?1:.5,transition:"all .2s"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
-                            <button onClick={()=>fetchH2H(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:.6}} title="H2H">⚔️</button>
-                            {!results[fix.id]?.h && <button onClick={()=>{setPredModal(fix);setPredHome(predictions[fix.id]?.h||"");setPredAway(predictions[fix.id]?.a||"");}} title="Predict" style={{background:"none",border:"none",cursor:"pointer",fontSize:14,opacity:predictions[fix.id]?1:.5}}>🎯</button>}
+                          <div style={{display:"flex",flexDirection:"column",gap:3,flexShrink:0}}>
+                            <button onClick={()=>setShareCardFix(fix)} title="শেয়ার কার্ড" style={{background:"none",border:"none",cursor:"pointer",fontSize:13,opacity:.65}}>🖼️</button>
+                            <button onClick={()=>requestNotification(fix,handleNotifToggle)} title={notifScheduled[fix.id]?"রিমাইন্ডার বাতিল":"১০ মিনিট আগে reminder"} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,opacity:notifScheduled[fix.id]?1:.5,transition:"all .2s"}}>{notifScheduled[fix.id]?"🔔":"🔕"}</button>
+                            <button onClick={()=>fetchH2H(fix)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,opacity:.6}} title="H2H">⚔️</button>
+                            {!results[fix.id]?.h && <button onClick={()=>{setPredModal(fix);setPredHome(predictions[fix.id]?.h||"");setPredAway(predictions[fix.id]?.a||"");}} title="Predict" style={{background:"none",border:"none",cursor:"pointer",fontSize:13,opacity:predictions[fix.id]?1:.5}}>🎯</button>}
                           </div>
                         </div>
                       );
