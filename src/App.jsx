@@ -34,7 +34,34 @@ function matchUTC(dateStr, etTime) {
 function koMatchUTC(m) {
   return matchUTC(m.date, m.etTime || "12:00");
 }
-// ── TheSportsDB team-name mapping (our names → TheSportsDB names) ──────────
+// ── football-data.org config (primary source — goal scorer সহ পূর্ণ ডেটা) ──
+// নিজের ফ্রি API key এখানে বসান: https://www.football-data.org/client/register
+const FOOTBALL_DATA_API_KEY = "824f73a1c1854c4186ae2acf2446b895";
+const FD_WC_COMPETITION_ID = 2000; // FIFA World Cup
+const FD_TEAM_MAP = {
+  "South Korea":"Korea Republic",
+  "Czech Republic":"Czechia",
+  "Ivory Coast":"Côte d'Ivoire",
+  "USA":"United States",
+  "Cape Verde":"Cabo Verde",
+  "Bosnia & Herzegovina":"Bosnia and Herzegovina",
+  "DR Congo":"DR Congo",
+};
+function fdName(team) { return FD_TEAM_MAP[team] || team; }
+// football-data.org কে সরাসরি browser থেকে call করতে গেলে অনেক সময় CORS ব্লক করে —
+// সেক্ষেত্রে corsproxy.io fallback ব্যবহার করা হয়
+async function fdFetch(url) {
+  try {
+    const r = await fetch(url, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
+    if (r.ok) return r;
+    throw new Error("status " + r.status);
+  } catch {
+    const proxied = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+    return fetch(proxied, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
+  }
+}
+
+// ── TheSportsDB team-name mapping (fallback source) ──────────────────────
 const TSDB_TEAM_MAP = {
   "Czech Republic":"Czech Republic",
   "Ivory Coast":"Ivory Coast",
@@ -60,14 +87,16 @@ function teamsMatch(a,b) {
 }
 function parseGoalDetails(str, side) {
   if (!str) return [];
-  return str.split(";").map(s=>s.trim()).filter(Boolean).map(s=>{
-    // format e.g. "Lionel Messi 23'" or "23' - Lionel Messi"
-    let m = s.match(/^(.*?)\s*(\d+)\s*'?\s*$/);
-    if (m && m[1]) return { team: side, scorer: m[1].trim(), minute: +m[2] };
-    m = s.match(/^(\d+)\s*'?\s*[-:]?\s*(.*)$/);
-    if (m && m[2]) return { team: side, scorer: m[2].trim(), minute: +m[1] };
-    return { team: side, scorer: s, minute: null };
-  }).filter(g=>g.scorer);
+  return str.split(/[;\n]/).map(s=>s.trim()).filter(Boolean).map(s=>{
+    // common formats: "Lionel Messi 23'", "23' Lionel Messi", "23' - Lionel Messi (PEN)", "Lionel Messi 23' 45'" (multi - handled by splitting later)
+    let m = s.match(/^(.*?)\s*(\d+)\s*'?\s*(\(.*\))?\s*$/);
+    if (m && m[1] && m[1].trim()) return { team: side, scorer: m[1].trim(), minute: +m[2] };
+    m = s.match(/^(\d+)\s*'?\s*[-:.)]?\s*(.*)$/);
+    if (m && m[2] && m[2].trim()) return { team: side, scorer: m[2].trim(), minute: +m[1] };
+    // no minute found, just a name
+    if (s && !/^\d+$/.test(s)) return { team: side, scorer: s, minute: null };
+    return null;
+  }).filter(Boolean);
 }
 
 
@@ -2149,6 +2178,10 @@ export default function App() {
   const [stadIdx, setStadIdx] = useState(null);
   const [results, setResults] = useState({});
   const [koResults, setKoResults] = useState({});
+  const resultsRef = useRef(results);
+  const koResultsRef = useRef(koResults);
+  useEffect(()=>{ resultsRef.current = results; }, [results]);
+  useEffect(()=>{ koResultsRef.current = koResults; }, [koResults]);
   const [favTeam, setFavTeam] = useState(() => { try { return localStorage.getItem("wc26_fav")||null; } catch { return null; } });
   const [bdClock, setBdClock] = useState("");
   const [autoFetching, setAutoFetching] = useState(false);
@@ -2258,7 +2291,67 @@ export default function App() {
       const started = [...startedGroup, ...startedKO];
       if (!started.length) { setAutoFetching(false); return; }
 
-      // ── যে যে UTC তারিখে ম্যাচ আছে, সেই তারিখের ইভেন্ট লিস্ট আনো (লীগ: FIFA World Cup id 4429) ──
+      // ── PRIMARY: football-data.org (goal scorer সহ পূর্ণ ডেটা) ──────────
+      const useFD = FOOTBALL_DATA_API_KEY && FOOTBALL_DATA_API_KEY !== "YOUR_FOOTBALL_DATA_API_KEY";
+      if (useFD) {
+        try {
+          const listRes = await fdFetch(`https://api.football-data.org/v4/competitions/${FD_WC_COMPETITION_ID}/matches`);
+          if (listRes.ok) {
+            const listJson = await listRes.json();
+            const matches = Array.isArray(listJson.matches) ? listJson.matches : [];
+            const newGroup = {}, newKO = {};
+            const detailQueue = [];
+            for (const f of started) {
+              const homeAlt = fdName(f.home), awayAlt = fdName(f.away);
+              const m = matches.find(mm =>
+                (teamsMatch(mm.homeTeam?.name, homeAlt) && teamsMatch(mm.awayTeam?.name, awayAlt)) ||
+                (teamsMatch(mm.homeTeam?.name, awayAlt) && teamsMatch(mm.awayTeam?.name, homeAlt))
+              );
+              if (!m) continue;
+              const swapped = !teamsMatch(m.homeTeam?.name, homeAlt);
+              let h = m.score?.fullTime?.home, a = m.score?.fullTime?.away;
+              if (h===null||h===undefined||a===null||a===undefined) { h = m.score?.halfTime?.home; a = m.score?.halfTime?.away; }
+              if (h===null||h===undefined||a===null||a===undefined) continue;
+              if (swapped) { const t=h; h=a; a=t; }
+              let status = "FT";
+              if (m.status === "IN_PLAY") status = "LIVE";
+              else if (m.status === "PAUSED") status = "HT";
+              else if (m.status === "FINISHED") status = "FT";
+              const minute = m.minute || null;
+              const cached = (f.isKO ? koResultsRef.current[f.id] : resultsRef.current[f.id]);
+              const cachedGoals = Array.isArray(cached?.goals) ? cached.goals : [];
+              const entry = { h:String(h), a:String(a), status, minute, goals:cachedGoals, cards:[] };
+              if (f.isKO) newKO[f.id] = entry; else newGroup[f.id] = entry;
+              const totalGoals = (+h||0) + (+a||0);
+              const needGoals = totalGoals > 0 && (status==="LIVE" || status==="HT" || cachedGoals.length < totalGoals);
+              if (needGoals) detailQueue.push({ ...f, matchId:m.id, swapped });
+            }
+            // rate-limit safe: প্রতি cycle এ সর্বোচ্চ ৪টা ম্যাচের detail (goal scorer) আনা হয়
+            for (const dq of detailQueue.slice(0,4)) {
+              try {
+                const dr = await fdFetch(`https://api.football-data.org/v4/matches/${dq.matchId}`);
+                if (dr.ok) {
+                  const dj = await dr.json();
+                  const goalsArr = Array.isArray(dj.goals) ? dj.goals : [];
+                  const goals = goalsArr.map(g => {
+                    const scorerIsHomeTeam = teamsMatch(g.team?.name, dq.swapped ? fdName(dq.away) : fdName(dq.home));
+                    return { team: scorerIsHomeTeam ? "home" : "away", scorer: g.scorer?.name || "?", minute: g.minute };
+                  });
+                  if (dq.isKO) newKO[dq.id] = { ...newKO[dq.id], goals };
+                  else newGroup[dq.id] = { ...newGroup[dq.id], goals };
+                }
+              } catch {}
+            }
+            if (Object.keys(newGroup).length > 0) setResults(prev => ({ ...prev, ...newGroup }));
+            if (Object.keys(newKO).length > 0) setKoResults(prev => ({ ...prev, ...newKO }));
+            setLastFetched(new Date());
+            setAutoFetching(false);
+            return; // football-data সফল হলে TSDB fallback লাগবে না
+          }
+        } catch (e) { console.error("football-data fetch error:", e); }
+      }
+
+      // ── FALLBACK: TheSportsDB (key-less, কিন্তু goal scorer প্রায়ই অনুপস্থিত) ──
       const dateSet = new Set();
       started.forEach(f => {
         const d = new Date(f.utc);
@@ -2276,12 +2369,34 @@ export default function App() {
         } catch { eventsByDate[d] = []; }
       }));
 
+      // ── Fallback: পুরো সিজনের ইভেন্ট লিস্ট (date-based lookup miss করলে এটা থেকে team-name দিয়ে খুঁজে নেওয়া হবে) ──
+      let seasonEvents = [];
+      const dayBasedFound = new Set();
+      Object.values(eventsByDate).forEach(list => list.forEach(ev => dayBasedFound.add(ev.idEvent)));
+      const needsFallback = started.some(f => {
+        const dateA = new Date(f.utc).toISOString().slice(0,10);
+        const dateB = new Date(f.utc + 24*3600000).toISOString().slice(0,10);
+        const candidates = [...(eventsByDate[dateA]||[]), ...(eventsByDate[dateB]||[])];
+        const homeAlt = tsdbName(f.home), awayAlt = tsdbName(f.away);
+        return !candidates.find(e =>
+          (teamsMatch(e.strHomeTeam,homeAlt) && teamsMatch(e.strAwayTeam,awayAlt)) ||
+          (teamsMatch(e.strHomeTeam,awayAlt) && teamsMatch(e.strAwayTeam,homeAlt))
+        );
+      });
+      if (needsFallback) {
+        try {
+          const sr = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsseason.php?id=4429&s=2026`);
+          const sj = await sr.json();
+          seasonEvents = Array.isArray(sj.events) ? sj.events : [];
+        } catch {}
+      }
+
       const newGroup = {}, newKO = {};
 
       for (const f of started) {
         const dateA = new Date(f.utc).toISOString().slice(0,10);
         const dateB = new Date(f.utc + 24*3600000).toISOString().slice(0,10);
-        const candidates = [...(eventsByDate[dateA]||[]), ...(eventsByDate[dateB]||[])];
+        const candidates = [...(eventsByDate[dateA]||[]), ...(eventsByDate[dateB]||[]), ...seasonEvents];
         const homeAlt = tsdbName(f.home), awayAlt = tsdbName(f.away);
         const ev = candidates.find(e =>
           (teamsMatch(e.strHomeTeam,homeAlt) && teamsMatch(e.strAwayTeam,awayAlt)) ||
@@ -2307,20 +2422,20 @@ export default function App() {
         const mm = (ev.strProgress||"").match(/(\d+)/);
         if (mm) minute = +mm[1];
 
-        // goal scorers
+        // goal scorers — lookupevent থেকে বিভিন্ন possible field চেক করা হয়
         let goals = [];
         try {
           const lr = await fetch(`https://www.thesportsdb.com/api/v1/json/3/lookupevent.php?id=${ev.idEvent}`);
           const lj = await lr.json();
-          const det = lj.events?.[0];
-          if (det) {
-            const homeSide = swapped ? "away" : "home";
-            const awaySide = swapped ? "home" : "away";
-            goals = [
-              ...parseGoalDetails(det.strHomeGoalDetails, homeSide),
-              ...parseGoalDetails(det.strAwayGoalDetails, awaySide),
-            ];
-          }
+          const det = lj.events?.[0] || ev;
+          const homeSide = swapped ? "away" : "home";
+          const awaySide = swapped ? "home" : "away";
+          const homeStr = det.strHomeGoalDetails || det.strHomeGoalsDetails || ev.strHomeGoalDetails;
+          const awayStr = det.strAwayGoalDetails || det.strAwayGoalsDetails || ev.strAwayGoalDetails;
+          goals = [
+            ...parseGoalDetails(homeStr, homeSide),
+            ...parseGoalDetails(awayStr, awaySide),
+          ];
         } catch {}
 
         const entry = { h:String(h), a:String(a), status, minute, goals, cards:[] };
@@ -2643,12 +2758,30 @@ export default function App() {
     const bd=new Date(now+6*3600000);
     const mn=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const todayBD=mn[bd.getUTCMonth()]+" "+bd.getUTCDate();
-    return ALL_GROUP_FIXTURES.filter(f=>{
-      // প্রতিটি fixture এর BD date বের করি
+    const todays = ALL_GROUP_FIXTURES.filter(f=>{
       const fixBDDate = bdDateStr(f.dateStr, f.etTime);
       return fixBDDate === todayBD;
     });
-  },[]);
+    const allOver = todays.length>0 && todays.every(f => {
+      try { return matchUTC(f.dateStr,f.etTime) + 105*60000 < now; } catch { return true; }
+    });
+    if (todays.length>0 && !allOver) return todays;
+    // আজকের সব ম্যাচ শেষ হয়ে গেলে বা আজ কোনো ম্যাচ না থাকলে — পরবর্তী দিনের ম্যাচ দেখাও
+    const upcoming = ALL_GROUP_FIXTURES
+      .filter(f => { try { return matchUTC(f.dateStr,f.etTime) > now; } catch { return false; } })
+      .sort((a,b)=>matchUTC(a.dateStr,a.etTime)-matchUTC(b.dateStr,b.etTime));
+    if (!upcoming.length) return [];
+    const nextBD = bdDateStr(upcoming[0].dateStr, upcoming[0].etTime);
+    return upcoming.filter(f => bdDateStr(f.dateStr,f.etTime) === nextBD);
+  },[results]);
+  const isShowingNextDay = useMemo(()=>{
+    if (!todayMatches.length) return false;
+    const now=Date.now();
+    const bd=new Date(now+6*3600000);
+    const mn=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const todayBD=mn[bd.getUTCMonth()]+" "+bd.getUTCDate();
+    return bdDateStr(todayMatches[0].dateStr, todayMatches[0].etTime) !== todayBD;
+  },[todayMatches]);
 
   // Group fixtures by date for the fixture tab
   const fixturesByDate = useMemo(() => {
@@ -2947,11 +3080,13 @@ export default function App() {
                   <div style={{background:`linear-gradient(135deg,${dark?"#064e3b":"#047857"},${dark?"#065f46 60%,#000e05":"#059669 60%,#f0fdf4"})`,padding:"16px 20px",display:"flex",alignItems:"center",gap:10}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{width:9,height:9,borderRadius:"50%",background:"#ef4444",display:"inline-block",animation:"pulse 1s infinite",boxShadow:"0 0 8px #ef444488"}}/>
-                      <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,letterSpacing:3,color:"#fff"}}>আজকের ম্যাচ</span>
+                      <span style={{fontFamily:"'Bebas Neue',cursive",fontSize:20,letterSpacing:3,color:"#fff"}}>{isShowingNextDay?"আগামী ম্যাচ":"আজকের ম্যাচ"}</span>
                     </div>
                     <span style={{marginLeft:4,padding:"2px 10px",background:"rgba(255,255,255,.15)",borderRadius:999,fontSize:11,fontWeight:700,color:"#fff",backdropFilter:"blur(4px)"}}>{todayMatches.length}টি ম্যাচ</span>
                     <div style={{marginLeft:"auto",fontSize:11,color:"rgba(255,255,255,.7)",fontWeight:500}}>
-                      {new Date(Date.now()+6*3600000).toLocaleDateString("bn-BD",{weekday:"long",month:"long",day:"numeric"})} — BD সময়
+                      {isShowingNextDay
+                        ? `${bdDateStr(todayMatches[0].dateStr, todayMatches[0].etTime)} — BD সময়`
+                        : `${new Date(Date.now()+6*3600000).toLocaleDateString("bn-BD",{weekday:"long",month:"long",day:"numeric"})} — BD সময়`}
                     </div>
                   </div>
                   {/* Match rows */}
