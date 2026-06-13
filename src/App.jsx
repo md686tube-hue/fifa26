@@ -2206,6 +2206,46 @@ export default function App() {
   useEffect(()=>{ resultsRef.current = results; }, [results]);
   useEffect(()=>{ koResultsRef.current = koResults; }, [koResults]);
   const [favTeam, setFavTeam] = useState(() => { try { return localStorage.getItem("wc26_fav")||null; } catch { return null; } });
+  const [picks, setPicks] = useState(() => { try { return JSON.parse(localStorage.getItem("wc26_picks")||"{}"); } catch { return {}; } });
+  const togglePick = (pid, side) => setPicks(p => {
+    const np = {...p, [pid]: p[pid]===side ? undefined : side};
+    if (np[pid]===undefined) delete np[pid];
+    try { localStorage.setItem("wc26_picks", JSON.stringify(np)); } catch {}
+    return np;
+  });
+
+
+  // ── 🔔 Goal alert: favTeam-এর ম্যাচে গোল হলে push notification ──────────
+  const prevGoalsRef = useRef({});
+  useEffect(() => {
+    if (!favTeam || !("Notification" in window) || Notification.permission !== "granted") return;
+    const checkGoals = (resObj, fixtures, idKey) => {
+      Object.entries(resObj).forEach(([id, r]) => {
+        const f = fixtures.find(x => String(x.id) === String(id));
+        if (!f || (f.home !== favTeam && f.away !== favTeam)) return;
+        const goals = Array.isArray(r?.goals) ? r.goals : [];
+        const prevLen = prevGoalsRef.current[idKey + id] ?? goals.length;
+        if (goals.length > prevLen) {
+          for (let i = prevLen; i < goals.length; i++) {
+            const g = goals[i];
+            const team = g.team === "home" ? f.home : f.away;
+            const score = `${r.h ?? "?"} - ${r.a ?? "?"}`;
+            try {
+              const n = new Notification(`⚽ গোল! ${team}`, {
+                body: `${g.scorer || ""}${g.minute?` (${g.minute}')`:""}\n${f.home} ${score} ${f.away}`,
+                icon: "/icon-192.png", tag: `wc26-goal-${id}-${i}`,
+              });
+              n.onclick = () => { window.focus(); n.close(); };
+            } catch {}
+          }
+        }
+        prevGoalsRef.current[idKey + id] = goals.length;
+      });
+    };
+    checkGoals(results, ALL_GROUP_FIXTURES, "g");
+    checkGoals(koResults, KNOCKOUT_ROUNDS.flatMap(r=>r.matches), "k");
+  }, [results, koResults, favTeam]);
+
   const [bdClock, setBdClock] = useState("");
   const [autoFetching, setAutoFetching] = useState(false);
   const [lastFetched, setLastFetched] = useState(null);
@@ -2734,11 +2774,34 @@ export default function App() {
     {k:"fixtures",l:"📅 Fixtures"},
     {k:"results",l:"✅ Results"},
     {k:"standings",l:"📊 Standings"},
+    {k:"scorers",l:"⚽ গোলদাতা"},
     {k:"bracket",l:"🗂️ Bracket"},
     {k:"stadiums",l:"🏟️ Stadiums"},
     {k:"squads",l:"👕 Squads"},
     {k:"myteam",l:"⭐ আমার দল"},
   ];
+
+  // ── Top Scorers (Golden Boot tracker) ──────────────────────────────────
+  const topScorers = useMemo(() => {
+    const map = {};
+    const add = (resObj, fixtures) => {
+      Object.entries(resObj).forEach(([id, r]) => {
+        const f = fixtures.find(x => String(x.id) === String(id));
+        if (!f || !Array.isArray(r?.goals)) return;
+        r.goals.forEach(g => {
+          if (!g.scorer || /\(og\)/i.test(g.scorer)) return; // own goals বাদ
+          const team = g.team === "home" ? f.home : f.away;
+          const key = g.scorer.trim() + "|" + team;
+          if (!map[key]) map[key] = { scorer: g.scorer.trim(), team, goals: 0 };
+          map[key].goals++;
+        });
+      });
+    };
+    add(results, ALL_GROUP_FIXTURES);
+    add(koResults, KNOCKOUT_ROUNDS.flatMap(r=>r.matches));
+    return Object.values(map).sort((a,b)=>b.goals-a.goals).slice(0,20);
+  }, [results, koResults]);
+
 
   // today's matches helper — BD সময়ের date দিয়ে compare
   const todayMatches = useMemo(()=>{
@@ -3732,6 +3795,30 @@ export default function App() {
           )}
 
           {/* ═══ BRACKET ═══ */}
+          {tab==="scorers" && (
+            <div>
+              <div style={{fontSize:18,fontWeight:800,marginBottom:4}}>⚽ Golden Boot Tracker</div>
+              <div style={{fontSize:11,color:T.sub,marginBottom:12}}>টুর্নামেন্টের সর্বোচ্চ গোলদাতারা (own goal বাদে)</div>
+              {topScorers.length===0 ? (
+                <div style={{textAlign:"center",padding:30,color:T.sub,fontSize:13}}>এখনো কোনো গোল রেকর্ড হয়নি</div>
+              ) : (
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  {topScorers.map((s,i)=>(
+                    <div key={s.scorer+s.team} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:10,background:T.card,border:`1px solid ${T.border}`}}>
+                      <div style={{width:24,textAlign:"center",fontWeight:800,fontSize:13,color:i<3?"#fbbf24":T.sub}}>{i+1}</div>
+                      <span style={{fontSize:20}}>{FLAGS[s.team]||"🏳"}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.scorer}</div>
+                        <div style={{fontSize:10,color:T.sub}}>{s.team}</div>
+                      </div>
+                      <div style={{fontSize:18,fontWeight:800,color:c}}>{s.goals}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {tab==="bracket" && (()=>{
             try {
             // ── helpers ────────────────────────────────────────────────────
@@ -3826,13 +3913,15 @@ export default function App() {
             const thirdP  = [{m:1, a:slotKOLoser("sf-1","L SF-1"),  b:slotKOLoser("sf-2","L SF-2"),  date:"Jul 18"}];
 
             // ── Team Slot component ────────────────────────────────────────
-            const TeamSlot = ({team, accent="#10b981", winner=false}) => (
-              <div style={{
+            const TeamSlot = ({team, accent="#10b981", winner=false, onClick=null, picked=false, pickResult=null}) => (
+              <div onClick={onClick} style={{
                 display:"flex", alignItems:"center", gap:5,
                 padding:"5px 8px",
                 background: team.tbd ? (dark?"rgba(255,255,255,.03)":"rgba(0,0,0,.04)") : winner ? "rgba(251,191,36,.12)" : `${accent}0f`,
-                border:`1px solid ${team.tbd ? T.border : winner ? "rgba(251,191,36,.4)" : accent+"33"}`,
-                borderRadius:7, minWidth:0, transition:"all .2s"
+                border:`1px solid ${picked?"#fbbf24":team.tbd ? T.border : winner ? "rgba(251,191,36,.4)" : accent+"33"}`,
+                borderRadius:7, minWidth:0, transition:"all .2s",
+                cursor: onClick ? "pointer" : "default",
+                boxShadow: picked ? "0 0 0 1px #fbbf24 inset" : "none"
               }}>
                 <span style={{fontSize:15, flexShrink:0}}>{team.flag}</span>
                 <span style={{
@@ -3840,13 +3929,26 @@ export default function App() {
                   color: team.tbd ? T.dim : winner ? "#fbbf24" : team.confirmed ? accent : T.text,
                   flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"
                 }}>{team.team}</span>
+                {picked && <span style={{fontSize:10,flexShrink:0}}>⭐</span>}
+                {pickResult==="correct" && <span style={{fontSize:10,flexShrink:0}}>✅</span>}
+                {pickResult==="wrong" && <span style={{fontSize:10,flexShrink:0}}>❌</span>}
                 {team.confirmed && !team.tbd && <span style={{fontSize:8,color:accent,flexShrink:0}}>✓</span>}
               </div>
             );
 
             // ── Match Box ──────────────────────────────────────────────────
-            const MatchBox = ({match, accent="#10b981", isFinal=false, showDate=true}) => {
+            const MatchBox = ({match, accent="#10b981", isFinal=false, showDate=true, pid=null}) => {
               const both = !match.a.tbd && !match.b.tbd;
+              const koRes = pid ? koResults[pid] : null;
+              const decided = koRes && koRes.h!=="" && koRes.a!=="" && !isNaN(+koRes.h) && !isNaN(+koRes.a);
+              const pick = pid ? picks[pid] : null;
+              const pickable = both && !decided && pid;
+              let aPickRes=null, bPickRes=null;
+              if (decided && pick) {
+                const winnerSide = +koRes.h > +koRes.a ? "a" : "b";
+                if (pick==="a") aPickRes = winnerSide==="a"?"correct":"wrong";
+                if (pick==="b") bPickRes = winnerSide==="b"?"correct":"wrong";
+              }
               return (
               <div style={{
                 background: isFinal ? "rgba(251,191,36,.06)" : T.card,
@@ -3857,10 +3959,11 @@ export default function App() {
               }}>
                 {showDate && <div style={{fontSize:8,color:T.dim,marginBottom:4,textAlign:"center",fontFamily:"'Bebas Neue',cursive",letterSpacing:1}}>{match.date}</div>}
                 <div style={{display:"flex",flexDirection:"column",gap:3}}>
-                  <TeamSlot team={match.a} accent={isFinal?"#fbbf24":accent}/>
+                  <TeamSlot team={match.a} accent={isFinal?"#fbbf24":accent} onClick={pickable?()=>togglePick(pid,"a"):null} picked={pick==="a"} pickResult={aPickRes}/>
                   <div style={{textAlign:"center",fontSize:8,color:T.dim,fontFamily:"'Bebas Neue',cursive",letterSpacing:1}}>VS</div>
-                  <TeamSlot team={match.b} accent={isFinal?"#fbbf24":accent}/>
+                  <TeamSlot team={match.b} accent={isFinal?"#fbbf24":accent} onClick={pickable?()=>togglePick(pid,"b"):null} picked={pick==="b"} pickResult={bPickRes}/>
                 </div>
+                {pickable && <div style={{fontSize:8,color:T.dim,textAlign:"center",marginTop:3}}>👆 ট্যাপ করে winner predict করো</div>}
               </div>
               );
             };
@@ -3873,9 +3976,9 @@ export default function App() {
             );
 
             // ── Column of matches ─────────────────────────────────────────
-            const MatchColumn = ({matches, accent, isFinal=false, justify="center"}) => (
+            const MatchColumn = ({matches, accent, isFinal=false, justify="center", idPrefix=null}) => (
               <div style={{display:"flex",flexDirection:"column",gap:6,justifyContent:justify}}>
-                {matches.map((m,i)=><MatchBox key={i} match={m} accent={accent} isFinal={isFinal}/>)}
+                {matches.map((m,i)=><MatchBox key={i} match={m} accent={accent} isFinal={isFinal} pid={idPrefix?`${idPrefix}-${m.m}`:null}/>)}
               </div>
             );
 
@@ -3951,25 +4054,25 @@ export default function App() {
                       {/* R32 left */}
                       <div style={{width:matchW,flexShrink:0}}>
                         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#10b981",textAlign:"center",marginBottom:5}}>ROUND OF 32</div>
-                        <MatchColumn matches={leftR32} accent="#10b981" justify="space-around"/>
+                        <MatchColumn matches={leftR32} accent="#10b981" justify="space-around" idPrefix="r32"/>
                       </div>
                       <Connector accent="#10b981"/>
                       {/* R16 left */}
                       <div style={{width:matchW,flexShrink:0}}>
                         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#3b82f6",textAlign:"center",marginBottom:5}}>ROUND OF 16</div>
-                        <MatchColumn matches={leftR16} accent="#3b82f6" justify="space-around"/>
+                        <MatchColumn matches={leftR16} accent="#3b82f6" justify="space-around" idPrefix="r16"/>
                       </div>
                       <Connector accent="#3b82f6"/>
                       {/* QF left */}
                       <div style={{width:matchW,flexShrink:0}}>
                         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#8b5cf6",textAlign:"center",marginBottom:5}}>QUARTER-FINAL</div>
-                        <MatchColumn matches={leftQF} accent="#8b5cf6" justify="space-around"/>
+                        <MatchColumn matches={leftQF} accent="#8b5cf6" justify="space-around" idPrefix="qf"/>
                       </div>
                       <Connector accent="#8b5cf6"/>
                       {/* SF left */}
                       <div style={{width:matchW,flexShrink:0}}>
                         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#f59e0b",textAlign:"center",marginBottom:5}}>SEMI-FINAL</div>
-                        <MatchColumn matches={leftSF} accent="#f59e0b" justify="center"/>
+                        <MatchColumn matches={leftSF} accent="#f59e0b" justify="center" idPrefix="sf"/>
                       </div>
                       <Connector accent="#f59e0b"/>
                     </div>
@@ -3978,10 +4081,10 @@ export default function App() {
                     <div style={{flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", gap:10, width:matchW+20}}>
                       <div style={{fontSize:32, animation:"pulse 3s infinite"}}>🏆</div>
                       <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:11,letterSpacing:2,color:"#fbbf24",textAlign:"center"}}>FINAL · Jul 19</div>
-                      <MatchBox match={fin[0]} accent="#fbbf24" isFinal={true} showDate={false}/>
+                      <MatchBox match={fin[0]} accent="#fbbf24" isFinal={true} showDate={false} pid="fin"/>
                       <div style={{width:"100%",height:1,background:"rgba(251,191,36,.2)"}}/>
                       <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:9,letterSpacing:1,color:"#6b7280",textAlign:"center"}}>3RD PLACE · Jul 18</div>
-                      <MatchBox match={thirdP[0]} accent="#6b7280" showDate={false}/>
+                      <MatchBox match={thirdP[0]} accent="#6b7280" showDate={false} pid="3pl"/>
                     </div>
 
                     {/* RIGHT SIDE: SF → QF → R16 → R32 */}
@@ -3989,25 +4092,25 @@ export default function App() {
                       {/* R32 right */}
                       <div style={{width:matchW,flexShrink:0}}>
                         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#10b981",textAlign:"center",marginBottom:5}}>ROUND OF 32</div>
-                        <MatchColumn matches={rightR32} accent="#10b981" justify="space-around"/>
+                        <MatchColumn matches={rightR32} accent="#10b981" justify="space-around" idPrefix="r32"/>
                       </div>
                       <Connector accent="#10b981"/>
                       {/* R16 right */}
                       <div style={{width:matchW,flexShrink:0}}>
                         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#3b82f6",textAlign:"center",marginBottom:5}}>ROUND OF 16</div>
-                        <MatchColumn matches={rightR16} accent="#3b82f6" justify="space-around"/>
+                        <MatchColumn matches={rightR16} accent="#3b82f6" justify="space-around" idPrefix="r16"/>
                       </div>
                       <Connector accent="#3b82f6"/>
                       {/* QF right */}
                       <div style={{width:matchW,flexShrink:0}}>
                         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#8b5cf6",textAlign:"center",marginBottom:5}}>QUARTER-FINAL</div>
-                        <MatchColumn matches={rightQF} accent="#8b5cf6" justify="space-around"/>
+                        <MatchColumn matches={rightQF} accent="#8b5cf6" justify="space-around" idPrefix="qf"/>
                       </div>
                       <Connector accent="#8b5cf6"/>
                       {/* SF right */}
                       <div style={{width:matchW,flexShrink:0}}>
                         <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:10,letterSpacing:2,color:"#f59e0b",textAlign:"center",marginBottom:5}}>SEMI-FINAL</div>
-                        <MatchColumn matches={rightSF} accent="#f59e0b" justify="center"/>
+                        <MatchColumn matches={rightSF} accent="#f59e0b" justify="center" idPrefix="sf"/>
                       </div>
                       <Connector accent="#f59e0b"/>
                     </div>
