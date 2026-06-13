@@ -93,6 +93,10 @@ const MANUAL_RESULTS = {
     { team:"away", scorer:"J. Lukic", minute:21 },
     { team:"home", scorer:"C. Larin", minute:78 }
   ], cards:[] },
+  4: { h:"1", a:"1", status:"FT", minute:null, goals:[
+    { team:"away", scorer:"B. Embolo (pen)", minute:17 },
+    { team:"home", scorer:"B. Khoukhi", minute:90 }
+  ], cards:[] },
   5: { h:"4", a:"1", status:"FT", minute:null, goals:[
     { team:"home", scorer:"D. Bobadilla (og)", minute:7 },
     { team:"home", scorer:"F. Balogun", minute:31 },
