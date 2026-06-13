@@ -2762,14 +2762,18 @@ export default function App() {
     return bdDateStr(todayMatches[0].dateStr, todayMatches[0].etTime) !== todayBD;
   },[todayMatches]);
 
-  // Group fixtures by date for the fixture tab
+  // Group fixtures by BD date for the fixture tab
   const fixturesByDate = useMemo(() => {
     const grouped = {};
     filteredFix.forEach(f => {
-      if (!grouped[f.dateStr]) grouped[f.dateStr] = [];
-      grouped[f.dateStr].push(f);
+      const key = bdDateStr(f.dateStr, f.etTime);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(f);
     });
     const mn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    Object.values(grouped).forEach(arr => arr.sort((a,b)=>{
+      try { return matchUTC(a.dateStr,a.etTime) - matchUTC(b.dateStr,b.etTime); } catch { return 0; }
+    }));
     return Object.entries(grouped).sort(([a],[b]) => {
       const [am,ad] = a.split(" "); const [bm,bd2] = b.split(" ");
       return (mn.indexOf(am)*31 + +ad) - (mn.indexOf(bm)*31 + +bd2);
@@ -2790,9 +2794,13 @@ export default function App() {
     const all = [...finishedGroup, ...finishedKO];
     const grouped = {};
     all.forEach(f => {
-      if (!grouped[f.dateStr]) grouped[f.dateStr] = [];
-      grouped[f.dateStr].push(f);
+      const key = bdDateStr(f.dateStr, f.etTime);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(f);
     });
+    Object.values(grouped).forEach(arr => arr.sort((a,b)=>{
+      try { return matchUTC(a.dateStr,a.etTime) - matchUTC(b.dateStr,b.etTime); } catch { return 0; }
+    }));
     return Object.entries(grouped).sort(([a],[b]) => {
       const [am,ad] = a.split(" "); const [bm,bd2] = b.split(" ");
       return (mn.indexOf(bm)*31 + +bd2) - (mn.indexOf(am)*31 + +ad); // descending: latest date first
