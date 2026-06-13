@@ -79,6 +79,14 @@ function normName(s) {
     .replace(/[^a-z0-9]/g,"");
 }
 function teamsMatch(a,b) {
+// ── Manual result fallback (API name-matching মাঝে মাঝে miss করে) ──────────
+const MANUAL_RESULTS = {
+  3: { h:"1", a:"1", status:"FT", minute:null, goals:[
+    { team:"away", scorer:"J. Lukic", minute:21 },
+    { team:"home", scorer:"C. Larin", minute:78 }
+  ], cards:[] },
+};
+function teamsMatch(a,b) {
   const na=normName(a), nb=normName(b);
   if (na===nb) return true;
   // partial containment for things like "Czechia" vs "Czech Republic", "DR Congo" vs "Congo DR"
@@ -231,7 +239,7 @@ const ALL_GROUP_FIXTURES=[
   {id:32,grp:"D",home:"Turkey",away:"Paraguay",dateStr:"Jun 19",etTime:"23:00",venue:"Levi's Stadium, Santa Clara"},
   {id:55,grp:"D",home:"Turkey",away:"USA",dateStr:"Jun 25",etTime:"22:00",venue:"SoFi Stadium, Inglewood"},
   {id:56,grp:"D",home:"Paraguay",away:"Australia",dateStr:"Jun 25",etTime:"22:00",venue:"Levi's Stadium, Santa Clara"},
-  {id:9,grp:"E",home:"Germany",away:"Curaçao",dateStr:"Jun 13",etTime:"13:00",venue:"NRG Stadium, Houston"},
+  {id:9,grp:"E",home:"Germany",away:"Curaçao",dateStr:"Jun 14",etTime:"13:00",venue:"NRG Stadium, Houston"},
   {id:10,grp:"E",home:"Ivory Coast",away:"Ecuador",dateStr:"Jun 14",etTime:"19:00",venue:"Lincoln Financial Field, Philadelphia"},
   {id:33,grp:"E",home:"Germany",away:"Ivory Coast",dateStr:"Jun 20",etTime:"16:00",venue:"BMO Field, Toronto"},
   {id:34,grp:"E",home:"Ecuador",away:"Curaçao",dateStr:"Jun 20",etTime:"20:00",venue:"Arrowhead Stadium, Kansas City"},
@@ -2176,7 +2184,7 @@ export default function App() {
   const [squadSearch, setSquadSearch] = useState("");
   const [standGrp, setStandGrp] = useState("A");
   const [stadIdx, setStadIdx] = useState(null);
-  const [results, setResults] = useState({});
+  const [results, setResults] = useState(() => ({...MANUAL_RESULTS}));
   const [koResults, setKoResults] = useState({});
   const resultsRef = useRef(results);
   const koResultsRef = useRef(koResults);
