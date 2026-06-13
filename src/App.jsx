@@ -78,7 +78,6 @@ function normName(s) {
     .normalize("NFD").replace(/[\u0300-\u036f]/g,"") // strip accents
     .replace(/[^a-z0-9]/g,"");
 }
-function teamsMatch(a,b) {
 // ── Manual result fallback (API name-matching মাঝে মাঝে miss করে) ──────────
 const MANUAL_RESULTS = {
   3: { h:"1", a:"1", status:"FT", minute:null, goals:[
