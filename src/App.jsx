@@ -4587,6 +4587,7 @@ export default function App() {
               {k:"fixtures",icon:"📅",label:"Fixtures"},
               {k:"results",icon:"✅",label:"Results"},
               {k:"standings",icon:"📊",label:"Standings"},
+              {k:"scorers",icon:"⚽",label:"গোলদাতা"},
               {k:"bracket",icon:"🗂️",label:"Bracket"},
               {k:"stadiums",icon:"🏟️",label:"Stadiums"},
               {k:"squads",icon:"👕",label:"Squads"},
