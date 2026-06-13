@@ -80,9 +80,25 @@ function normName(s) {
 }
 // ── Manual result fallback (API name-matching মাঝে মাঝে miss করে) ──────────
 const MANUAL_RESULTS = {
+  1: { h:"2", a:"0", status:"FT", minute:null, goals:[
+    { team:"home", scorer:"J. Quiñones", minute:23 },
+    { team:"home", scorer:"R. Jiménez", minute:55 }
+  ], cards:[] },
+  2: { h:"2", a:"1", status:"FT", minute:null, goals:[
+    { team:"away", scorer:"L. Krejčí", minute:59 },
+    { team:"home", scorer:"Hwang In-beom", minute:70 },
+    { team:"home", scorer:"Oh Hyeon-gyu", minute:80 }
+  ], cards:[] },
   3: { h:"1", a:"1", status:"FT", minute:null, goals:[
     { team:"away", scorer:"J. Lukic", minute:21 },
     { team:"home", scorer:"C. Larin", minute:78 }
+  ], cards:[] },
+  5: { h:"4", a:"1", status:"FT", minute:null, goals:[
+    { team:"home", scorer:"D. Bobadilla (og)", minute:7 },
+    { team:"home", scorer:"F. Balogun", minute:31 },
+    { team:"home", scorer:"F. Balogun", minute:45 },
+    { team:"away", scorer:"Mauricio", minute:73 },
+    { team:"home", scorer:"G. Reyna", minute:90 }
   ], cards:[] },
 };
 function teamsMatch(a,b) {
@@ -2318,7 +2334,9 @@ export default function App() {
       console.log("[WC26] started fixtures:", started.length, started.map(f=>`${f.home} vs ${f.away}`));
       if (!started.length) { setAutoFetching(false); return; }
 
-      // ── PRIMARY: football-data.org (goal scorer সহ পূর্ণ ডেটা) ──────────
+      const newGroup = {}, newKO = {};
+
+      // ── PRIMARY: football-data.org (score/status — সাধারণত goal scorer থাকে না, free tier limitation) ──
       const useFD = FOOTBALL_DATA_API_KEY && FOOTBALL_DATA_API_KEY !== "YOUR_FOOTBALL_DATA_API_KEY";
       if (useFD) {
         try {
@@ -2328,8 +2346,6 @@ export default function App() {
             const listJson = await listRes.json();
             const matches = Array.isArray(listJson.matches) ? listJson.matches : [];
             console.log("[WC26] football-data total matches:", matches.length, "sample:", matches.slice(0,3).map(m=>`${m.homeTeam?.name} vs ${m.awayTeam?.name} | ${m.status} | ${m.score?.fullTime?.home}-${m.score?.fullTime?.away}`));
-            const newGroup = {}, newKO = {};
-            const detailQueue = [];
             for (const f of started) {
               const homeAlt = fdName(f.home), awayAlt = fdName(f.away);
               const m = matches.find(mm =>
@@ -2352,36 +2368,12 @@ export default function App() {
               const cachedGoals = Array.isArray(cached?.goals) ? cached.goals : [];
               const entry = { h:String(h), a:String(a), status, minute, goals:cachedGoals, cards:[] };
               if (f.isKO) newKO[f.id] = entry; else newGroup[f.id] = entry;
-              const totalGoals = (+h||0) + (+a||0);
-              const needGoals = totalGoals > 0 && (status==="LIVE" || status==="HT" || cachedGoals.length < totalGoals);
-              if (needGoals) detailQueue.push({ ...f, matchId:m.id, swapped });
             }
-            // rate-limit safe: প্রতি cycle এ সর্বোচ্চ ৪টা ম্যাচের detail (goal scorer) আনা হয়
-            for (const dq of detailQueue.slice(0,4)) {
-              try {
-                const dr = await fdFetch(`https://api.football-data.org/v4/matches/${dq.matchId}`);
-                if (dr.ok) {
-                  const dj = await dr.json();
-                  const goalsArr = Array.isArray(dj.goals) ? dj.goals : [];
-                  const goals = goalsArr.map(g => {
-                    const scorerIsHomeTeam = teamsMatch(g.team?.name, dq.swapped ? fdName(dq.away) : fdName(dq.home));
-                    return { team: scorerIsHomeTeam ? "home" : "away", scorer: g.scorer?.name || "?", minute: g.minute };
-                  });
-                  if (dq.isKO) newKO[dq.id] = { ...newKO[dq.id], goals };
-                  else newGroup[dq.id] = { ...newGroup[dq.id], goals };
-                }
-              } catch {}
-            }
-            if (Object.keys(newGroup).length > 0) setResults(prev => ({ ...prev, ...newGroup }));
-            if (Object.keys(newKO).length > 0) setKoResults(prev => ({ ...prev, ...newKO }));
-            setLastFetched(new Date());
-            setAutoFetching(false);
-            return; // football-data সফল হলে TSDB fallback লাগবে না
           }
         } catch (e) { console.error("football-data fetch error:", e); }
       }
 
-      // ── FALLBACK: TheSportsDB (key-less, কিন্তু goal scorer প্রায়ই অনুপস্থিত) ──
+      // ── TheSportsDB: score fallback (FD miss করলে) + goal scorer enrichment (সব ম্যাচের জন্য) ──
       const dateSet = new Set();
       started.forEach(f => {
         const d = new Date(f.utc);
@@ -2421,9 +2413,16 @@ export default function App() {
         } catch {}
       }
 
-      const newGroup = {}, newKO = {};
-
+      let lookupBudget = 6; // প্রতি cycle এ সর্বোচ্চ এতগুলো lookupevent কল (rate-limit safe)
       for (const f of started) {
+        const cached = (f.isKO ? koResultsRef.current[f.id] : resultsRef.current[f.id]);
+        const fdEntry = f.isKO ? newKO[f.id] : newGroup[f.id];
+        const baseEntry = fdEntry || cached;
+        const baseGoals = Array.isArray(baseEntry?.goals) ? baseEntry.goals : [];
+        const baseTotal = baseEntry ? ((+baseEntry.h||0)+(+baseEntry.a||0)) : 0;
+        const goalsComplete = baseEntry && baseTotal > 0 && baseGoals.length >= baseTotal;
+        if (goalsComplete && fdEntry) continue; // FD score আছে এবং goal scorer ও সম্পূর্ণ — TSDB লাগবে না
+
         const dateA = new Date(f.utc).toISOString().slice(0,10);
         const dateB = new Date(f.utc + 24*3600000).toISOString().slice(0,10);
         const candidates = [...(eventsByDate[dateA]||[]), ...(eventsByDate[dateB]||[]), ...seasonEvents];
@@ -2433,40 +2432,50 @@ export default function App() {
           (teamsMatch(e.strHomeTeam,awayAlt) && teamsMatch(e.strAwayTeam,homeAlt))
         );
         if (!ev) continue;
-        if (ev.intHomeScore === null || ev.intAwayScore === null || ev.intHomeScore === undefined || ev.intAwayScore === undefined) continue;
 
         const swapped = !teamsMatch(ev.strHomeTeam, homeAlt);
-        let h = +ev.intHomeScore, a = +ev.intAwayScore;
-        if (swapped) { const t=h; h=a; a=t; }
-
-        // status detection
-        let status = "FT";
-        const st = (ev.strStatus||"").toLowerCase();
-        const prog = (ev.strProgress||"").toLowerCase();
-        if (st.includes("finish") || st === "ft" || st.includes("match finished")) status = "FT";
-        else if (st.includes("half") || prog.includes("ht")) status = "HT";
-        else if (st === "ns" || st.includes("not started") || !st) status = "FT"; // fallback: কোনো status না থাকলে FT ধরে নেই (score আছে মানে শেষ)
-        else status = "LIVE";
-
-        let minute = null;
-        const mm = (ev.strProgress||"").match(/(\d+)/);
-        if (mm) minute = +mm[1];
+        let h, a, status, minute;
+        if (fdEntry) {
+          // FD-এর score/status নির্ভরযোগ্য — শুধু goal scorer চাই
+          h = fdEntry.h; a = fdEntry.a; status = fdEntry.status; minute = fdEntry.minute;
+        } else {
+          if (ev.intHomeScore === null || ev.intAwayScore === null || ev.intHomeScore === undefined || ev.intAwayScore === undefined) continue;
+          h = +ev.intHomeScore; a = +ev.intAwayScore;
+          if (swapped) { const t=h; h=a; a=t; }
+          // status detection
+          status = "FT";
+          const st = (ev.strStatus||"").toLowerCase();
+          const prog = (ev.strProgress||"").toLowerCase();
+          if (st.includes("finish") || st === "ft" || st.includes("match finished")) status = "FT";
+          else if (st.includes("half") || prog.includes("ht")) status = "HT";
+          else if (st === "ns" || st.includes("not started") || !st) status = "FT";
+          else status = "LIVE";
+          minute = null;
+          const mm = (ev.strProgress||"").match(/(\d+)/);
+          if (mm) minute = +mm[1];
+          h = String(h); a = String(a);
+        }
 
         // goal scorers — lookupevent থেকে বিভিন্ন possible field চেক করা হয়
-        let goals = [];
-        try {
-          const lr = await fetch(`https://www.thesportsdb.com/api/v1/json/3/lookupevent.php?id=${ev.idEvent}`);
-          const lj = await lr.json();
-          const det = lj.events?.[0] || ev;
-          const homeSide = swapped ? "away" : "home";
-          const awaySide = swapped ? "home" : "away";
-          const homeStr = det.strHomeGoalDetails || det.strHomeGoalsDetails || ev.strHomeGoalDetails;
-          const awayStr = det.strAwayGoalDetails || det.strAwayGoalsDetails || ev.strAwayGoalDetails;
-          goals = [
-            ...parseGoalDetails(homeStr, homeSide),
-            ...parseGoalDetails(awayStr, awaySide),
-          ];
-        } catch {}
+        let goals = baseGoals;
+        const totalGoals = (+h||0)+(+a||0);
+        if (totalGoals > 0 && baseGoals.length < totalGoals && lookupBudget > 0) {
+          lookupBudget--;
+          try {
+            const lr = await fetch(`https://www.thesportsdb.com/api/v1/json/3/lookupevent.php?id=${ev.idEvent}`);
+            const lj = await lr.json();
+            const det = lj.events?.[0] || ev;
+            const homeSide = swapped ? "away" : "home";
+            const awaySide = swapped ? "home" : "away";
+            const homeStr = det.strHomeGoalDetails || det.strHomeGoalsDetails || ev.strHomeGoalDetails;
+            const awayStr = det.strAwayGoalDetails || det.strAwayGoalsDetails || ev.strAwayGoalDetails;
+            const parsed = [
+              ...parseGoalDetails(homeStr, homeSide),
+              ...parseGoalDetails(awayStr, awaySide),
+            ];
+            if (parsed.length >= baseGoals.length) goals = parsed;
+          } catch {}
+        }
 
         const entry = { h:String(h), a:String(a), status, minute, goals, cards:[] };
         if (f.isKO) newKO[f.id] = entry; else newGroup[f.id] = entry;
