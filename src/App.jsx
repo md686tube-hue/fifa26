@@ -2390,6 +2390,7 @@ export default function App() {
             const listJson = await listRes.json();
             const matches = Array.isArray(listJson.matches) ? listJson.matches : [];
             console.log("[WC26] football-data total matches:", matches.length, "sample:", matches.slice(0,3).map(m=>`${m.homeTeam?.name} vs ${m.awayTeam?.name} | ${m.status} | ${m.score?.fullTime?.home}-${m.score?.fullTime?.away}`));
+            let fdGoalBudget = 3; // প্রতি cycle এ সর্বোচ্চ এতগুলো /v4/matches/{id} কল (rate-limit safe, 10 req/min)
             for (const f of started) {
               const homeAlt = fdName(f.home), awayAlt = fdName(f.away);
               const m = matches.find(mm =>
@@ -2411,6 +2412,30 @@ export default function App() {
               const cached = (f.isKO ? koResultsRef.current[f.id] : resultsRef.current[f.id]);
               const cachedGoals = Array.isArray(cached?.goals) ? cached.goals : [];
               const entry = { h:String(h), a:String(a), status, minute, goals:cachedGoals, cards:[] };
+
+              // ── football-data.org single-match endpoint থেকে real goal scorer (live সহ) ──
+              const totalGoals = (+h||0)+(+a||0);
+              if (totalGoals > 0 && cachedGoals.length < totalGoals && fdGoalBudget > 0 && m.id) {
+                fdGoalBudget--;
+                try {
+                  const gr = await fdFetch(`https://api.football-data.org/v4/matches/${m.id}`);
+                  if (gr.ok) {
+                    const gj = await gr.json();
+                    const fdGoals = Array.isArray(gj.goals) ? gj.goals : [];
+                    if (fdGoals.length > 0) {
+                      const parsed = fdGoals.map(g => {
+                        let side = (g.team?.id === m.homeTeam?.id) ? "home" : "away";
+                        if (swapped) side = side === "home" ? "away" : "home";
+                        const isOwn = g.type === "OWN" || g.type === "OWN_GOAL";
+                        if (isOwn) side = side === "home" ? "away" : "home"; // own goal benefits the opponent
+                        return { team: side, scorer: (g.scorer?.name||"?") + (isOwn?" (og)":""), minute: g.minute ?? null };
+                      }).sort((x,y)=>(x.minute||0)-(y.minute||0));
+                      if (parsed.length >= cachedGoals.length) entry.goals = parsed;
+                    }
+                  }
+                } catch (e) { console.error("football-data single-match fetch error:", e); }
+              }
+
               if (f.isKO) newKO[f.id] = entry; else newGroup[f.id] = entry;
             }
           }
