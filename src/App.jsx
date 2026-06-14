@@ -76,7 +76,8 @@ function tsdbName(team) { return TSDB_TEAM_MAP[team] || team; }
 function normName(s) {
   return (s||"").toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g,"") // strip accents
-    .replace(/[^a-z0-9]/g,"");
+    .replace(/[^a-z0-9]/g,"")
+    .replace(/turkiye/g,"turkey"); // FIFA ২০২২-এ "Turkey" কে "Türkiye" নামকরণ করেছে — কিছু API এখন এই নাম ব্যবহার করে
 }
 // ── Manual result fallback (API name-matching মাঝে মাঝে miss করে) ──────────
 const MANUAL_RESULTS = {
@@ -103,6 +104,14 @@ const MANUAL_RESULTS = {
     { team:"home", scorer:"F. Balogun", minute:45 },
     { team:"away", scorer:"Mauricio", minute:73 },
     { team:"home", scorer:"G. Reyna", minute:90 }
+  ], cards:[] },
+  6: { h:"2", a:"0", status:"FT", minute:null, goals:[
+    { team:"home", scorer:"N. Irankunda", minute:27 },
+    { team:"home", scorer:"C. Metcalfe", minute:75 }
+  ], cards:[] },
+  7: { h:"1", a:"1", status:"FT", minute:null, goals:[
+    { team:"away", scorer:"I. Saibari", minute:21 },
+    { team:"home", scorer:"Vinícius Júnior", minute:32 }
   ], cards:[] },
 };
 function teamsMatch(a,b) {
