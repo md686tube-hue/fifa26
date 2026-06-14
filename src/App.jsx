@@ -49,16 +49,21 @@ const FD_TEAM_MAP = {
 };
 function fdName(team) { return FD_TEAM_MAP[team] || team; }
 // football-data.org কে সরাসরি browser থেকে call করতে গেলে অনেক সময় CORS ব্লক করে —
-// সেক্ষেত্রে corsproxy.io fallback ব্যবহার করা হয়
+// সেক্ষেত্রে একাধিক CORS proxy ক্রমান্বয়ে try করা হয় (একটা fail করলে পরেরটা)
 async function fdFetch(url) {
   try {
     const r = await fetch(url, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
     if (r.ok) return r;
     throw new Error("status " + r.status);
-  } catch {
-    const proxied = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
-    return fetch(proxied, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
-  }
+  } catch {}
+  try {
+    const r2 = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
+    if (r2.ok) return r2;
+    throw new Error("status " + r2.status);
+  } catch {}
+  // দ্বিতীয় fallback: allorigins (raw mode হেডার ফরওয়ার্ড করে না, তাই token কে URL-এ embed করা সম্ভব নয়;
+  // তবে এটা অন্তত public/cached response দিতে পারে যখন corsproxy ডাউন থাকে)
+  return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
 }
 
 // ── TheSportsDB team-name mapping (fallback source) ──────────────────────
@@ -2262,6 +2267,8 @@ export default function App() {
   const [bdClock, setBdClock] = useState("");
   const [autoFetching, setAutoFetching] = useState(false);
   const [lastFetched, setLastFetched] = useState(null);
+  const [fetchDebug, setFetchDebug] = useState(null);
+  const [showDebug, setShowDebug] = useState(false);
   const fetchTimeoutRef = useRef(null);
   // Feature: Head-to-Head
   const [h2hFixId, setH2hFixId] = useState(null);
@@ -2370,6 +2377,7 @@ export default function App() {
   // Auto-fetch results from TheSportsDB (free, CORS-friendly, real live data)
   const fetchResults = useCallback(async () => {
     setAutoFetching(true);
+    const dbg = { ts:new Date().toLocaleTimeString("bn-BD"), started:0, fd:{tried:false}, tsdb:{tried:false}, error:null };
     try {
       const now = Date.now();
 
@@ -2384,22 +2392,28 @@ export default function App() {
         .map(m => ({ id:m.id, isKO:true, home:m.home, away:m.away, utc:koMatchUTC(m) }));
 
       const started = [...startedGroup, ...startedKO];
+      dbg.started = started.length;
       console.log("[WC26] started fixtures:", started.length, started.map(f=>`${f.home} vs ${f.away}`));
-      if (!started.length) { setAutoFetching(false); return; }
+      if (!started.length) { setAutoFetching(false); setFetchDebug(dbg); return; }
 
       const newGroup = {}, newKO = {};
 
       // ── PRIMARY: football-data.org (score/status — সাধারণত goal scorer থাকে না, free tier limitation) ──
       const useFD = FOOTBALL_DATA_API_KEY && FOOTBALL_DATA_API_KEY !== "YOUR_FOOTBALL_DATA_API_KEY";
       if (useFD) {
+        dbg.fd.tried = true;
         try {
           const listRes = await fdFetch(`https://api.football-data.org/v4/competitions/${FD_WC_COMPETITION_ID}/matches`);
           console.log("[WC26] football-data response status:", listRes.status);
+          dbg.fd.status = listRes.status;
           if (listRes.ok) {
             const listJson = await listRes.json();
             const matches = Array.isArray(listJson.matches) ? listJson.matches : [];
+            dbg.fd.totalMatches = matches.length;
+            dbg.fd.live = matches.filter(m=>m.status==="IN_PLAY"||m.status==="PAUSED").map(m=>`${m.homeTeam?.name} ${m.score?.fullTime?.home??0}-${m.score?.fullTime?.away??0} ${m.awayTeam?.name} (${m.status})`);
             console.log("[WC26] football-data total matches:", matches.length, "sample:", matches.slice(0,3).map(m=>`${m.homeTeam?.name} vs ${m.awayTeam?.name} | ${m.status} | ${m.score?.fullTime?.home}-${m.score?.fullTime?.away}`));
             let fdGoalBudget = 3; // প্রতি cycle এ সর্বোচ্চ এতগুলো /v4/matches/{id} কল (rate-limit safe, 10 req/min)
+            let fdMatched = 0;
             for (const f of started) {
               const homeAlt = fdName(f.home), awayAlt = fdName(f.away);
               const m = matches.find(mm =>
@@ -2407,6 +2421,7 @@ export default function App() {
                 (teamsMatch(mm.homeTeam?.name, awayAlt) && teamsMatch(mm.awayTeam?.name, homeAlt))
               );
               if (!m) { console.log(`[WC26] NO MATCH FOUND for ${f.home} vs ${f.away} (looked for "${homeAlt}" vs "${awayAlt}")`); continue; }
+              fdMatched++;
               console.log(`[WC26] matched ${f.home} vs ${f.away} -> ${m.homeTeam?.name} ${m.score?.fullTime?.home}-${m.score?.fullTime?.away} ${m.awayTeam?.name} | status=${m.status}`);
               const swapped = !teamsMatch(m.homeTeam?.name, homeAlt);
               let h = m.score?.fullTime?.home, a = m.score?.fullTime?.away;
@@ -2447,11 +2462,13 @@ export default function App() {
 
               if (f.isKO) newKO[f.id] = entry; else newGroup[f.id] = entry;
             }
+            dbg.fd.matched = fdMatched;
           }
-        } catch (e) { console.error("football-data fetch error:", e); }
+        } catch (e) { console.error("football-data fetch error:", e); dbg.fd.error = String(e?.message||e); }
       }
 
       // ── TheSportsDB: score fallback (FD miss করলে) + goal scorer enrichment (সব ম্যাচের জন্য) ──
+      dbg.tsdb.tried = true;
       const dateSet = new Set();
       started.forEach(f => {
         const d = new Date(f.utc);
@@ -2468,6 +2485,7 @@ export default function App() {
           eventsByDate[d] = Array.isArray(j.events) ? j.events : [];
         } catch { eventsByDate[d] = []; }
       }));
+      dbg.tsdb.eventCounts = Object.fromEntries(Object.entries(eventsByDate).map(([d,l])=>[d,l.length]));
 
       // ── Fallback: পুরো সিজনের ইভেন্ট লিস্ট (date-based lookup miss করলে এটা থেকে team-name দিয়ে খুঁজে নেওয়া হবে) ──
       let seasonEvents = [];
@@ -2562,12 +2580,15 @@ export default function App() {
         if (f.isKO) newKO[f.id] = entry; else newGroup[f.id] = entry;
       }
 
+      dbg.applied = { group:Object.keys(newGroup).length, ko:Object.keys(newKO).length };
       if (Object.keys(newGroup).length > 0) setResults(prev => ({ ...prev, ...newGroup }));
       if (Object.keys(newKO).length > 0) setKoResults(prev => ({ ...prev, ...newKO }));
       setLastFetched(new Date());
     } catch (err) {
       console.error("Auto-fetch error:", err);
+      dbg.error = String(err?.message||err);
     }
+    setFetchDebug(dbg);
     setAutoFetching(false);
   }, []);
 
@@ -3044,8 +3065,21 @@ export default function App() {
                 {!autoFetching && lastFetched && <div style={{fontSize:9,color:T.sub,cursor:"pointer",display:"flex",alignItems:"center",gap:4}} onClick={fetchResults}><span style={{color:c}}>✓</span> {lastFetched.toLocaleTimeString("bn-BD")} · ট্যাপ করুন</div>}
                 {!autoFetching && !lastFetched && <div style={{fontSize:9,color:T.sub,cursor:"pointer"}} onClick={fetchResults}>⟳ ফলাফল আনুন</div>}
                 {visitorCount && <div style={{fontSize:9,color:T.sub,display:"flex",alignItems:"center",gap:3}}><span style={{width:5,height:5,borderRadius:"50%",background:"#10b981",display:"inline-block"}}/>👁 {visitorCount.toLocaleString()} ভিজিটর</div>}
+                <div style={{fontSize:9,color:T.dim,cursor:"pointer",opacity:.5}} onClick={()=>setShowDebug(v=>!v)}>🔧</div>
               </div>
             </div>
+
+            {showDebug && fetchDebug && (
+              <div style={{margin:"8px 0",padding:10,borderRadius:8,background:dark?"rgba(0,0,0,.3)":"rgba(0,0,0,.04)",border:`1px solid ${T.border}`,fontSize:10,color:T.sub,fontFamily:"monospace",lineHeight:1.6,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+                <div style={{color:T.text,fontWeight:700,marginBottom:4}}>🔧 Fetch Debug — {fetchDebug.ts}</div>
+                <div>started fixtures: {fetchDebug.started}</div>
+                <div>FD: tried={String(fetchDebug.fd?.tried)} status={fetchDebug.fd?.status ?? "-"} totalMatches={fetchDebug.fd?.totalMatches ?? "-"} matched={fetchDebug.fd?.matched ?? "-"}{fetchDebug.fd?.error?` ERROR=${fetchDebug.fd.error}`:""}</div>
+                {fetchDebug.fd?.live && <div>FD live: {fetchDebug.fd.live.length? fetchDebug.fd.live.join(", ") : "(কোনোটা নেই)"}</div>}
+                <div>TSDB: tried={String(fetchDebug.tsdb?.tried)} events={JSON.stringify(fetchDebug.tsdb?.eventCounts||{})}</div>
+                <div>applied: group={fetchDebug.applied?.group ?? 0} ko={fetchDebug.applied?.ko ?? 0}</div>
+                {fetchDebug.error && <div style={{color:"#ef4444"}}>ERROR: {fetchDebug.error}</div>}
+              </div>
+            )}
 
             {favTeam && (
               <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",marginBottom:8,background:"rgba(251,191,36,.07)",border:"1px solid rgba(251,191,36,.25)",borderRadius:9,flexWrap:"wrap"}}>
