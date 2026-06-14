@@ -2487,12 +2487,15 @@ export default function App() {
           h = +ev.intHomeScore; a = +ev.intAwayScore;
           if (swapped) { const t=h; h=a; a=t; }
           // status detection
-          status = "FT";
           const st = (ev.strStatus||"").toLowerCase();
           const prog = (ev.strProgress||"").toLowerCase();
+          // ম্যাচ এখনো শুরু না হলে TSDB অনেক সময় placeholder 0-0 + খালি/"NS" status দেয় —
+          // এটাকে ভুলভাবে "FT" ধরা চলবে না, নাহলে Live Tracker ম্যাচ শুরুর আগেই minute count শুরু করে দেয়
+          const notStarted = st === "ns" || st.includes("not start") ||
+            ((st === "" || st === "tba") && prog === "" && h === 0 && a === 0);
+          if (notStarted) continue;
           if (st.includes("finish") || st === "ft" || st.includes("match finished")) status = "FT";
           else if (st.includes("half") || prog.includes("ht")) status = "HT";
-          else if (st === "ns" || st.includes("not started") || !st) status = "FT";
           else status = "LIVE";
           minute = null;
           const mm = (ev.strProgress||"").match(/(\d+)/);
@@ -3037,11 +3040,14 @@ export default function App() {
               {/* ── LIVE TRACKER (fixtures tab এ সবার আগে) ── */}
               {(()=>{
                 const nowMs = Date.now();
-                // শুধু actual kickoff হয়েছে এমন ম্যাচ — 0 থেকে 115 মিনিটের মধ্যে
+                // শুধু actual kickoff হয়েছে এমন ম্যাচ — scheduled সময় পার হয়েছে (115 মিনিটের মধ্যে)
+                // এবং API confirm করেছে যে ম্যাচ আসলেই LIVE/HT (broadcast delay হলে এই ধাপে আসবে না)
                 const liveNow = ALL_GROUP_FIXTURES.filter(f=>{
                   const utc = matchUTC(f.dateStr,f.etTime);
                   const el = nowMs - utc;
-                  return el >= 0 && el < 115*60*1000;
+                  if (el < 0 || el >= 115*60*1000) return false;
+                  const r = results[f.id];
+                  return r && (r.status==="LIVE" || r.status==="HT");
                 });
                 if(!liveNow.length) return null;
                 return (
@@ -3062,6 +3068,9 @@ export default function App() {
                         const elMs=nowMs-utc;
                         const minElapsed=Math.floor(elMs/60000);
                         const isHT = r?.status==="HT";
+                        // API এখনো কোনো status/score দেয়নি — মানে actual kickoff এখনো হয়নি (delayed broadcast)।
+                        // এই অবস্থায় scheduled time থেকে minute count শুরু করা ভুল, তাই "অপেক্ষায়" দেখাবে।
+                        const pending = !r;
                         const minuteLabel = isHT ? "HT" : (r?.minute ? `${r.minute}'` : `${minElapsed}'`);
                         // goals sorted by minute
                         const goals = Array.isArray(r?.goals) ? [...r.goals].sort((a,b)=>(a.minute||0)-(b.minute||0)) : [];
@@ -3080,8 +3089,13 @@ export default function App() {
                                 <span style={{fontSize:28,flexShrink:0}}>{FLAGS[f.home]||"🏳"}</span>
                               </div>
                               {/* Score box */}
-                              <div style={{textAlign:"center",minWidth:88,flexShrink:0,padding:"6px 10px",background:isHT?"rgba(251,191,36,.12)":"rgba(239,68,68,.1)",borderRadius:10,border:isHT?"1px solid rgba(251,191,36,.4)":"1px solid rgba(239,68,68,.35)"}}>
-                                {hasScore ? (
+                              <div style={{textAlign:"center",minWidth:88,flexShrink:0,padding:"6px 10px",background:isHT?"rgba(251,191,36,.12)":pending?"rgba(148,163,184,.1)":"rgba(239,68,68,.1)",borderRadius:10,border:isHT?"1px solid rgba(251,191,36,.4)":pending?"1px solid rgba(148,163,184,.3)":"1px solid rgba(239,68,68,.35)"}}>
+                                {pending ? (
+                                  <>
+                                    <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:14,color:T.sub,lineHeight:1.25}}>কিক-অফের<br/>অপেক্ষায়</div>
+                                    <div style={{fontSize:9,color:T.sub,fontWeight:700,marginTop:2}}>⏳ শীঘ্রই শুরু হবে</div>
+                                  </>
+                                ) : hasScore ? (
                                   <>
                                     <div style={{fontFamily:"'Bebas Neue',cursive",fontSize:30,color:isHT?"#fbbf24":"#ef4444",lineHeight:1,letterSpacing:2}}>{r.h} – {r.a}</div>
                                     <div style={{fontSize:10,fontWeight:800,color:isHT?"#fbbf24":"#ef4444",letterSpacing:1,marginTop:2}}>
