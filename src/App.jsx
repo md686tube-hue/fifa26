@@ -35,8 +35,10 @@ function koMatchUTC(m) {
   return matchUTC(m.date, m.etTime || "12:00");
 }
 // ── football-data.org config (primary source — goal scorer সহ পূর্ণ ডেটা) ──
-// নিজের ফ্রি API key এখানে বসান: https://www.football-data.org/client/register
-const FOOTBALL_DATA_API_KEY = "824f73a1c1854c4186ae2acf2446b895";
+// ⚠️ সরাসরি browser থেকে football-data.org কে call করলে CORS/X-Auth-Token ব্লক হয়,
+// আর পাবলিক CORS-proxy (corsproxy.io, allorigins ইত্যাদি) প্রায়ই down/rate-limited থাকে —
+// তাই API key এখন সার্ভার-সাইডে (/api/scores.js, /api/match.js — Vercel serverless function)
+// রাখা হয়েছে এবং এই অ্যাপ সেই same-origin endpoint থেকে data আনে। (key + এর README দেখুন)
 const FD_WC_COMPETITION_ID = 2000; // FIFA World Cup
 const FD_TEAM_MAP = {
   "South Korea":"Korea Republic",
@@ -48,23 +50,9 @@ const FD_TEAM_MAP = {
   "DR Congo":"DR Congo",
 };
 function fdName(team) { return FD_TEAM_MAP[team] || team; }
-// football-data.org কে সরাসরি browser থেকে call করতে গেলে অনেক সময় CORS ব্লক করে —
-// সেক্ষেত্রে একাধিক CORS proxy ক্রমান্বয়ে try করা হয় (একটা fail করলে পরেরটা)
-async function fdFetch(url) {
-  try {
-    const r = await fetch(url, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
-    if (r.ok) return r;
-    throw new Error("status " + r.status);
-  } catch {}
-  try {
-    const r2 = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
-    if (r2.ok) return r2;
-    throw new Error("status " + r2.status);
-  } catch {}
-  // দ্বিতীয় fallback: allorigins (raw mode হেডার ফরওয়ার্ড করে না, তাই token কে URL-এ embed করা সম্ভব নয়;
-  // তবে এটা অন্তত public/cached response দিতে পারে যখন corsproxy ডাউন থাকে)
-  return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, { headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY } });
-}
+// same-origin Vercel serverless proxy — কোনো CORS সমস্যা নেই
+async function fdScores() { return fetch(`/api/scores`); }
+async function fdMatch(id) { return fetch(`/api/match?id=${id}`); }
 
 // ── TheSportsDB team-name mapping (fallback source) ──────────────────────
 const TSDB_TEAM_MAP = {
@@ -2399,11 +2387,11 @@ export default function App() {
       const newGroup = {}, newKO = {};
 
       // ── PRIMARY: football-data.org (score/status — সাধারণত goal scorer থাকে না, free tier limitation) ──
-      const useFD = FOOTBALL_DATA_API_KEY && FOOTBALL_DATA_API_KEY !== "YOUR_FOOTBALL_DATA_API_KEY";
+      const useFD = true; // key এখন সার্ভারে (Vercel env var) — client always serverless proxy ব্যবহার করবে
       if (useFD) {
         dbg.fd.tried = true;
         try {
-          const listRes = await fdFetch(`https://api.football-data.org/v4/competitions/${FD_WC_COMPETITION_ID}/matches`);
+          const listRes = await fdScores();
           console.log("[WC26] football-data response status:", listRes.status);
           dbg.fd.status = listRes.status;
           if (listRes.ok) {
@@ -2442,7 +2430,7 @@ export default function App() {
               if (totalGoals > 0 && cachedGoals.length < totalGoals && fdGoalBudget > 0 && m.id) {
                 fdGoalBudget--;
                 try {
-                  const gr = await fdFetch(`https://api.football-data.org/v4/matches/${m.id}`);
+                  const gr = await fdMatch(m.id);
                   if (gr.ok) {
                     const gj = await gr.json();
                     const fdGoals = Array.isArray(gj.goals) ? gj.goals : [];
@@ -2604,7 +2592,7 @@ export default function App() {
       const hasLiveKO = KNOCKOUT_ROUNDS.flatMap(r=>r.matches).some(m => {
         try { const e = now - koMatchUTC(m); return e >= 0 && e < 125 * 60 * 1000; } catch { return false; }
       });
-      const delay = (hasLiveGroup || hasLiveKO) ? 30 * 1000 : 60 * 1000;
+      const delay = (hasLiveGroup || hasLiveKO) ? 15 * 1000 : 60 * 1000;
       timeoutId = setTimeout(async () => {
         await fetchResults();
         scheduleNext();
