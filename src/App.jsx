@@ -106,6 +106,27 @@ const MANUAL_RESULTS = {
     { team:"away", scorer:"I. Saibari", minute:21 },
     { team:"home", scorer:"Vinícius Júnior", minute:32 }
   ], cards:[] },
+  8: { h:"0", a:"1", status:"FT", minute:null, goals:[
+    { team:"away", scorer:"J. McGinn", minute:28 }
+  ], cards:[] },
+  10: { h:"1", a:"0", status:"FT", minute:null, goals:[
+    { team:"home", scorer:"Amad Diallo", minute:90 }
+  ], cards:[] },
+  11: { h:"2", a:"2", status:"FT", minute:null, goals:[
+    { team:"home", scorer:"V. van Dijk", minute:48 },
+    { team:"away", scorer:"K. Nakamura", minute:55 },
+    { team:"home", scorer:"C. Summerville", minute:64 },
+    { team:"away", scorer:"D. Kamada", minute:89 }
+  ], cards:[] },
+  12: { h:"5", a:"1", status:"FT", minute:null, goals:[
+    { team:"home", scorer:"Y. Ayari", minute:7 },
+    { team:"home", scorer:"A. Isak", minute:30 },
+    { team:"away", scorer:"O. Rekik", minute:43 },
+    { team:"home", scorer:"V. Gyökeres", minute:59 },
+    { team:"home", scorer:"M. Svanberg", minute:84 },
+    { team:"home", scorer:"Y. Ayari", minute:96 }
+  ], cards:[] },
+  17: { h:"0", a:"0", status:"FT", minute:null, goals:[], cards:[] },
 };
 function teamsMatch(a,b) {
   const na=normName(a), nb=normName(b);
@@ -3148,7 +3169,7 @@ export default function App() {
                               <div style={{flex:1,display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end",minWidth:0}}>
                                 <div style={{textAlign:"right",minWidth:0}}>
                                   <div style={{fontWeight:800,fontSize:14,color:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{f.home}</div>
-                                  {homeGoals.length>0&&<div style={{fontSize:9,color:"#ef4444",marginTop:2,textAlign:"right"}}>{homeGoals.map(g=>`⚽${g.minute}'`).join(" ")}</div>}
+                                  {homeGoals.length>0&&<div style={{fontSize:9,color:"#ef4444",marginTop:2,textAlign:"right"}}>{homeGoals.map(g=>`⚽ ${g.scorer||"?"} ${g.minute?g.minute+"'":""}`).join(", ")}</div>}
                                 </div>
                                 <span style={{fontSize:28,flexShrink:0}}>{FLAGS[f.home]||"🏳"}</span>
                               </div>
@@ -3178,7 +3199,7 @@ export default function App() {
                                 <span style={{fontSize:28,flexShrink:0}}>{FLAGS[f.away]||"🏳"}</span>
                                 <div style={{minWidth:0}}>
                                   <div style={{fontWeight:800,fontSize:14,color:T.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{f.away}</div>
-                                  {awayGoals.length>0&&<div style={{fontSize:9,color:"#ef4444",marginTop:2}}>{awayGoals.map(g=>`⚽${g.minute}'`).join(" ")}</div>}
+                                  {awayGoals.length>0&&<div style={{fontSize:9,color:"#ef4444",marginTop:2}}>{awayGoals.map(g=>`⚽ ${g.scorer||"?"} ${g.minute?g.minute+"'":""}`).join(", ")}</div>}
                                 </div>
                               </div>
                             </div>
