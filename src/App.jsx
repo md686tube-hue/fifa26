@@ -2468,7 +2468,7 @@ export default function App() {
       const eventsByDate = {};
       await Promise.all([...dateSet].map(async d => {
         try {
-          const r = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${d}&l=4429`);
+          const r = await fetch(`https://www.thesportsdb.com/api/v1/json/123/eventsday.php?d=${d}&l=4429`);
           const j = await r.json();
           eventsByDate[d] = Array.isArray(j.events) ? j.events : [];
         } catch { eventsByDate[d] = []; }
@@ -2491,13 +2491,14 @@ export default function App() {
       });
       if (needsFallback) {
         try {
-          const sr = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsseason.php?id=4429&s=2026`);
+          const sr = await fetch(`https://www.thesportsdb.com/api/v1/json/123/eventsseason.php?id=4429&s=2026`);
           const sj = await sr.json();
           seasonEvents = Array.isArray(sj.events) ? sj.events : [];
         } catch {}
       }
 
-      let lookupBudget = 6; // প্রতি cycle এ সর্বোচ্চ এতগুলো lookupevent কল (rate-limit safe)
+      let lookupBudget = 8; // প্রতি cycle এ সর্বোচ্চ এতগুলো lookupevent কল (rate-limit safe)
+      let tsdbEvMatched = 0, tsdbGoalsFetched = 0, tsdbGoalsFound = 0;
       for (const f of started) {
         const cached = (f.isKO ? koResultsRef.current[f.id] : resultsRef.current[f.id]);
         const fdEntry = f.isKO ? newKO[f.id] : newGroup[f.id];
@@ -2516,6 +2517,7 @@ export default function App() {
           (teamsMatch(e.strHomeTeam,awayAlt) && teamsMatch(e.strAwayTeam,homeAlt))
         );
         if (!ev) continue;
+        tsdbEvMatched++;
 
         const swapped = !teamsMatch(ev.strHomeTeam, homeAlt);
         let h, a, status, minute;
@@ -2548,8 +2550,9 @@ export default function App() {
         const totalGoals = (+h||0)+(+a||0);
         if (totalGoals > 0 && baseGoals.length < totalGoals && lookupBudget > 0) {
           lookupBudget--;
+          tsdbGoalsFetched++;
           try {
-            const lr = await fetch(`https://www.thesportsdb.com/api/v1/json/3/lookupevent.php?id=${ev.idEvent}`);
+            const lr = await fetch(`https://www.thesportsdb.com/api/v1/json/123/lookupevent.php?id=${ev.idEvent}`);
             const lj = await lr.json();
             const det = lj.events?.[0] || ev;
             const homeSide = swapped ? "away" : "home";
@@ -2561,12 +2564,16 @@ export default function App() {
               ...parseGoalDetails(awayStr, awaySide),
             ];
             if (parsed.length >= baseGoals.length) goals = parsed;
+            if (parsed.length > 0) tsdbGoalsFound++;
           } catch {}
         }
 
         const entry = { h:String(h), a:String(a), status, minute, goals, cards:[] };
         if (f.isKO) newKO[f.id] = entry; else newGroup[f.id] = entry;
       }
+      dbg.tsdb.matched = tsdbEvMatched;
+      dbg.tsdb.goalsFetched = tsdbGoalsFetched;
+      dbg.tsdb.goalsFound = tsdbGoalsFound;
 
       dbg.applied = { group:Object.keys(newGroup).length, ko:Object.keys(newKO).length };
       if (Object.keys(newGroup).length > 0) setResults(prev => ({ ...prev, ...newGroup }));
@@ -3064,6 +3071,7 @@ export default function App() {
                 <div>FD: tried={String(fetchDebug.fd?.tried)} status={fetchDebug.fd?.status ?? "-"} totalMatches={fetchDebug.fd?.totalMatches ?? "-"} matched={fetchDebug.fd?.matched ?? "-"}{fetchDebug.fd?.error?` ERROR=${fetchDebug.fd.error}`:""}</div>
                 {fetchDebug.fd?.live && <div>FD live: {fetchDebug.fd.live.length? fetchDebug.fd.live.join(", ") : "(কোনোটা নেই)"}</div>}
                 <div>TSDB: tried={String(fetchDebug.tsdb?.tried)} events={JSON.stringify(fetchDebug.tsdb?.eventCounts||{})}</div>
+                <div>TSDB matched={fetchDebug.tsdb?.matched ?? "-"} goalsFetched={fetchDebug.tsdb?.goalsFetched ?? "-"} goalsFound={fetchDebug.tsdb?.goalsFound ?? "-"}</div>
                 <div>applied: group={fetchDebug.applied?.group ?? 0} ko={fetchDebug.applied?.ko ?? 0}</div>
                 {fetchDebug.error && <div style={{color:"#ef4444"}}>ERROR: {fetchDebug.error}</div>}
               </div>
