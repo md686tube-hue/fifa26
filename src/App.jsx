@@ -54,6 +54,21 @@ function fdName(team) { return FD_TEAM_MAP[team] || team; }
 async function fdScores() { return fetch(`/api/scores`); }
 async function fdMatch(id) { return fetch(`/api/match?id=${id}`); }
 
+// ── API-Football (api-football.com) config — real goal scorer + minute (primary scorer source) ──
+const AF_TEAM_MAP = {
+  "South Korea":"South Korea",
+  "Czech Republic":"Czech Republic",
+  "Ivory Coast":"Ivory Coast",
+  "USA":"USA",
+  "Cape Verde":"Cape Verde",
+  "Bosnia & Herzegovina":"Bosnia and Herzegovina",
+  "DR Congo":"DR Congo",
+};
+function afName(team) { return AF_TEAM_MAP[team] || team; }
+async function afFixtures() { return fetch(`/api/fixtures`); }
+async function afEvents(fixtureId) { return fetch(`/api/events?fixture=${fixtureId}`); }
+
+
 // ── TheSportsDB team-name mapping (fallback source) ──────────────────────
 const TSDB_TEAM_MAP = {
   "Czech Republic":"Czech Republic",
@@ -2476,7 +2491,93 @@ export default function App() {
         } catch (e) { console.error("football-data fetch error:", e); dbg.fd.error = String(e?.message||e); }
       }
 
-      // ── TheSportsDB: score fallback (FD miss করলে) + goal scorer enrichment (সব ম্যাচের জন্য) ──
+      // ── API-Football: real goal scorer + minute (primary scorer source, free tier supports this) ──
+      dbg.af = { tried:false };
+      try {
+        dbg.af.tried = true;
+        const afRes = await afFixtures();
+        dbg.af.status = afRes.status;
+        if (afRes.ok) {
+          const afJson = await afRes.json();
+          const afFix = Array.isArray(afJson.response) ? afJson.response : [];
+          dbg.af.totalFixtures = afFix.length;
+          let afGoalBudget = 5; // প্রতি cycle এ সর্বোচ্চ এতগুলো /fixtures/events কল
+          let afMatched = 0, afGoalsFetched = 0, afGoalsFound = 0;
+          for (const f of started) {
+            const cached = (f.isKO ? koResultsRef.current[f.id] : resultsRef.current[f.id]);
+            const fdEntry = f.isKO ? newKO[f.id] : newGroup[f.id];
+            const baseEntry = fdEntry || cached;
+            const baseGoals = Array.isArray(baseEntry?.goals) ? baseEntry.goals : [];
+            const baseTotal = baseEntry ? ((+baseEntry.h||0)+(+baseEntry.a||0)) : 0;
+            if (baseEntry && baseTotal > 0 && baseGoals.length >= baseTotal) continue; // আগেই সম্পূর্ণ
+
+            const homeAlt = afName(f.home), awayAlt = afName(f.away);
+            const afm = afFix.find(x =>
+              (teamsMatch(x.teams?.home?.name, homeAlt) && teamsMatch(x.teams?.away?.name, awayAlt)) ||
+              (teamsMatch(x.teams?.home?.name, awayAlt) && teamsMatch(x.teams?.away?.name, homeAlt))
+            );
+            if (!afm) continue;
+            afMatched++;
+            const swapped = !teamsMatch(afm.teams?.home?.name, homeAlt);
+            const fid = afm.fixture?.id;
+            const totalGoals = (afm.goals?.home||0) + (afm.goals?.away||0);
+            if (totalGoals === 0 || !fid || afGoalBudget <= 0) continue;
+            afGoalBudget--;
+            afGoalsFetched++;
+            try {
+              const evRes = await afEvents(fid);
+              if (evRes.ok) {
+                const evJson = await evRes.json();
+                const events = Array.isArray(evJson.response) ? evJson.response : [];
+                const goalEvents = events.filter(e => e.type === "Goal");
+                const cardEvents = events.filter(e => e.type === "Card");
+                const parsedCards = cardEvents.map(e => {
+                  let side = (e.team?.id === afm.teams?.home?.id) ? "home" : "away";
+                  if (swapped) side = side === "home" ? "away" : "home";
+                  const minute = e.time?.elapsed != null ? (e.time.elapsed + (e.time.extra ? e.time.extra : 0)) : null;
+                  const isRed = e.detail === "Red Card" || e.detail === "Second Yellow card";
+                  return { team: side, player: e.player?.name || "?", minute, type: isRed ? "red" : "yellow" };
+                }).sort((x,y)=>(x.minute||0)-(y.minute||0));
+                if (goalEvents.length > 0) {
+                  const parsed = goalEvents.map(e => {
+                    let side = (e.team?.id === afm.teams?.home?.id) ? "home" : "away";
+                    const isOwn = e.detail === "Own Goal";
+                    if (isOwn) side = side === "home" ? "away" : "home"; // own goal — বিপক্ষ দলের পক্ষে গণনা
+                    if (swapped) side = side === "home" ? "away" : "home";
+                    const isPen = e.detail === "Penalty";
+                    const minute = e.time?.elapsed != null ? (e.time.elapsed + (e.time.extra ? e.time.extra : 0)) : null;
+                    const scorer = (e.player?.name || "?") + (isPen?" (pen)":"") + (isOwn?" (og)":"");
+                    return { team: side, scorer, minute };
+                  }).sort((x,y)=>(x.minute||0)-(y.minute||0));
+                  if (parsed.length >= baseGoals.length) {
+                    afGoalsFound++;
+                    const h = afm.goals?.home, a = afm.goals?.away;
+                    const hh = swapped ? a : h, aa = swapped ? h : a;
+                    let status = "FT";
+                    const st = afm.fixture?.status?.short;
+                    if (["1H","2H","ET","P","BT"].includes(st)) status = "LIVE";
+                    else if (st === "HT") status = "HT";
+                    else if (["FT","AET","PEN"].includes(st)) status = "FT";
+                    else if (baseEntry?.status) status = baseEntry.status;
+                    const minute = afm.fixture?.status?.elapsed ?? baseEntry?.minute ?? null;
+                    const entry = { h:String(hh), a:String(aa), status, minute, goals:parsed, cards:parsedCards };
+                    if (f.isKO) newKO[f.id] = entry; else newGroup[f.id] = entry;
+                  }
+                } else if (parsedCards.length > (baseEntry?.cards?.length||0) && baseEntry) {
+                  // গোল নেই কিন্তু নতুন কার্ড এসেছে — বিদ্যমান entry-তে শুধু cards আপডেট করো
+                  const updated = { ...baseEntry, cards: parsedCards };
+                  if (f.isKO) newKO[f.id] = updated; else newGroup[f.id] = updated;
+                }
+              }
+            } catch (e) { console.error("api-football events fetch error:", e); }
+          }
+          dbg.af.matched = afMatched;
+          dbg.af.goalsFetched = afGoalsFetched;
+          dbg.af.goalsFound = afGoalsFound;
+        }
+      } catch (e) { console.error("api-football fetch error:", e); dbg.af.error = String(e?.message||e); }
+
+      // ── TheSportsDB: score fallback (FD/AF miss করলে) + goal scorer enrichment (tertiary) ──
       dbg.tsdb.tried = true;
       const dateSet = new Set();
       started.forEach(f => {
@@ -2852,7 +2953,7 @@ export default function App() {
     {k:"fixtures",l:"📅 Fixtures"},
     {k:"results",l:"✅ Results"},
     {k:"standings",l:"📊 Standings"},
-    {k:"scorers",l:"⚽ গোলদাতা"},
+    {k:"scorers",l:"⚽ Scorer"},
     {k:"bracket",l:"🗂️ Bracket"},
     {k:"stadiums",l:"🏟️ Stadiums"},
     {k:"squads",l:"👕 Squads"},
@@ -3092,6 +3193,8 @@ export default function App() {
                 <div>FD: tried={String(fetchDebug.fd?.tried)} status={fetchDebug.fd?.status ?? "-"} totalMatches={fetchDebug.fd?.totalMatches ?? "-"} matched={fetchDebug.fd?.matched ?? "-"}{fetchDebug.fd?.error?` ERROR=${fetchDebug.fd.error}`:""}</div>
                 {fetchDebug.fd?.live && <div>FD live: {fetchDebug.fd.live.length? fetchDebug.fd.live.join(", ") : "(কোনোটা নেই)"}</div>}
                 <div>TSDB: tried={String(fetchDebug.tsdb?.tried)} events={JSON.stringify(fetchDebug.tsdb?.eventCounts||{})}</div>
+                <div>AF: tried={String(fetchDebug.af?.tried)} status={fetchDebug.af?.status ?? "-"} totalFixtures={fetchDebug.af?.totalFixtures ?? "-"}{fetchDebug.af?.error?` ERROR=${fetchDebug.af.error}`:""}</div>
+                <div>AF matched={fetchDebug.af?.matched ?? "-"} goalsFetched={fetchDebug.af?.goalsFetched ?? "-"} goalsFound={fetchDebug.af?.goalsFound ?? "-"}</div>
                 <div>TSDB matched={fetchDebug.tsdb?.matched ?? "-"} goalsFetched={fetchDebug.tsdb?.goalsFetched ?? "-"} goalsFound={fetchDebug.tsdb?.goalsFound ?? "-"}</div>
                 <div>applied: group={fetchDebug.applied?.group ?? 0} ko={fetchDebug.applied?.ko ?? 0}</div>
                 {fetchDebug.error && <div style={{color:"#ef4444"}}>ERROR: {fetchDebug.error}</div>}
@@ -3679,6 +3782,15 @@ export default function App() {
                             </div>
                           </div>
                           <div style={{fontSize:9,color:T.dim,marginTop:5,textAlign:"center"}}>{fix.venue?.split(",")[0]}{fix.isKO?` · ${KNOCKOUT_ROUNDS.find(rd=>rd.matches.some(m=>m.id===fix.id))?.short||""}`:` · Group ${fix.grp}`}</div>
+                          {Array.isArray(r?.cards)&&r.cards.length>0&&(
+                            <div style={{marginTop:6,display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center"}}>
+                              {r.cards.map((cd,ci)=>(
+                                <span key={ci} style={{fontSize:9,color:T.sub,background:cd.type==="red"?"rgba(239,68,68,.1)":"rgba(251,191,36,.1)",border:`1px solid ${cd.type==="red"?"rgba(239,68,68,.3)":"rgba(251,191,36,.3)"}`,borderRadius:5,padding:"2px 6px"}}>
+                                  {cd.type==="red"?"🟥":"🟨"} {cd.player} {cd.minute}'
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -4690,7 +4802,7 @@ export default function App() {
               {k:"fixtures",icon:"📅",label:"Fixtures"},
               {k:"results",icon:"✅",label:"Results"},
               {k:"standings",icon:"📊",label:"Standings"},
-              {k:"scorers",icon:"⚽",label:"গোলদাতা"},
+              {k:"scorers",icon:"⚽",label:"Scorer"},
               {k:"bracket",icon:"🗂️",label:"Bracket"},
               {k:"stadiums",icon:"🏟️",label:"Stadiums"},
               {k:"squads",icon:"👕",label:"Squads"},
