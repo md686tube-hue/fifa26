@@ -2434,7 +2434,7 @@ export default function App() {
       // ── সব fixture (group + KO) যেগুলো শুরু হয়ে গেছে ──
       const startedGroup = ALL_GROUP_FIXTURES
         .filter(f => { try { return matchUTC(f.dateStr,f.etTime) <= now; } catch { return false; } })
-        .map(f => ({ id:f.id, isKO:false, home:f.home, away:f.away, utc:matchUTC(f.dateStr,f.etTime) }));
+        .map(f => ({ id:f.id, isKO:false, home:f.home, away:f.away, utc:matchUTC(f.dateStr,f.etTime), grp:f.grp }));
 
       const isPlaceholder = (n) => /^(Winner|Runner-up|Best|W |L )/.test(n||"");
       const startedKO = KNOCKOUT_ROUNDS.flatMap(r=>r.matches)
