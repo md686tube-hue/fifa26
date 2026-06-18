@@ -2321,6 +2321,7 @@ export default function App() {
   // Feature: Bracket interactive
   const [bracketSelected, setBracketSelected] = useState(null);
   const [bracketScale, setBracketScale] = useState(0.55);
+  const [expandedMatch, setExpandedMatch] = useState(null); // bracket-এ tap করা match-এর detail popup
   // Feature: Match Predictions
   const [predictions, setPredictions] = useState(() => { try { return JSON.parse(localStorage.getItem("wc26_predictions")||"{}"); } catch { return {}; } });
   const [predModal, setPredModal] = useState(null);
@@ -2530,10 +2531,16 @@ export default function App() {
         dbg.af.tried = true;
         const afRes = await afFixtures();
         dbg.af.status = afRes.status;
-        if (afRes.ok) {
-          const afJson = await afRes.json();
+        const afJson = await afRes.json();
+        // API-Football errors object/array থাকলে exact reason জানা যাবে (plan limit, invalid key ইত্যাদি)
+        if (afJson.errors && (Array.isArray(afJson.errors) ? afJson.errors.length : Object.keys(afJson.errors).length)) {
+          dbg.af.apiErrors = afJson.errors;
+        }
+        dbg.af.results = afJson.results;
+        if (afRes.ok && !dbg.af.apiErrors) {
           const afFix = Array.isArray(afJson.response) ? afJson.response : [];
           dbg.af.totalFixtures = afFix.length;
+          dbg.af.sample = afFix.slice(0,2).map(x=>`${x.teams?.home?.name} vs ${x.teams?.away?.name} | ${x.fixture?.status?.short} | ${x.goals?.home}-${x.goals?.away}`);
           let afGoalBudget = 5; // প্রতি cycle এ সর্বোচ্চ এতগুলো /fixtures/events কল
           let afMatched = 0, afGoalsFetched = 0, afGoalsFound = 0;
           for (const f of started) {
@@ -3239,7 +3246,9 @@ export default function App() {
                 <div>FD: tried={String(fetchDebug.fd?.tried)} status={fetchDebug.fd?.status ?? "-"} totalMatches={fetchDebug.fd?.totalMatches ?? "-"} matched={fetchDebug.fd?.matched ?? "-"}{fetchDebug.fd?.error?` ERROR=${fetchDebug.fd.error}`:""}</div>
                 {fetchDebug.fd?.live && <div>FD live: {fetchDebug.fd.live.length? fetchDebug.fd.live.join(", ") : "(কোনোটা নেই)"}</div>}
                 <div>TSDB: tried={String(fetchDebug.tsdb?.tried)} events={JSON.stringify(fetchDebug.tsdb?.eventCounts||{})}</div>
-                <div>AF: tried={String(fetchDebug.af?.tried)} status={fetchDebug.af?.status ?? "-"} totalFixtures={fetchDebug.af?.totalFixtures ?? "-"}{fetchDebug.af?.error?` ERROR=${fetchDebug.af.error}`:""}</div>
+                <div>AF: tried={String(fetchDebug.af?.tried)} status={fetchDebug.af?.status ?? "-"} results={fetchDebug.af?.results ?? "-"} totalFixtures={fetchDebug.af?.totalFixtures ?? "-"}{fetchDebug.af?.error?` ERROR=${fetchDebug.af.error}`:""}</div>
+                {fetchDebug.af?.apiErrors && <div style={{color:"#ef4444"}}>AF API ERRORS: {JSON.stringify(fetchDebug.af.apiErrors)}</div>}
+                {fetchDebug.af?.sample && <div>AF sample: {fetchDebug.af.sample.join(" | ")}</div>}
                 <div>AF matched={fetchDebug.af?.matched ?? "-"} goalsFetched={fetchDebug.af?.goalsFetched ?? "-"} goalsFound={fetchDebug.af?.goalsFound ?? "-"}</div>
                 <div>TSDB matched={fetchDebug.tsdb?.matched ?? "-"} goalsFetched={fetchDebug.tsdb?.goalsFetched ?? "-"} goalsFound={fetchDebug.tsdb?.goalsFound ?? "-"}</div>
                 <div>applied: group={fetchDebug.applied?.group ?? 0} ko={fetchDebug.applied?.ko ?? 0}</div>
@@ -4202,8 +4211,10 @@ export default function App() {
               const both = !match.a.tbd && !match.b.tbd;
               const koRes = pid ? koResults[pid] : null;
               const decided = koRes && koRes.h!=="" && koRes.a!=="" && !isNaN(+koRes.h) && !isNaN(+koRes.a);
+              const isLive = koRes && (koRes.status==="LIVE" || koRes.status==="HT");
               const pick = pid ? picks[pid] : null;
-              const pickable = both && !decided && pid;
+              const pickable = both && !decided && pid && !isLive;
+              const expandable = both && pid && (decided || isLive);
               let aPickRes=null, bPickRes=null;
               if (decided && pick) {
                 const winnerSide = +koRes.h > +koRes.a ? "a" : "b";
@@ -4211,20 +4222,28 @@ export default function App() {
                 if (pick==="b") bPickRes = winnerSide==="b"?"correct":"wrong";
               }
               return (
-              <div style={{
+              <div onClick={expandable?()=>setExpandedMatch({pid, match, accent, isFinal}):undefined} style={{
                 background: isFinal ? "rgba(251,191,36,.06)" : T.card,
-                border:`1.5px solid ${isFinal?"rgba(251,191,36,.35)":both?accent+"44":T.border}`,
+                border:`1.5px solid ${isLive?"#ef4444":isFinal?"rgba(251,191,36,.35)":both?accent+"44":T.border}`,
                 borderRadius:10, padding:"7px 8px", width:"100%",
-                boxShadow: both ? `0 0 12px ${isFinal?"rgba(251,191,36,.15)":accent+"18"}` : "none",
-                transition:"all .2s"
+                boxShadow: isLive ? "0 0 12px rgba(239,68,68,.3)" : both ? `0 0 12px ${isFinal?"rgba(251,191,36,.15)":accent+"18"}` : "none",
+                transition:"all .2s", cursor: expandable ? "pointer" : "default", position:"relative"
               }}>
+                {isLive && <div style={{position:"absolute",top:-7,right:6,background:"#ef4444",color:"#fff",fontSize:7,fontWeight:700,padding:"1px 5px",borderRadius:4,display:"flex",alignItems:"center",gap:3}}><span style={{width:4,height:4,borderRadius:"50%",background:"#fff",animation:"pulse 1s infinite"}}/>LIVE</div>}
                 {showDate && <div style={{fontSize:8,color:T.dim,marginBottom:4,textAlign:"center",fontFamily:"'Bebas Neue',cursive",letterSpacing:1}}>{match.date}</div>}
                 <div style={{display:"flex",flexDirection:"column",gap:3}}>
-                  <TeamSlot team={match.a} accent={isFinal?"#fbbf24":accent} onClick={pickable?()=>togglePick(pid,"a"):null} picked={pick==="a"} pickResult={aPickRes}/>
+                  <div style={{display:"flex",alignItems:"center",gap:4}}>
+                    <div style={{flex:1,minWidth:0}}><TeamSlot team={match.a} accent={isFinal?"#fbbf24":accent} onClick={pickable?()=>togglePick(pid,"a"):null} picked={pick==="a"} pickResult={aPickRes}/></div>
+                    {(decided||isLive) && <span style={{fontSize:11,fontWeight:800,color:isLive?"#ef4444":T.text,minWidth:14,textAlign:"center",flexShrink:0}}>{koRes.h}</span>}
+                  </div>
                   <div style={{textAlign:"center",fontSize:8,color:T.dim,fontFamily:"'Bebas Neue',cursive",letterSpacing:1}}>VS</div>
-                  <TeamSlot team={match.b} accent={isFinal?"#fbbf24":accent} onClick={pickable?()=>togglePick(pid,"b"):null} picked={pick==="b"} pickResult={bPickRes}/>
+                  <div style={{display:"flex",alignItems:"center",gap:4}}>
+                    <div style={{flex:1,minWidth:0}}><TeamSlot team={match.b} accent={isFinal?"#fbbf24":accent} onClick={pickable?()=>togglePick(pid,"b"):null} picked={pick==="b"} pickResult={bPickRes}/></div>
+                    {(decided||isLive) && <span style={{fontSize:11,fontWeight:800,color:isLive?"#ef4444":T.text,minWidth:14,textAlign:"center",flexShrink:0}}>{koRes.a}</span>}
+                  </div>
                 </div>
                 {pickable && <div style={{fontSize:8,color:T.dim,textAlign:"center",marginTop:3}}>👆 ট্যাপ করে winner predict করো</div>}
+                {expandable && <div style={{fontSize:8,color:T.dim,textAlign:"center",marginTop:3}}>🔍 বিস্তারিত দেখতে ট্যাপ করো</div>}
               </div>
               );
             };
@@ -4414,6 +4433,62 @@ export default function App() {
                     })}
                   </div>
                 </div>
+
+                {/* ── EXPANDED MATCH DETAIL POPUP ── */}
+                {expandedMatch && expandedMatch.pid && (() => {
+                  const { pid: epid, match: em, accent: eaccent } = expandedMatch;
+                  const koRes = koResults[epid];
+                  if (!koRes) return null;
+                  const goals = Array.isArray(koRes.goals) ? [...koRes.goals].sort((x,y)=>(x.minute||0)-(y.minute||0)) : [];
+                  const cards = Array.isArray(koRes.cards) ? koRes.cards : [];
+                  const mInfo = KNOCKOUT_ROUNDS.flatMap(r=>r.matches).find(m=>m.id===epid);
+                  return (
+                    <div onClick={()=>setExpandedMatch(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9998,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+                      <div onClick={e=>e.stopPropagation()} style={{background:T.card,border:`1.5px solid ${eaccent}44`,borderRadius:14,padding:18,maxWidth:340,width:"100%",boxShadow:"0 10px 40px rgba(0,0,0,.4)"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                          <span style={{fontSize:10,color:T.dim,fontFamily:"'Bebas Neue',cursive",letterSpacing:1}}>{em.date}{mInfo?.venue?` · ${mInfo.venue.split(",")[0]}`:""}</span>
+                          <span onClick={()=>setExpandedMatch(null)} style={{cursor:"pointer",fontSize:16,color:T.dim,padding:"0 4px"}}>✕</span>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:14,marginBottom:14}}>
+                          <div style={{textAlign:"center",flex:1}}>
+                            <div style={{fontSize:28}}>{em.a.flag}</div>
+                            <div style={{fontSize:11,fontWeight:700,marginTop:2}}>{em.a.team}</div>
+                          </div>
+                          <div style={{fontSize:24,fontWeight:800,fontFamily:"'Bebas Neue',cursive",color:eaccent}}>{koRes.h} - {koRes.a}</div>
+                          <div style={{textAlign:"center",flex:1}}>
+                            <div style={{fontSize:28}}>{em.b.flag}</div>
+                            <div style={{fontSize:11,fontWeight:700,marginTop:2}}>{em.b.team}</div>
+                          </div>
+                        </div>
+                        {koRes.status==="LIVE"||koRes.status==="HT" ? (
+                          <div style={{textAlign:"center",fontSize:10,color:"#ef4444",fontWeight:700,marginBottom:10}}>🔴 {koRes.status==="HT"?"হাফ-টাইম":`লাইভ ${koRes.minute?koRes.minute+"'":""}`}</div>
+                        ) : (
+                          <div style={{textAlign:"center",fontSize:10,color:T.sub,marginBottom:10}}>সমাপ্ত (FT)</div>
+                        )}
+                        {goals.length>0 && (
+                          <div style={{marginBottom:cards.length>0?10:0}}>
+                            <div style={{fontSize:9,color:T.dim,marginBottom:5,fontWeight:700}}>⚽ গোল</div>
+                            {goals.map((g,gi)=>(
+                              <div key={gi} style={{fontSize:10,color:T.text,padding:"3px 0",display:"flex",justifyContent:"space-between"}}>
+                                <span>{g.team==="home"?em.a.team:em.b.team}</span>
+                                <span style={{color:T.sub}}>{g.scorer} {g.minute?g.minute+"'":""}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {cards.length>0 && (
+                          <div>
+                            <div style={{fontSize:9,color:T.dim,marginBottom:5,fontWeight:700}}>🟨 কার্ড</div>
+                            {cards.map((cd,ci)=>(
+                              <div key={ci} style={{fontSize:10,color:T.sub,padding:"3px 0"}}>{cd.type==="red"?"🟥":"🟨"} {cd.player} {cd.minute}'</div>
+                            ))}
+                          </div>
+                        )}
+                        {goals.length===0 && cards.length===0 && <div style={{textAlign:"center",fontSize:10,color:T.dim}}>কোনো গোল বা কার্ড নেই</div>}
+                      </div>
+                    </div>
+                  );
+                })()}
 
               </div>
             );
