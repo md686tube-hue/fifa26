@@ -68,6 +68,10 @@ function afName(team) { return AF_TEAM_MAP[team] || team; }
 async function afFixtures() { return fetch(`/api/fixtures`); }
 async function afEvents(fixtureId) { return fetch(`/api/events?fixture=${fixtureId}`); }
 
+// ── Wikipedia footballbox scraper — সম্পূর্ণ ফ্রি, key লাগে না (tertiary scorer source) ──
+async function wikiScorers(group) { return fetch(`/api/wiki-scorers?group=${group}`); }
+const wikiGroupCache = {}; // group -> parsed matches (একই request-এ বারবার fetch এড়াতে)
+
 
 // ── TheSportsDB team-name mapping (fallback source) ──────────────────────
 const TSDB_TEAM_MAP = {
@@ -2750,6 +2754,58 @@ export default function App() {
       dbg.tsdb.goalsFetched = tsdbGoalsFetched;
       dbg.tsdb.goalsFound = tsdbGoalsFound;
 
+      // ── Wikipedia footballbox: সম্পূর্ণ ফ্রি, key-হীন tertiary scorer source ──
+      // (শুধু group-stage; এক গ্রুপ পেজে ৬টা ম্যাচই থাকে, তাই গ্রুপ অনুযায়ী batch করা হচ্ছে)
+      dbg.wiki = { tried:false, groupsChecked:[], goalsFound:0 };
+      try {
+        const groupsNeeded = new Set();
+        for (const f of started) {
+          if (f.isKO) continue;
+          const baseEntry = newGroup[f.id] || resultsRef.current[f.id];
+          const baseGoals = Array.isArray(baseEntry?.goals) ? baseEntry.goals : [];
+          const baseTotal = baseEntry ? ((+baseEntry.h||0)+(+baseEntry.a||0)) : 0;
+          if (baseEntry && baseTotal > 0 && baseGoals.length < baseTotal) groupsNeeded.add(f.grp);
+        }
+        if (groupsNeeded.size > 0) {
+          dbg.wiki.tried = true;
+          dbg.wiki.groupsChecked = [...groupsNeeded];
+          for (const grp of groupsNeeded) {
+            try {
+              const wr = await wikiScorers(grp);
+              if (!wr.ok) continue;
+              const wj = await wr.json();
+              const wMatches = Array.isArray(wj.matches) ? wj.matches : [];
+              const grpFixtures = started.filter(f => !f.isKO && f.grp === grp);
+              for (const f of grpFixtures) {
+                const baseEntry = newGroup[f.id] || resultsRef.current[f.id];
+                const baseGoals = Array.isArray(baseEntry?.goals) ? baseEntry.goals : [];
+                const baseTotal = baseEntry ? ((+baseEntry.h||0)+(+baseEntry.a||0)) : 0;
+                if (!baseEntry || baseTotal === 0 || baseGoals.length >= baseTotal) continue;
+                const homeAlt = f.home, awayAlt = f.away;
+                const wm = wMatches.find(x =>
+                  (teamsMatch(x.team1, homeAlt) && teamsMatch(x.team2, awayAlt)) ||
+                  (teamsMatch(x.team1, awayAlt) && teamsMatch(x.team2, homeAlt))
+                );
+                if (!wm) continue;
+                const swapped = !teamsMatch(wm.team1, homeAlt);
+                const g1 = Array.isArray(wm.goals1) ? wm.goals1 : [];
+                const g2 = Array.isArray(wm.goals2) ? wm.goals2 : [];
+                const homeGoalsArr = swapped ? g2 : g1;
+                const awayGoalsArr = swapped ? g1 : g2;
+                const parsed = [
+                  ...homeGoalsArr.map(g => ({ team: g.og ? "away" : "home", scorer: g.scorer + (g.pen?" (pen)":"") + (g.og?" (og)":""), minute: g.minute })),
+                  ...awayGoalsArr.map(g => ({ team: g.og ? "home" : "away", scorer: g.scorer + (g.pen?" (pen)":"") + (g.og?" (og)":""), minute: g.minute })),
+                ].sort((a,b)=>(a.minute||0)-(b.minute||0));
+                if (parsed.length >= baseGoals.length && parsed.length > 0) {
+                  dbg.wiki.goalsFound++;
+                  newGroup[f.id] = { ...baseEntry, goals: parsed };
+                }
+              }
+            } catch (e) { console.error("wiki-scorers fetch error for group", grp, e); }
+          }
+        }
+      } catch (e) { console.error("wiki-scorers pass error:", e); dbg.wiki.error = String(e?.message||e); }
+
       dbg.applied = { group:Object.keys(newGroup).length, ko:Object.keys(newKO).length };
       if (Object.keys(newGroup).length > 0) setResults(prev => ({ ...prev, ...newGroup }));
       if (Object.keys(newKO).length > 0) setKoResults(prev => ({ ...prev, ...newKO }));
@@ -3251,6 +3307,7 @@ export default function App() {
                 {fetchDebug.af?.sample && <div>AF sample: {fetchDebug.af.sample.join(" | ")}</div>}
                 <div>AF matched={fetchDebug.af?.matched ?? "-"} goalsFetched={fetchDebug.af?.goalsFetched ?? "-"} goalsFound={fetchDebug.af?.goalsFound ?? "-"}</div>
                 <div>TSDB matched={fetchDebug.tsdb?.matched ?? "-"} goalsFetched={fetchDebug.tsdb?.goalsFetched ?? "-"} goalsFound={fetchDebug.tsdb?.goalsFound ?? "-"}</div>
+                <div>Wiki: tried={String(fetchDebug.wiki?.tried)} groups={JSON.stringify(fetchDebug.wiki?.groupsChecked||[])} goalsFound={fetchDebug.wiki?.goalsFound ?? 0}{fetchDebug.wiki?.error?` ERROR=${fetchDebug.wiki.error}`:""}</div>
                 <div>applied: group={fetchDebug.applied?.group ?? 0} ko={fetchDebug.applied?.ko ?? 0}</div>
                 {fetchDebug.error && <div style={{color:"#ef4444"}}>ERROR: {fetchDebug.error}</div>}
               </div>
