@@ -81,11 +81,22 @@ const TSDB_TEAM_MAP = {
   "USA":"USA",
 };
 function tsdbName(team) { return TSDB_TEAM_MAP[team] || team; }
+// একই দলের জন্য বিভিন্ন সোর্সে ভিন্ন নাম ব্যবহার হয় — এগুলো একটা canonical alias-এ ম্যাপ করা হচ্ছে
+const NAME_ALIASES = {
+  "czechrepublic":"czechia",
+  "ivorycoast":"cotedivoire", "cotedivoire":"cotedivoire",
+  "korearepublic":"southkorea", "republicofkorea":"southkorea",
+  "usa":"unitedstates", "unitedstatesofamerica":"unitedstates",
+  "caboverde":"capeverde",
+  "drcongo":"congodr", "democraticrepublicofthecongo":"congodr",
+};
 function normName(s) {
-  return (s||"").toLowerCase()
+  let r = (s||"").toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g,"") // strip accents
+    .replace(/&/g,"and")
     .replace(/[^a-z0-9]/g,"")
     .replace(/turkiye/g,"turkey"); // FIFA ২০২২-এ "Turkey" কে "Türkiye" নামকরণ করেছে — কিছু API এখন এই নাম ব্যবহার করে
+  return NAME_ALIASES[r] || r;
 }
 // ── Manual result fallback (API name-matching মাঝে মাঝে miss করে) ──────────
 const MANUAL_RESULTS = {
@@ -143,11 +154,21 @@ const MANUAL_RESULTS = {
   ], cards:[] },
   17: { h:"0", a:"0", status:"FT", minute:null, goals:[], cards:[] },
 };
+function normTokens(s) {
+  return (s||"").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/turkiye/g,"turkey")
+    .replace(/&/g,"and")
+    .replace(/[^a-z0-9\s]/g," ")
+    .split(/\s+/).filter(Boolean).sort().join(" ");
+}
 function teamsMatch(a,b) {
   const na=normName(a), nb=normName(b);
   if (na===nb) return true;
-  // partial containment for things like "Czechia" vs "Czech Republic", "DR Congo" vs "Congo DR"
+  // partial containment for things like "Czechia" vs "Czech Republic"
   if (na.length>3 && nb.length>3 && (na.includes(nb)||nb.includes(na))) return true;
+  // word-order independent match — "DR Congo" vs "Congo DR", "Korea Republic" vs "Republic of Korea"
+  if (normTokens(a) === normTokens(b)) return true;
   return false;
 }
 function parseGoalDetails(str, side) {
@@ -2440,10 +2461,22 @@ export default function App() {
             let fdMatched = 0;
             for (const f of started) {
               const homeAlt = fdName(f.home), awayAlt = fdName(f.away);
-              const m = matches.find(mm =>
+              let m = matches.find(mm =>
                 (teamsMatch(mm.homeTeam?.name, homeAlt) && teamsMatch(mm.awayTeam?.name, awayAlt)) ||
                 (teamsMatch(mm.homeTeam?.name, awayAlt) && teamsMatch(mm.awayTeam?.name, homeAlt))
               );
+              if (!m) {
+                // name match fail করলে kickoff-time fallback (±৩ ঘণ্টা window)
+                const win = matches.filter(mm => {
+                  const ts = mm.utcDate ? new Date(mm.utcDate).getTime() : null;
+                  return ts && Math.abs(ts - f.utc) < 3*3600*1000;
+                });
+                m = win.find(mm =>
+                  teamsMatch(mm.homeTeam?.name, homeAlt) || teamsMatch(mm.awayTeam?.name, homeAlt) ||
+                  teamsMatch(mm.homeTeam?.name, awayAlt) || teamsMatch(mm.awayTeam?.name, awayAlt)
+                );
+                if (!m && win.length === 1) m = win[0];
+              }
               if (!m) { console.log(`[WC26] NO MATCH FOUND for ${f.home} vs ${f.away} (looked for "${homeAlt}" vs "${awayAlt}")`); continue; }
               fdMatched++;
               console.log(`[WC26] matched ${f.home} vs ${f.away} -> ${m.homeTeam?.name} ${m.score?.fullTime?.home}-${m.score?.fullTime?.away} ${m.awayTeam?.name} | status=${m.status}`);
@@ -2512,10 +2545,23 @@ export default function App() {
             if (baseEntry && baseTotal > 0 && baseGoals.length >= baseTotal) continue; // আগেই সম্পূর্ণ
 
             const homeAlt = afName(f.home), awayAlt = afName(f.away);
-            const afm = afFix.find(x =>
+            let afm = afFix.find(x =>
               (teamsMatch(x.teams?.home?.name, homeAlt) && teamsMatch(x.teams?.away?.name, awayAlt)) ||
               (teamsMatch(x.teams?.home?.name, awayAlt) && teamsMatch(x.teams?.away?.name, homeAlt))
             );
+            // name match fail করলে date/time fallback — same kickoff window (±৩ ঘণ্টা) + একদিকের team name অন্তত মিলে
+            if (!afm) {
+              const fixtureWindow = afFix.filter(x => {
+                const ts = x.fixture?.timestamp ? x.fixture.timestamp * 1000 : null;
+                return ts && Math.abs(ts - f.utc) < 3*3600*1000;
+              });
+              afm = fixtureWindow.find(x =>
+                teamsMatch(x.teams?.home?.name, homeAlt) || teamsMatch(x.teams?.away?.name, homeAlt) ||
+                teamsMatch(x.teams?.home?.name, awayAlt) || teamsMatch(x.teams?.away?.name, awayAlt)
+              );
+              // একেবারে কিছু না মিললে, ওই সময়ের একমাত্র ম্যাচ হলে সেটাই ধরে নেওয়া (last resort)
+              if (!afm && fixtureWindow.length === 1) afm = fixtureWindow[0];
+            }
             if (!afm) continue;
             afMatched++;
             const swapped = !teamsMatch(afm.teams?.home?.name, homeAlt);
